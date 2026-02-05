@@ -14,6 +14,90 @@ if (!(Test-Path $TemplateSource)) {
     exit 1
 }
 
+# 環境檢查：檢查並可使用 winget 安裝缺少的工具 (git, gh, pwsh)
+function Test-Command {
+    param([string]$Name)
+    try { Get-Command $Name -ErrorAction Stop | Out-Null; return $true } catch { return $false }
+}
+function Install-With-Winget {
+    param([string]$Id, [string]$Display, [switch]$Auto)
+    if (-not (Test-Command 'winget')) {
+        Write-Host "winget 未找到，無法自動安裝 $Display，請手動安裝。" -ForegroundColor Yellow
+        return $false
+    }
+    $args = "install --id $Id -e --accept-package-agreements --accept-source-agreements"
+    if ($Auto) { $args += " --silent" }
+    Write-Host "執行: winget $args"
+    $proc = Start-Process -FilePath winget -ArgumentList $args -NoNewWindow -Wait -PassThru -ErrorAction SilentlyContinue
+    if ($proc -and $proc.ExitCode -eq 0) {
+        Write-Host "$Display 安裝成功。" -ForegroundColor Green
+        return $true
+    } else {
+        Write-Host "$Display 安裝失敗 (ExitCode: $($proc.ExitCode))." -ForegroundColor Red
+        return $false
+    }
+}
+
+$tools = @{
+    'git' = @{ id='Git.Git'; display='Git' }
+    'gh'  = @{ id='GitHub.cli'; display='GitHub CLI' }
+    'pwsh' = @{ id='Microsoft.PowerShell'; display='PowerShell (pwsh)' }
+    'node' = @{ id='OpenJS.NodeJS.LTS'; display='Node.js (含 npm, npx)' }
+}
+
+# 額外檢查：如果 node 已安裝但 npm 或 npx 不存在，提示安裝 Node.js
+function Test-NodeTools {
+    $nodeExists = Test-Command 'node'
+    $npmExists = Test-Command 'npm'
+    $npxExists = Test-Command 'npx'
+    return @{ node=$nodeExists; npm=$npmExists; npx=$npxExists }
+}
+
+$nodeTools = Test-NodeTools
+if (-not $nodeTools.node -or -not $nodeTools.npm -or -not $nodeTools.npx) {
+    Write-Host "Node.js 或 npm/npx 未完整安裝。"
+    $ans = Read-Host "是否使用 winget 安裝 Node.js LTS（含 npm, npx）？(Y/n)"
+    if ($ans -notmatch '^[nN]') {
+        $ok = Install-With-Winget $tools['node'].id $tools['node'].display
+        if (-not $ok) { Write-Host "無法安裝 Node.js，請手動安裝後重新執行腳本。" -ForegroundColor Red; exit 1 }
+    } else {
+        Write-Host "跳過安裝 Node.js。若需要 Node 功能請手動安裝。" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "node/npm/npx 已存在。" -ForegroundColor Green
+}
+
+foreach ($cmd in $tools.Keys) {
+    if (-not (Test-Command $cmd)) {
+        $info = $tools[$cmd]
+        $ans = Read-Host "$($info.display) 未偵測到，是否使用 winget 安裝？(Y/n)"
+        if ($ans -match '^[nN]') {
+            Write-Host "跳過安裝 $($info.display)。" -ForegroundColor Yellow
+        } else {
+            $ok = Install-With-Winget $info.id $info.display
+            if (-not $ok) { Write-Host "無法安裝 $($info.display)。請手動安裝後重新執行腳本。" -ForegroundColor Red; exit 1 }
+        }
+    } else {
+        Write-Host "$cmd 已存在。" -ForegroundColor Green
+    }
+}
+
+# 可選：將專案內容移入子資料夾（避免移動 .git 與此腳本）
+$target = Read-Host "請輸入要搬移到的資料夾名稱（留空則不搬移）"
+if (-not [string]::IsNullOrWhiteSpace($target)) {
+    if (Test-Path $target) {
+        $confirm = Read-Host "資料夾 '$target' 已存在，是否清空並繼續？(y/N)"
+        if ($confirm -match '^[yY]') { Remove-Item -LiteralPath $target -Recurse -Force } else { Write-Host "已取消。" -ForegroundColor Yellow; exit 1 }
+    }
+    New-Item -ItemType Directory -Path $target | Out-Null
+    $scriptName = Split-Path -Leaf $MyInvocation.MyCommand.Path
+    $items = Get-ChildItem -LiteralPath . -Force | Where-Object { $_.Name -ne $target -and $_.Name -ne '.git' -and $_.Name -ne $scriptName }
+    foreach ($it in $items) {
+        Move-Item -LiteralPath $it.FullName -Destination $target -Force
+    }
+    Set-Location $target
+}
+
 function Test-ComponentEnabled {
     param([string]$Name)
 
@@ -160,10 +244,37 @@ if (!(Test-Path ".gitignore")) {
     Set-Content -Path ".gitignore" -Value $GitIgnoreContent -Encoding utf8
 }
 
-# 執行首次提交
-git add .
-git commit -m "Initial commit: 架構與 AI Agent 規則部署"
-Write-Host "✅ 首次提交完成，已包含 AI Agent 與技術規範" -ForegroundColor Green
+# 執行首次提交（檢查是否有變更與 git config）
+$hasChanges = (git status --porcelain) -ne ''
+if ($hasChanges) {
+    $name = git config --get user.name
+    $email = git config --get user.email
+    if (-not $name -or -not $email) {
+        Write-Host "git user.name 或 user.email 未設定，將使用臨時值以執行提交。" -ForegroundColor Yellow
+        git config user.name "Init Script"
+        git config user.email "init@example.com"
+        $restoreConfig = $true
+    }
+
+    git add .
+    $commitOk = $false
+    try {
+        git commit -m "Initial commit: 架構與 AI Agent 規則部署"
+        $commitOk = $true
+    } catch {
+        Write-Host "git commit 失敗：$($_.Exception.Message)" -ForegroundColor Red
+    }
+
+    if ($restoreConfig) {
+        git config --unset user.name
+        git config --unset user.email
+    }
+
+    if ($commitOk) { Write-Host "✅ 首次提交完成，已包含 AI Agent 與技術規範" -ForegroundColor Green }
+    else { Write-Host "⚠️ 首次提交未完成，請手動檢查 git 狀態。" -ForegroundColor Yellow }
+} else {
+    Write-Host "無變更可提交，跳過首次提交。" -ForegroundColor Yellow
+}
 
 
 Write-Host "`n🚀 專案初始化成功！現在可以啟動 VS Code 並進入 Agent Mode。" -ForegroundColor Yellow
