@@ -70,3 +70,11 @@ Generate `changes/<...>/05-review.md` with:
 - **NEVER approve code with CRITICAL security vulnerabilities**
 - All CRITICAL and HIGH issues must be resolved before merge
 - Financial precision issues are always CRITICAL
+
+## Next Step
+After review completion and fixes applied:
+- If **CRITICAL issues found**: Fix immediately, do not proceed
+- If **approved**: Run `/archive` to finalize change package
+- Or use `/workflow` for guided progression
+
+⚠️ **BLOCK MERGE** if any CRITICAL security or financial compliance issues remain

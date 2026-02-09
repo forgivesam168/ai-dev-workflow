@@ -62,3 +62,11 @@ Create `changes/<...>/99-archive.md`:
 - Do not include secrets or sensitive customer/transaction data
 - Keep archive concise but complete for future reference
 - Link to relevant PRs and issues
+
+## Next Step
+After archive completion:
+- 🎉 **Workflow Complete!** Change package finalized
+- Start new work with `/brainstorm` or `/workflow`
+- Review lessons learned for process improvement
+
+✅ **Change Package Lifecycle**: Closed and archived for future reference

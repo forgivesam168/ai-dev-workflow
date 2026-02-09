@@ -5,7 +5,7 @@ It contains:
 - Constitution / global behavior rules for AI assistants (`copilot-instructions.md`)
 - Agent personas (`agents/*.agent.md`) — 5 agents
 - Instruction files (`instructions/*.instructions.md`)
-- Prompt library (`prompts/*.prompt.md`) — 9 prompts
+- Prompt library (`prompts/*.prompt.md`) — 10 prompts
 - Skills library (`skills/**/SKILL.md`) — 24 skills
 - Bootstrap script (`Init-Project.ps1`) to deploy these assets into another project.
 
@@ -23,6 +23,7 @@ It contains:
 
 | Command | Stage | Description |
 |---------|-------|-------------|
+| `/workflow` | 0 | **Orchestrator**: Detect stage, guide next step |
 | `/brainstorm` | 1 | Triage risk, clarify requirements |
 | `/spec` | 2 | Generate specification document |
 | `/plan` | 3 | Create implementation plan |
@@ -62,5 +63,7 @@ pwsh -File .\Init-Project.ps1
 - Prefer `mode=finsec` (governance & security) for PR reviews in regulated environments.
 
 ## Workflow (recommended)
+- For guided workflow: `/workflow` (automatic stage detection)
 - For medium/high-risk changes: `/brainstorm` → `/spec` → `/plan` → `/tdd` → `/review` → `/archive`
+- For low-risk changes: `/brainstorm` → `/plan` → `/tdd` → `/review` → `/archive` (fast path)
 - See `WORKFLOW.md` for the full flow and skip rules.

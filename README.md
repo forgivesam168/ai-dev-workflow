@@ -47,6 +47,7 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 
 | Stage | Command | Description |
 |-------|---------|-------------|
+| 0 | `/workflow` | **Orchestrator**: Detect current stage, guide next step |
 | 1 | `/brainstorm` | Triage risk, clarify requirements, create change package |
 | 2 | `/spec` | Generate specification document |
 | 3 | `/plan` | Create executable implementation plan |
@@ -54,10 +55,18 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 | 5 | `/review` | Code Review + Security Review (parallel) |
 | 6 | `/archive` | Finalize and document |
 
+### Workflow Orchestrator
+
+Use `/workflow` for guided progression:
+- Automatically detects current stage
+- Suggests next command
+- Shows progress and what's remaining
+- Interactive execution with confirmation
+
 ### Workflow Paths
 
 - **Standard path**: Brainstorm → Spec → Plan → Implement (TDD) → Review → Archive
-- **Fast path**: Plan → Implement → Review (low-risk only)
+- **Fast path**: Brainstorm → Plan → Implement → Review (low-risk only, skip Spec)
 
 Each work item produces a **Change Package** under `changes/<YYYY-MM-DD>-<slug>/`.
 

@@ -52,4 +52,8 @@ Create `changes/<...>/03-spec.md` with:
 - Timezone handling
 
 ## Next Step
-Ask: "Should I generate the implementation plan? Use `/plan`"
+After spec completion:
+- Run `/plan` to break down into executable tasks
+- Or use `/workflow` for guided progression
+
+💡 Tip: Spec is complete when acceptance criteria are explicit and testable

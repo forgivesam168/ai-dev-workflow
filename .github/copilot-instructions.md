@@ -63,15 +63,50 @@ Adopt the specific persona based on the user's request:
 1. Brainstorm → 2. Spec → 3. Plan → 4. Implement → 5. Review → 6. Archive
 ```
 
+### Workflow Orchestrator
+Use `/workflow` to:
+- Detect current stage automatically
+- Get guided progression through stages
+- See what's completed and what's next
+- Interactive execution with confirmation
+
 ### Commands
 | Stage | Command | Description |
 |-------|---------|-------------|
+| 0 | `/workflow` | **Orchestrator**: Detect state, suggest next step |
 | 1 | `/brainstorm` | Triage risk, clarify requirements |
 | 2 | `/spec` | Generate specification document |
 | 3 | `/plan` | Create implementation plan |
 | 4 | `/tdd` | TDD implementation |
 | 5 | `/review` | Code + Security review (parallel) |
 | 6 | `/archive` | Finalize and document |
+
+### Workflow State Detection (Automatic)
+When user mentions working on a feature, proactively check:
+1. Does `changes/` folder exist?
+2. Which files are present? (`01-brainstorm.md`, `03-spec.md`, etc.)
+3. What stage are we at?
+4. Suggest next command if appropriate
+
+**Detection Rules:**
+- No change package → Suggest `/brainstorm` or `/workflow`
+- `01-brainstorm.md` exists → Next: `/spec` (or `/plan` for fast path)
+- `03-spec.md` exists → Next: `/plan`
+- `04-plan.md` exists → Next: `/tdd`
+- Uncommitted changes detected → Next: `/review`
+- `05-review.md` exists → Next: `/archive`
+
+### Two Paths
+**Standard Path** (Med/High risk):
+```
+Brainstorm → Spec → Plan → Implement → Review → Archive
+```
+
+**Fast Path** (Low risk only):
+```
+Brainstorm → Plan → Implement → Review → Archive
+          (skip Spec)
+```
 
 ### TDD Execution (Stage 4)
 1. **Red**: Write the failing test first.

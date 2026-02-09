@@ -43,3 +43,9 @@ Create `changes/<YYYY-MM-DD>-<slug>/` with:
 - Keep acceptance criteria explicit and testable
 - Do not include secrets or sensitive customer/transaction data
 - For brownfield: note affected modules and regression points
+
+## Next Step
+After brainstorm completion:
+- **Standard Path (Med/High risk)**: Run `/spec` to generate formal specification
+- **Fast Path (Low risk)**: Skip to `/plan` for immediate task breakdown
+- Or use `/workflow` for guided progression

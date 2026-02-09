@@ -324,3 +324,10 @@ This command invokes the `tdd-guide` agent located at:
 
 And can reference the `tdd-workflow` skill at:
 `~/.claude/skills/tdd-workflow/`
+
+## Next Step
+After implementation completion:
+- Run `/review` for code + security review
+- Or use `/workflow` for guided progression
+
+✅ **Done when**: Tests pass, coverage ≥80%, code is refactored and clean

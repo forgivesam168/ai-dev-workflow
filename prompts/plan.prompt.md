@@ -124,3 +124,10 @@ Prefer generating plan artifacts into:
 - If brownfield/high-risk: `changes/<...>/06-impact-analysis.md`
 
 If the required inputs (intake/spec) are missing, produce the best-effort plan but also list a **minimal missing artifacts checklist**.
+
+## Next Step
+After plan approval:
+- Run `/tdd` to start test-driven implementation
+- Or use `/workflow` for guided progression
+
+⚠️ **IMPORTANT**: Do not start implementation without user approval of the plan!
