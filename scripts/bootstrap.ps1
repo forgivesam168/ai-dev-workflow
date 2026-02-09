@@ -272,8 +272,11 @@ function Sync-WorkflowFiles {
     .PARAMETER Force
     強制覆蓋現有檔案
     
+    .PARAMETER Backup
+    在同步前備份現有 .github 目錄
+    
     .OUTPUTS
-    PSCustomObject with properties: FilesAdded, FilesUpdated, FilesSkipped
+    PSCustomObject with properties: FilesAdded, FilesUpdated, FilesSkipped, FilesConflicted
     
     .EXAMPLE
     $result = Sync-WorkflowFiles -SourcePath ".\.github" -TargetPath "C:\Projects\MyApp"
@@ -286,7 +289,9 @@ function Sync-WorkflowFiles {
         [Parameter(Mandatory=$true)]
         [string]$TargetPath,
         
-        [switch]$Force
+        [switch]$Force,
+        
+        [switch]$Backup
     )
     
     # 排除清單（不複製這些檔案）
@@ -306,6 +311,17 @@ function Sync-WorkflowFiles {
     
     # 建立目標 .github 目錄
     $targetGithubPath = Join-Path $TargetPath ".github"
+    
+    # 如果需要備份且目標存在
+    if ($Backup -and (Test-Path $targetGithubPath)) {
+        $backupResult = Backup-Directory -SourcePath $targetGithubPath
+        if ($backupResult.Success) {
+            Write-Host "✅ $($backupResult.Message)" -ForegroundColor Green
+        } else {
+            Write-Host "⚠️  $($backupResult.Message)" -ForegroundColor Yellow
+        }
+    }
+    
     if (-not (Test-Path $targetGithubPath)) {
         New-Item -ItemType Directory -Path $targetGithubPath -Force | Out-Null
     }
@@ -314,6 +330,7 @@ function Sync-WorkflowFiles {
     $filesAdded = @()
     $filesUpdated = @()
     $filesSkipped = @()
+    $filesConflicted = @()
     
     # 取得所有檔案
     $allFiles = Get-ChildItem -Path $resolvedSourcePath -Recurse -File
@@ -347,11 +364,15 @@ function Sync-WorkflowFiles {
         
         # 檢查檔案是否已存在
         if (Test-Path $targetFile) {
-            if ($Force) {
+            # 檢查檔案內容是否相同
+            if (Test-FilesIdentical -Path1 $file.FullName -Path2 $targetFile) {
+                $filesSkipped += $relativePath
+            } elseif ($Force) {
                 Copy-Item -Path $file.FullName -Destination $targetFile -Force
                 $filesUpdated += $relativePath
             } else {
-                $filesSkipped += $relativePath
+                # 衝突：檔案存在且內容不同，但未強制覆蓋
+                $filesConflicted += $relativePath
             }
         } else {
             Copy-Item -Path $file.FullName -Destination $targetFile
@@ -363,6 +384,7 @@ function Sync-WorkflowFiles {
         FilesAdded = $filesAdded
         FilesUpdated = $filesUpdated
         FilesSkipped = $filesSkipped
+        FilesConflicted = $filesConflicted
     }
 }
 
@@ -429,6 +451,166 @@ function Initialize-GitRepo {
     }
 }
 
+function Get-FileHash256 {
+    <#
+    .SYNOPSIS
+    計算檔案的 SHA256 雜湊值
+    
+    .PARAMETER Path
+    檔案路徑
+    
+    .OUTPUTS
+    String - SHA256 雜湊值
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Path
+    )
+    
+    if (-not (Test-Path $Path)) {
+        return $null
+    }
+    
+    $hash = Get-FileHash -Path $Path -Algorithm SHA256
+    return $hash.Hash
+}
+
+function Test-FilesIdentical {
+    <#
+    .SYNOPSIS
+    檢查兩個檔案內容是否相同
+    
+    .PARAMETER Path1
+    第一個檔案路徑
+    
+    .PARAMETER Path2
+    第二個檔案路徑
+    
+    .OUTPUTS
+    Boolean - 檔案內容相同則回傳 $true
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Path1,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$Path2
+    )
+    
+    if (-not (Test-Path $Path1) -or -not (Test-Path $Path2)) {
+        return $false
+    }
+    
+    $hash1 = Get-FileHash256 -Path $Path1
+    $hash2 = Get-FileHash256 -Path $Path2
+    
+    return $hash1 -eq $hash2
+}
+
+function Backup-Directory {
+    <#
+    .SYNOPSIS
+    備份目錄到時間戳命名的備份目錄
+    
+    .PARAMETER SourcePath
+    要備份的來源目錄
+    
+    .PARAMETER BackupName
+    備份目錄名稱（可選，預設為 <原目錄名>.backup-<時間戳>）
+    
+    .OUTPUTS
+    PSCustomObject with properties: Success, BackupPath, Message
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$SourcePath,
+        
+        [Parameter(Mandatory=$false)]
+        [string]$BackupName
+    )
+    
+    if (-not (Test-Path $SourcePath)) {
+        return [PSCustomObject]@{
+            Success = $false
+            BackupPath = $null
+            Message = "Source directory not found: $SourcePath"
+        }
+    }
+    
+    # 產生備份名稱
+    if (-not $BackupName) {
+        $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+        $sourceName = Split-Path $SourcePath -Leaf
+        $BackupName = "$sourceName.backup-$timestamp"
+    }
+    
+    $parentPath = Split-Path $SourcePath -Parent
+    $backupPath = Join-Path $parentPath $BackupName
+    
+    # 檢查備份目錄是否已存在
+    if (Test-Path $backupPath) {
+        return [PSCustomObject]@{
+            Success = $false
+            BackupPath = $null
+            Message = "Backup already exists: $backupPath"
+        }
+    }
+    
+    try {
+        Copy-Item -Path $SourcePath -Destination $backupPath -Recurse -Force
+        
+        return [PSCustomObject]@{
+            Success = $true
+            BackupPath = $backupPath
+            Message = "Backup created: $backupPath"
+        }
+    } catch {
+        return [PSCustomObject]@{
+            Success = $false
+            BackupPath = $null
+            Message = "Backup failed: $($_.Exception.Message)"
+        }
+    }
+}
+
+function Test-GitUncommittedChanges {
+    <#
+    .SYNOPSIS
+    檢查目錄是否有未提交的 Git 變更
+    
+    .PARAMETER TargetPath
+    專案根目錄
+    
+    .PARAMETER Directory
+    要檢查的子目錄（預設為 .github）
+    
+    .OUTPUTS
+    Boolean - 有未提交變更則回傳 $true
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$TargetPath,
+        
+        [Parameter(Mandatory=$false)]
+        [string]$Directory = ".github"
+    )
+    
+    try {
+        Push-Location $TargetPath
+        
+        $status = git status --porcelain $Directory 2>&1
+        
+        Pop-Location
+        
+        # 如果輸出不為空，表示有未提交變更
+        return -not [string]::IsNullOrWhiteSpace($status)
+        
+    } catch {
+        Pop-Location
+        return $false
+    }
+}
+
 function Write-EnvironmentCheck {
     <#
     .SYNOPSIS
@@ -473,6 +655,15 @@ function Write-EnvironmentCheck {
 function Main {
     Write-Host "🚀 Bootstrap AI Workflow Installer" -ForegroundColor Cyan
     Write-Host ""
+    
+    # 檢查 Update 模式
+    $forceMode = $Force -or $Update
+    $backupMode = $Backup -or $Update  # Update 模式自動啟用備份
+    
+    if ($Update -and -not $Force) {
+        Write-Host "ℹ️  執行 --update 模式（將檢查衝突並建立備份）" -ForegroundColor Cyan
+        Write-Host ""
+    }
     
     # 環境檢測
     Write-Host "環境檢測:" -ForegroundColor Cyan
@@ -545,9 +736,6 @@ function Main {
     # 檔案同步
     # ========================================================================
     
-    Write-Host "同步工作流檔案..." -ForegroundColor Cyan
-    Write-Host ""
-    
     # 取得當前專案根目錄（假設 bootstrap.ps1 在 scripts/ 目錄下）
     $currentPath = Get-Location
     $templateSourcePath = Join-Path $script:RepoRoot ".github"
@@ -563,9 +751,30 @@ function Main {
         }
     }
     
+    # 檢查未提交的變更（Update 模式）
+    if ($Update) {
+        $targetGithubPath = Join-Path $currentPath.Path ".github"
+        if (Test-Path $targetGithubPath) {
+            $hasChanges = Test-GitUncommittedChanges -TargetPath $currentPath.Path -Directory ".github"
+            if ($hasChanges) {
+                Write-Host "⚠️  檢測到 .github/ 目錄有未提交的變更" -ForegroundColor Yellow
+                Write-Host "   建議先提交變更後再執行 --update" -ForegroundColor Gray
+                $continue = Read-Host "是否繼續更新? (y/n)"
+                if ($continue -ne 'y') {
+                    Write-Host "已取消。" -ForegroundColor Gray
+                    exit 0
+                }
+                Write-Host ""
+            }
+        }
+    }
+    
+    Write-Host "同步工作流檔案..." -ForegroundColor Cyan
+    Write-Host ""
+    
     try {
         # 執行檔案同步
-        $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $currentPath.Path -Force:$Force
+        $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $currentPath.Path -Force:$forceMode -Backup:$backupMode
         
         # 顯示同步結果
         if ($syncResult.FilesAdded.Count -gt 0) {
@@ -577,7 +786,18 @@ function Main {
         }
         
         if ($syncResult.FilesSkipped.Count -gt 0) {
-            Write-Host "⏭️  跳過 $($syncResult.FilesSkipped.Count) 個檔案（workflows/CODEOWNERS 等）" -ForegroundColor Gray
+            Write-Host "⏭️  跳過 $($syncResult.FilesSkipped.Count) 個檔案（workflows/CODEOWNERS 或內容相同）" -ForegroundColor Gray
+        }
+        
+        if ($syncResult.FilesConflicted.Count -gt 0) {
+            Write-Host "⚠️  偵測到 $($syncResult.FilesConflicted.Count) 個衝突檔案（內容不同但未覆蓋）" -ForegroundColor Yellow
+            if ($Verbose) {
+                foreach ($file in $syncResult.FilesConflicted) {
+                    Write-Host "   - $file" -ForegroundColor Gray
+                }
+            }
+            Write-Host ""
+            Write-Host "提示：使用 -Force 或 -Update 參數強制覆蓋衝突檔案" -ForegroundColor Cyan
         }
         
         Write-Host ""
@@ -610,24 +830,26 @@ function Main {
     # Git 初始化
     # ========================================================================
     
-    Write-Host "檢查 Git 初始化..." -ForegroundColor Cyan
-    Write-Host ""
-    
-    try {
-        $gitResult = Initialize-GitRepo -TargetPath $currentPath.Path
+    if (-not $SkipHooks) {
+        Write-Host "檢查 Git 初始化..." -ForegroundColor Cyan
+        Write-Host ""
         
-        if ($gitResult.IsNew) {
-            Write-Host "✅ Git repository 已初始化" -ForegroundColor Green
-        } else {
-            Write-Host "ℹ️  Git repository 已存在" -ForegroundColor Cyan
+        try {
+            $gitResult = Initialize-GitRepo -TargetPath $currentPath.Path
+            
+            if ($gitResult.IsNew) {
+                Write-Host "✅ Git repository 已初始化" -ForegroundColor Green
+            } else {
+                Write-Host "ℹ️  Git repository 已存在" -ForegroundColor Cyan
+            }
+            
+            Write-Host ""
+            
+        } catch {
+            Write-Host "⚠️  Git 初始化失敗: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Host "   您可以稍後手動執行 'git init'" -ForegroundColor Gray
+            Write-Host ""
         }
-        
-        Write-Host ""
-        
-    } catch {
-        Write-Host "⚠️  Git 初始化失敗: $($_.Exception.Message)" -ForegroundColor Yellow
-        Write-Host "   您可以稍後手動執行 'git init'" -ForegroundColor Gray
-        Write-Host ""
     }
     
     Write-Host "✅ Bootstrap completed!" -ForegroundColor Green

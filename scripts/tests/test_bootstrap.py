@@ -52,3 +52,78 @@ def test_sync_workflow_files_force_overwrites(tmp_path: Path) -> None:
 
     assert "README.md" in result.files_updated
     assert (target_github / "README.md").read_text() == "new content"
+
+
+def test_files_are_identical_detects_same_content(tmp_path: Path) -> None:
+    """Test that files_are_identical correctly identifies identical files."""
+    file1 = tmp_path / "file1.txt"
+    file2 = tmp_path / "file2.txt"
+    file1.write_text("same content")
+    file2.write_text("same content")
+    
+    assert bootstrap.files_are_identical(file1, file2)
+
+
+def test_files_are_identical_detects_different_content(tmp_path: Path) -> None:
+    """Test that files_are_identical correctly identifies different files."""
+    file1 = tmp_path / "file1.txt"
+    file2 = tmp_path / "file2.txt"
+    file1.write_text("content A")
+    file2.write_text("content B")
+    
+    assert not bootstrap.files_are_identical(file1, file2)
+
+
+def test_sync_detects_conflicts_without_force(tmp_path: Path) -> None:
+    """Test that sync detects conflicts when files differ and force=False."""
+    source = tmp_path / ".github"
+    project_root = tmp_path / "project-conflict"
+    source.mkdir(parents=True)
+    (source / "config.yml").write_text("new config")
+    
+    project_root.mkdir()
+    target_github = project_root / ".github"
+    target_github.mkdir(parents=True)
+    (target_github / "config.yml").write_text("old config")
+    
+    result = bootstrap.sync_workflow_files(source, project_root, force=False)
+    
+    assert "config.yml" in result.files_conflicted
+    assert "config.yml" not in result.files_updated
+    assert "config.yml" not in result.files_added
+
+
+def test_backup_directory_creates_timestamped_backup(tmp_path: Path) -> None:
+    """Test that backup_directory creates a backup with timestamp."""
+    source_dir = tmp_path / ".github"
+    source_dir.mkdir()
+    (source_dir / "file.txt").write_text("content")
+    
+    result = bootstrap.backup_directory(source_dir)
+    
+    assert result.success
+    assert result.backup_path is not None
+    backup_path = Path(result.backup_path)
+    assert backup_path.exists()
+    assert ".github.backup-" in backup_path.name
+    assert (backup_path / "file.txt").read_text() == "content"
+
+
+def test_sync_with_backup_creates_backup(tmp_path: Path) -> None:
+    """Test that sync with backup=True creates a backup before syncing."""
+    source = tmp_path / ".github"
+    project_root = tmp_path / "project-backup"
+    source.mkdir(parents=True)
+    (source / "new.txt").write_text("new")
+    
+    project_root.mkdir()
+    target_github = project_root / ".github"
+    target_github.mkdir(parents=True)
+    (target_github / "old.txt").write_text("old")
+    
+    result = bootstrap.sync_workflow_files(source, project_root, force=True, backup=True)
+    
+    # Check that backup was created
+    backup_dirs = list(project_root.glob(".github.backup-*"))
+    assert len(backup_dirs) == 1
+    assert (backup_dirs[0] / "old.txt").exists()
