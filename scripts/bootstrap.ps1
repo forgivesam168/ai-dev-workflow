@@ -366,6 +366,69 @@ function Sync-WorkflowFiles {
     }
 }
 
+function Initialize-GitRepo {
+    <#
+    .SYNOPSIS
+    初始化 Git repository
+    
+    .DESCRIPTION
+    檢測目標目錄是否已有 .git，如果沒有則執行 git init
+    
+    .PARAMETER TargetPath
+    目標專案目錄
+    
+    .OUTPUTS
+    PSCustomObject with properties: IsNew, GitDir, Message
+    
+    .EXAMPLE
+    $result = Initialize-GitRepo -TargetPath "C:\Projects\MyApp"
+    if ($result.IsNew) {
+        Write-Host "Git repository initialized"
+    }
+    #>
+    
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$TargetPath
+    )
+    
+    # 檢查 .git 目錄
+    $gitDir = Join-Path $TargetPath ".git"
+    
+    if (Test-Path $gitDir) {
+        # Git repo 已存在
+        return [PSCustomObject]@{
+            IsNew = $false
+            GitDir = $gitDir
+            Message = "Git repository already exists"
+        }
+    }
+    
+    # 執行 git init
+    try {
+        Push-Location $TargetPath
+        
+        $initOutput = git init 2>&1
+        
+        Pop-Location
+        
+        # 驗證 .git 目錄是否建立成功
+        if (Test-Path $gitDir) {
+            return [PSCustomObject]@{
+                IsNew = $true
+                GitDir = $gitDir
+                Message = "Git repository initialized successfully"
+            }
+        } else {
+            throw "git init executed but .git directory not found"
+        }
+        
+    } catch {
+        Pop-Location
+        throw "Failed to initialize Git repository: $($_.Exception.Message)"
+    }
+}
+
 function Write-EnvironmentCheck {
     <#
     .SYNOPSIS
@@ -543,7 +606,29 @@ function Main {
         exit 1
     }
     
-    # TODO: Git 初始化
+    # ========================================================================
+    # Git 初始化
+    # ========================================================================
+    
+    Write-Host "檢查 Git 初始化..." -ForegroundColor Cyan
+    Write-Host ""
+    
+    try {
+        $gitResult = Initialize-GitRepo -TargetPath $currentPath.Path
+        
+        if ($gitResult.IsNew) {
+            Write-Host "✅ Git repository 已初始化" -ForegroundColor Green
+        } else {
+            Write-Host "ℹ️  Git repository 已存在" -ForegroundColor Cyan
+        }
+        
+        Write-Host ""
+        
+    } catch {
+        Write-Host "⚠️  Git 初始化失敗: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "   您可以稍後手動執行 'git init'" -ForegroundColor Gray
+        Write-Host ""
+    }
     
     Write-Host "✅ Bootstrap completed!" -ForegroundColor Green
 }
