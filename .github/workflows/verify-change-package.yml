@@ -1,0 +1,112 @@
+name: Verify Change Package
+
+on:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      # 導入初期建議先用 "false"（只警告不擋 PR），等大家習慣後再改成 "true"
+      FAIL_MODE: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collect changed files
+        id: diff
+        run: |
+          git fetch --no-tags --prune --depth=1 origin ${{ github.base_ref }}
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          echo "changed<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED"
+
+      - name: Verify change package if code-like files changed
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CHANGED="${{ steps.diff.outputs.changed }}"
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          FAIL_MODE="${FAIL_MODE:-true}"
+
+          fail() {
+            local msg="$1"
+            if [ "$FAIL_MODE" = "true" ]; then
+              echo "::error::${msg}"
+              exit 1
+            else
+              echo "::warning::${msg}"
+            fi
+          }
+
+          # 1) 判斷是否有「程式碼/設定」類變更（changes/ 之外）
+          NEEDS_PACKAGE=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+
+            # files we ignore as "docs-only"
+            case "$f" in
+              changes/*) continue ;;
+              README*|WORKFLOW.md|SECURITY.md|LICENSE*|docs/*) continue ;;
+              .github/ISSUE_TEMPLATE/*) continue ;;
+            esac
+
+            # always treat workflows as code-like
+            case "$f" in
+              .github/workflows/*) NEEDS_PACKAGE=1; continue ;;
+            esac
+
+            # common code/config patterns
+            case "$f" in
+              *.cs|*.fs|*.vb|*.py|*.ts|*.tsx|*.js|*.jsx|*.go|*.java|*.kt|*.rb|*.php|*.rs|*.sql|*.ps1|*.sh|*.bat|*.cmd|*.yml|*.yaml|Dockerfile|Makefile|*.csproj|*.fsproj|*.vbproj|*.sln|*.props|*.targets|*.toml|*.lock|*.gradle|pom.xml|go.mod|go.sum|Cargo.toml|Cargo.lock|package.json|package-lock.json|pnpm-lock.yaml|yarn.lock|requirements.txt|requirements*.txt|Pipfile|Pipfile.lock|pyproject.toml|poetry.lock|composer.json|composer.lock|Gemfile|Gemfile.lock|docker-compose*.yml)
+                NEEDS_PACKAGE=1
+                ;;
+            esac
+          done <<< "$CHANGED"
+
+          if [ "$NEEDS_PACKAGE" -eq 0 ]; then
+            echo "No code-like changes detected outside changes/. Skipping enforcement."
+            exit 0
+          fi
+
+          # 2) 從本次 PR 變更中找出變更到的 change package 目錄（不含 changes/_template）
+          CHANGE_DIRS=()
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              changes/_template/*) continue ;;
+              changes/*/*)
+                d=$(echo "$f" | awk -F/ '{print $1"/"$2}')
+                # dedupe
+                found=0
+                for x in "${CHANGE_DIRS[@]:-}"; do [ "$x" = "$d" ] && found=1; done
+                [ "$found" -eq 0 ] && CHANGE_DIRS+=("$d")
+                ;;
+            esac
+          done <<< "$CHANGED"
+
+          if [ "${#CHANGE_DIRS[@]}" -eq 0 ]; then
+            fail "Detected code-like changes, but this PR does not update any change package under changes/<...>/. Please add/update a change folder (NOT changes/_template). Minimum: changes/<id>/00-intake.md (and ideally 05-test-plan.md)."
+            exit 0
+          fi
+
+          if [ "${#CHANGE_DIRS[@]}" -gt 1 ]; then
+            echo "::warning::This PR updates multiple change packages: ${CHANGE_DIRS[*]}. Consider splitting into separate PRs if they are unrelated."
+          fi
+
+          # 3) 驗證每個 change package 至少具備 00-intake.md；缺 05-test-plan.md 則警告
+          for d in "${CHANGE_DIRS[@]}"; do
+            if [ ! -f "${d}/00-intake.md" ]; then
+              fail "Change package missing required file: ${d}/00-intake.md"
+              exit 0
+            fi
+            if [ ! -f "${d}/05-test-plan.md" ]; then
+              echo "::warning::Change package missing recommended file: ${d}/05-test-plan.md (add a minimal verification plan to reduce back-and-forth)."
+            fi
+          done
+
+          echo "OK: change package updated in this PR: ${CHANGE_DIRS[*]}"

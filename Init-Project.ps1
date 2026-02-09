@@ -122,6 +122,9 @@ $Directories = @(
     ".github/skills",
     ".github/ISSUE_TEMPLATE",
     "docs"
+    "changes",
+    "changes/_template",
+    ".vscode",
 )
 
 foreach ($dir in $Directories) {
@@ -179,6 +182,8 @@ if (Test-ComponentEnabled "project-files") {
         ".editorconfig",
         "README.md",
         "SECURITY.md"
+        "WORKFLOW.md",
+        "README.zh-TW.md",
     )
     foreach ($file in $ProjectFiles) {
         $SourceFile = Join-Path $TemplateSource $file
@@ -186,6 +191,26 @@ if (Test-ComponentEnabled "project-files") {
             Copy-Item $SourceFile ".\$file" -Force
             Write-Host "📄 部署專案檔案: $file" -ForegroundColor Gray
         }
+    }
+
+
+    # 部署 VS Code 專案設定（建議：讓 Copilot/Instruction Files 一致）
+    $VSCodeFolder = Join-Path $TemplateSource ".vscode"
+    if (Test-Path $VSCodeFolder) {
+        if (!(Test-Path ".vscode")) { New-Item -Path ".vscode" -ItemType Directory -Force | Out-Null }
+        Copy-Item (Join-Path $VSCodeFolder "*") ".vscode" -Recurse -Force
+        Write-Host "🧩 部署 .vscode 設定完成" -ForegroundColor Gray
+    }
+
+    # 部署 Change Package 模板（changes/_template）
+    $ChangesFolder = Join-Path $TemplateSource "changes"
+    if (Test-Path $ChangesFolder) {
+        if (!(Test-Path "changes")) { New-Item -Path "changes" -ItemType Directory -Force | Out-Null }
+        # 只覆蓋模板與 README，避免覆蓋既有 change folders
+        Copy-Item (Join-Path $ChangesFolder "README.md") "changes\README.md" -Force -ErrorAction SilentlyContinue
+        if (!(Test-Path "changes\_template")) { New-Item -Path "changes\_template" -ItemType Directory -Force | Out-Null }
+        Copy-Item (Join-Path $ChangesFolder "_template\*") "changes\_template" -Recurse -Force
+        Write-Host "📦 部署 Change Package 模板完成" -ForegroundColor Gray
     }
 
     $PullRequestTemplate = Join-Path $TemplateSource ".github\PULL_REQUEST_TEMPLATE.md"

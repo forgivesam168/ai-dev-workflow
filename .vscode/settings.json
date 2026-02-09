@@ -1,0 +1,8 @@
+{
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "chat.useAgentsMdFile": true,
+  "chat.useNestedAgentsMdFiles": true,
+  "editor.formatOnSave": true,
+  "editor.wordWrap": "on",
+  "files.autoSave": "onFocusChange"
+}

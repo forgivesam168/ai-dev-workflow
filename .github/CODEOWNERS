@@ -1,5 +1,17 @@
+# CODEOWNERS (Template)
+# Replace placeholders with your real GitHub org teams or usernames.
+# Examples:
+# * @your-org/developers
+# .github/workflows/ @your-org/platform-team
+# changes/ @your-org/architecture-team
+
 * @your-org/your-team
 
+# High-risk areas
+.github/workflows/ @your-org/your-platform-team
+changes/ @your-org/your-architecture-team
+
+# This workflow template repo
 .github/ @your-org/your-platform-team
 instructions/ @your-org/your-architecture-team
 agents/ @your-org/your-architecture-team

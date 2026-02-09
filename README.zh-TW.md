@@ -48,3 +48,28 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 聯絡與貢獻
 
 如需協助或想要新增技能，請在本專案建立 issue 或提交 PR，並在 PR 描述中包含測試說明與風險評估。
+
+
+## 建議流程（Brainstorm → Spec → Plan → Implement）
+
+本範本建議在中高風險變更時採用以下順序：
+
+1. `/brainstorm`：先釐清需求、限制與替代方案，產出決策紀錄（Decision Log）與 specs 起始檔案
+2. `specs/<YYYY-MM-DD>-<slug>/`：沉澱 `proposal.md / tasks.md / decision-log.md`
+3. `/plan`：由 `plan-agent` 讀取 specs 後，輸出可執行計畫（每步含驗收方式）
+4. Implement（TDD）→ PR review
+
+完整流程與判斷準則請見：`WORKFLOW.md`。
+
+
+## 工作流程摘要（建議給新手看）
+
+- **標準路**：Intake → Brainstorm → Spec → Plan → Implement(TDD) → Review → Archive  
+- **快速路**：Intake → Plan → Implement → Review（僅低風險）
+
+每次需求/變更都建立一個 **Change Package**：
+- `changes/<YYYY-MM-DD>-<slug>/`
+
+詳見：
+- `WORKFLOW.md`
+- `changes/README.md`
