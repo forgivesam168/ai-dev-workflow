@@ -251,6 +251,121 @@ function Test-GitHubCLIInstalled {
     }
 }
 
+# ============================================================================
+# 檔案同步函數
+# ============================================================================
+
+function Sync-WorkflowFiles {
+    <#
+    .SYNOPSIS
+    同步 .github/ 工作流檔案到目標專案
+    
+    .DESCRIPTION
+    將模板 repo 的 .github/ 內容複製到目標專案，並保留現有 CI/CD
+    
+    .PARAMETER SourcePath
+    源 .github/ 路徑
+    
+    .PARAMETER TargetPath
+    目標專案根目錄
+    
+    .PARAMETER Force
+    強制覆蓋現有檔案
+    
+    .OUTPUTS
+    PSCustomObject with properties: FilesAdded, FilesUpdated, FilesSkipped
+    
+    .EXAMPLE
+    $result = Sync-WorkflowFiles -SourcePath ".\.github" -TargetPath "C:\Projects\MyApp"
+    #>
+    
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$SourcePath,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$TargetPath,
+        
+        [switch]$Force
+    )
+    
+    # 排除清單（不複製這些檔案）
+    $excludePatterns = @(
+        "workflows",        # 保留現有 CI/CD
+        "CODEOWNERS",       # 保留現有 code owners
+        "dependabot.yml"    # 保留現有 dependabot 設定
+    )
+    
+    # 確保源目錄存在
+    if (-not (Test-Path $SourcePath)) {
+        throw "Source path not found: $SourcePath"
+    }
+    
+    # 解析完整路徑
+    $resolvedSourcePath = (Resolve-Path $SourcePath).Path
+    
+    # 建立目標 .github 目錄
+    $targetGithubPath = Join-Path $TargetPath ".github"
+    if (-not (Test-Path $targetGithubPath)) {
+        New-Item -ItemType Directory -Path $targetGithubPath -Force | Out-Null
+    }
+    
+    # 統計
+    $filesAdded = @()
+    $filesUpdated = @()
+    $filesSkipped = @()
+    
+    # 取得所有檔案
+    $allFiles = Get-ChildItem -Path $resolvedSourcePath -Recurse -File
+    
+    foreach ($file in $allFiles) {
+        # 計算相對路徑
+        $relativePath = $file.FullName.Substring($resolvedSourcePath.Length).TrimStart('\')
+        
+        # 檢查是否在排除清單中
+        $shouldExclude = $false
+        foreach ($pattern in $excludePatterns) {
+            if ($relativePath -like "*$pattern*") {
+                $shouldExclude = $true
+                break
+            }
+        }
+        
+        if ($shouldExclude) {
+            $filesSkipped += $relativePath
+            continue
+        }
+        
+        # 目標檔案路徑
+        $targetFile = Join-Path $targetGithubPath $relativePath
+        $targetDir = Split-Path $targetFile -Parent
+        
+        # 確保目標目錄存在
+        if (-not (Test-Path $targetDir)) {
+            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+        }
+        
+        # 檢查檔案是否已存在
+        if (Test-Path $targetFile) {
+            if ($Force) {
+                Copy-Item -Path $file.FullName -Destination $targetFile -Force
+                $filesUpdated += $relativePath
+            } else {
+                $filesSkipped += $relativePath
+            }
+        } else {
+            Copy-Item -Path $file.FullName -Destination $targetFile
+            $filesAdded += $relativePath
+        }
+    }
+    
+    return [PSCustomObject]@{
+        FilesAdded = $filesAdded
+        FilesUpdated = $filesUpdated
+        FilesSkipped = $filesSkipped
+    }
+}
+
 function Write-EnvironmentCheck {
     <#
     .SYNOPSIS
@@ -362,7 +477,72 @@ function Main {
     }
 
     Write-Host ""
-    # TODO: 檔案同步
+    
+    # ========================================================================
+    # 檔案同步
+    # ========================================================================
+    
+    Write-Host "同步工作流檔案..." -ForegroundColor Cyan
+    Write-Host ""
+    
+    # 取得當前專案根目錄（假設 bootstrap.ps1 在 scripts/ 目錄下）
+    $currentPath = Get-Location
+    $templateSourcePath = Join-Path $script:RepoRoot ".github"
+    
+    # 檢查是否在模板 repo 內執行（避免自我覆蓋）
+    if ($currentPath.Path -eq $script:RepoRoot) {
+        Write-Host "⚠️  警告：正在模板 repo 內執行 bootstrap" -ForegroundColor Yellow
+        Write-Host "   建議：請在目標專案目錄執行此腳本" -ForegroundColor Gray
+        $continue = Read-Host "是否繼續（將會複製到目前目錄）? (y/n)"
+        if ($continue -ne 'y') {
+            Write-Host "已取消。" -ForegroundColor Gray
+            exit 0
+        }
+    }
+    
+    try {
+        # 執行檔案同步
+        $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $currentPath.Path -Force:$Force
+        
+        # 顯示同步結果
+        if ($syncResult.FilesAdded.Count -gt 0) {
+            Write-Host "✅ 新增 $($syncResult.FilesAdded.Count) 個檔案" -ForegroundColor Green
+        }
+        
+        if ($syncResult.FilesUpdated.Count -gt 0) {
+            Write-Host "✅ 更新 $($syncResult.FilesUpdated.Count) 個檔案" -ForegroundColor Yellow
+        }
+        
+        if ($syncResult.FilesSkipped.Count -gt 0) {
+            Write-Host "⏭️  跳過 $($syncResult.FilesSkipped.Count) 個檔案（workflows/CODEOWNERS 等）" -ForegroundColor Gray
+        }
+        
+        Write-Host ""
+        
+        # 顯示詳細清單（如果 Verbose）
+        if ($Verbose) {
+            if ($syncResult.FilesAdded.Count -gt 0) {
+                Write-Host "新增的檔案:" -ForegroundColor Cyan
+                $syncResult.FilesAdded | ForEach-Object {
+                    Write-Host "  + $_" -ForegroundColor Green
+                }
+                Write-Host ""
+            }
+            
+            if ($syncResult.FilesUpdated.Count -gt 0) {
+                Write-Host "更新的檔案:" -ForegroundColor Cyan
+                $syncResult.FilesUpdated | ForEach-Object {
+                    Write-Host "  ~ $_" -ForegroundColor Yellow
+                }
+                Write-Host ""
+            }
+        }
+        
+    } catch {
+        Write-Host "❌ 檔案同步失敗: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
+    }
+    
     # TODO: Git 初始化
     
     Write-Host "✅ Bootstrap completed!" -ForegroundColor Green
