@@ -439,6 +439,21 @@ main() {
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     local repo_root="$(cd "$script_dir/.." && pwd)"
     local current_path="$(pwd)"
+    
+    # Detect if running from installed location (check for .github in parent)
+    if [ ! -d "$repo_root/.github" ]; then
+        # If not found, assume we're running in a project that used bootstrap
+        # and the source is the current directory
+        if [ -d "$current_path/.github" ]; then
+            repo_root="$current_path"
+        else
+            log_error "❌ 找不到 .github 目錄。請確認："
+            echo "   1. 從 ai-dev-workflow 專案根目錄執行此腳本"
+            echo "   2. 或確保當前專案已有 .github/ 結構"
+            exit 1
+        fi
+    fi
+    
     local template_source="$repo_root/.github"
     
     # Environment checks
