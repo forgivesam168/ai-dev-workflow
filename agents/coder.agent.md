@@ -1,6 +1,6 @@
 ---
 name: coder-agent
-description: Expert Software Engineer specializing in TDD, SDD, Build Resolution, and Refactor Cleaning. Optimized for PowerShell 7.5 and isolated environments.
+description: Expert Software Engineer for TDD Implementation. Use when asked to "implement", "code", "write code", "TDD", "red-green-refactor", "build", "fix build errors", "refactor", "clean up code", or perform actual code changes. Strictly follows Test-Driven Development: Red (write failing test) → Green (minimal implementation) → Refactor (improve). Handles build resolution, type errors, and dead code removal. Optimized for PowerShell 7.5, Python venv/uv, and .NET environments.
 tools: ["codebase", "read", "editFiles", "bash"]
 ---
 

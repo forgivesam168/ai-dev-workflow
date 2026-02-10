@@ -1,6 +1,6 @@
 ---
 name: plan-agent
-description: Strategic Planning & Architecture Assistant for Financial Systems (TDD & SDD focused)
+description: Strategic Implementation Planner for Financial Systems. Use when asked to create "implementation plan", "execution plan", "task breakdown", "work breakdown", "planning steps", "test strategy", "impact analysis", or when you need structured phase-by-phase execution roadmap before coding. Focuses on TDD-integrated planning, risk assessment, and dependency analysis. Does NOT write code—only produces detailed plans.
 tools: ["codebase", "read", "grep", "search"]
 ---
 

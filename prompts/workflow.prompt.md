@@ -43,9 +43,9 @@ Based on files present:
 |---------------|---------------|--------------|
 | (none) | 🆕 New work | `/brainstorm` |
 | 01-brainstorm.md | Brainstorm done | `/spec` |
-| 03-spec.md | Spec done | `/plan` |
+| 03-spec.md | Spec done | `/create-plan` |
 | 04-plan.md | Plan done | `/tdd` |
-| (implementation done) | Code complete | `/review` |
+| (implementation done) | Code complete | `/code-review` |
 | 05-review.md | Review done | `/archive` |
 | 99-archive.md | ✅ Complete | (start new work) |
 
@@ -57,7 +57,7 @@ Show user:
 ✅ Completed: Brainstorm → Spec
 ⏭️  Next Step: Generate implementation plan
 
-Would you like to run `/plan` now? (yes/no)
+Would you like to run `/create-plan` now? (yes/no)
 ```
 
 ### Step 4: Interactive Execution
@@ -80,7 +80,7 @@ If user confirms:
    ├─ Define acceptance criteria
    └─ Security/compliance requirements
 
-3. Plan (/plan)
+3. Plan (/create-plan)
    ├─ Break down into tasks
    ├─ Create test strategy
    └─ Impact analysis (brownfield)
@@ -90,7 +90,7 @@ If user confirms:
    ├─ Green: Minimal implementation
    └─ Refactor: Improve code
 
-5. Review (/review)
+5. Review (/code-review)
    ├─ Code review (quality)
    └─ Security review (parallel)
 
@@ -146,7 +146,7 @@ Agent:
 Would you like to start with `/brainstorm`? (yes/no)
 Options:
 - "yes" → Run /brainstorm
-- "fast" → Skip to /plan (low-risk only)
+- "fast" → Skip to /create-plan (low-risk only)
 ```
 
 ### Scenario 2: Mid-Workflow
@@ -193,7 +193,7 @@ Agent:
 - src/notifications/types.ts (new)
 - src/notifications/service.test.ts (new)
 
-Would you like to run `/review` now? (yes/no/show-diff)
+Would you like to run `/code-review` now? (yes/no/show-diff)
 ```
 
 ## Advanced Options

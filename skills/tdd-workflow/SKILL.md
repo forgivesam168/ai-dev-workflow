@@ -1,6 +1,6 @@
 ---
 name: tdd-workflow
-description: Use this skill when writing new features, fixing bugs, or refactoring code. Enforces test-driven development with 80%+ coverage including unit, integration, and E2E tests.
+description: Test-Driven Development workflow enforcement skill. ONLY use when explicitly asked for "TDD methodology", "test-first development", "red-green-refactor cycle", "TDD best practices", or when detailed TDD workflow guidance is requested. NOT automatically triggered for general coding—use coder-agent instead for implementation tasks. Provides comprehensive TDD patterns, coverage requirements, and testing strategies.
 ---
 
 # Test-Driven Development Workflow

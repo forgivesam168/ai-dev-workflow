@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Senior Code Quality Auditor. Focuses on Maintainability, TDD compliance, Financial Logic precision, and Performance.
+description: Senior Code Quality & Security Auditor for Financial Systems. Use when asked to "review", "audit", "check code quality", "security review", "inspect changes", "validate compliance", or "check for issues". Focuses on Financial Logic precision (no float for money), TDD compliance, maintainability, performance, and security vulnerabilities. Produces structured review reports with severity classification (BLOCKER/WARNING/NIT).
 tools: ["codebase", "read", "grep", "bash"]
 ---
 

@@ -4,6 +4,8 @@ description: 'Generate a comprehensive specification document (PRD/Spec) for a f
 
 # Spec Command
 
+> **💡 Recommended Agent**: This command works best with `spec-agent` (Specification Specialist). Use `/agent` in CLI or select from agent dropdown in VS Code.
+
 Use `/spec` after `/brainstorm` to transform clarified requirements into a formal specification document.
 
 ## When to Use

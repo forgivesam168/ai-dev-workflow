@@ -4,6 +4,8 @@ description: 'Start a work item: triage risk, run structured brainstorming, and 
 
 # Brainstorm Command
 
+> **💡 Recommended Agent**: This command works best with `architect-agent` for system design decisions or `spec-agent` for requirements clarification. Use `/agent` in CLI or select from agent dropdown in VS Code.
+
 Use `/brainstorm` at the start of any new work item to:
 1. Triage and classify risk (Low/Med/High)
 2. Decide workflow path (Standard vs Fast)

@@ -2,8 +2,11 @@
 description: Restate requirements, assess risks, and create step-by-step implementation plan. WAIT for user CONFIRM before touching any code.
 ---
 
-# Plan Command
+# Create Plan Command
 
+> **💡 Recommended Agent**: This command works best with `plan-agent` (Strategic Planner). Use `/agent` in CLI or select from agent dropdown in VS Code.
+>
+> **⚠️ Note for CLI users**: Use `/create-plan` to avoid conflict with CLI's built-in `/plan` command.
 
 > Tip: If the problem is ambiguous or high-risk, run `/brainstorm` first to compare options and create a decision log.
 

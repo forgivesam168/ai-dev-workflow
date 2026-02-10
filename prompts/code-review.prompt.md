@@ -2,9 +2,13 @@
 description: 'Comprehensive Code Review + Security Review (parallel). Check for security vulnerabilities, code quality, and financial compliance.'
 ---
 
-# Review Command
+# Code Review Command
 
-Use `/review` after implementation to perform Code Review and Security Review in parallel.
+> **💡 Recommended Agent**: This command works best with `code-reviewer` (Quality & Security Auditor). Use `/agent` in CLI or select from agent dropdown in VS Code.
+>
+> **⚠️ Note for CLI users**: Use `/code-review` to avoid conflict with CLI's built-in `/review` command.
+
+Use this command after implementation to perform Code Review and Security Review in parallel.
 
 ## Scope
 Reviews uncommitted changes: `git diff --name-only HEAD`

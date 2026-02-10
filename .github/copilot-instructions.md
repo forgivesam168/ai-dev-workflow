@@ -90,10 +90,10 @@ When user mentions working on a feature, proactively check:
 
 **Detection Rules:**
 - No change package → Suggest `/brainstorm` or `/workflow`
-- `01-brainstorm.md` exists → Next: `/spec` (or `/plan` for fast path)
-- `03-spec.md` exists → Next: `/plan`
+- `01-brainstorm.md` exists → Next: `/spec` (or `/create-plan` for fast path)
+- `03-spec.md` exists → Next: `/create-plan`
 - `04-plan.md` exists → Next: `/tdd`
-- Uncommitted changes detected → Next: `/review`
+- Uncommitted changes detected → Next: `/code-review`
 - `05-review.md` exists → Next: `/archive`
 
 ### Two Paths

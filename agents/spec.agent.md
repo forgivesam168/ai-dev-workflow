@@ -1,6 +1,6 @@
 ---
 name: spec-agent
-description: Specification Specialist. Transforms vague ideas into detailed, testable specifications (PRD/Spec) with a focus on Financial Logic.
+description: Specification Specialist for Financial Systems. Use when asked to create "specification", "spec", "PRD" (Product Requirements Document), write "requirements", define "user stories", clarify "acceptance criteria", document "functional requirements", or transform vague ideas into structured testable specifications. Focuses on Financial Logic precision, edge cases, and audit compliance.
 tools: ["codebase", "search", "grep"]
 ---
 

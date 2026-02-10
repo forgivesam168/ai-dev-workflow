@@ -33,9 +33,9 @@
 |------|------|------|
 | 1 | `/brainstorm` | 風險分類、需求釐清、建立 change package |
 | 2 | `/spec` | 產出規格文件 |
-| 3 | `/plan` | 產出可執行計畫（含測試策略、影響分析） |
+| 3 | `/create-plan` | 產出可執行計畫（含測試策略、影響分析） |
 | 4 | `/tdd` | TDD 實作（Red-Green-Refactor） |
-| 5 | `/review` | Code Review + Security Review（並行） |
+| 5 | `/code-review` | Code Review + Security Review（並行） |
 | 6 | `/archive` | 驗收歸檔 |
 
 ---
@@ -115,8 +115,8 @@
 - 新需求：先開 Issue（或一張 task）
 - 先 `/brainstorm`（產出 01/02/03 草稿）
 - `/spec`（完善 03-spec.md）
-- `/plan`（產出 04-plan.md）
-- 進入 TDD 實作 → `/review` → Merge
+- `/create-plan`（產出 04-plan.md）
+- 進入 TDD 實作 → `/code-review` → Merge
 - 合併後 `/archive`（5 分鐘完成）
 
 ---

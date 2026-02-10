@@ -4,7 +4,9 @@ description: Enforce test-driven development workflow. Scaffold interfaces, gene
 
 # TDD Command
 
-This command invokes the **tdd-guide** agent to enforce test-driven development methodology.
+> **💡 Recommended Agent**: This command works best with `coder-agent` (TDD Implementation Specialist). Use `/agent` in CLI or select from agent dropdown in VS Code.
+
+This command enforces test-driven development methodology following the Red-Green-Refactor cycle.
 
 ## What This Command Does
 

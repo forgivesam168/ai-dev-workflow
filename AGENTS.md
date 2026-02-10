@@ -26,9 +26,9 @@ It contains:
 | `/workflow` | 0 | **Orchestrator**: Detect stage, guide next step |
 | `/brainstorm` | 1 | Triage risk, clarify requirements |
 | `/spec` | 2 | Generate specification document |
-| `/plan` | 3 | Create implementation plan |
+| `/create-plan` | 3 | Create implementation plan |
 | `/tdd` | 4 | TDD implementation |
-| `/review` | 5 | Code + Security review |
+| `/code-review` | 5 | Code + Security review |
 | `/archive` | 6 | Finalize and document |
 | `/commit` | Tool | Generate commit message |
 | `/readme` | Tool | Create README |
@@ -64,6 +64,6 @@ pwsh -File .\Init-Project.ps1
 
 ## Workflow (recommended)
 - For guided workflow: `/workflow` (automatic stage detection)
-- For medium/high-risk changes: `/brainstorm` → `/spec` → `/plan` → `/tdd` → `/review` → `/archive`
-- For low-risk changes: `/brainstorm` → `/plan` → `/tdd` → `/review` → `/archive` (fast path)
+- For medium/high-risk changes: `/brainstorm` → `/spec` → `/create-plan` → `/tdd` → `/code-review` → `/archive`
+- For low-risk changes: `/brainstorm` → `/create-plan` → `/tdd` → `/code-review` → `/archive` (fast path)
 - See `WORKFLOW.md` for the full flow and skip rules.
