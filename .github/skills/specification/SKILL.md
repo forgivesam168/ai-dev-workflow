@@ -1,7 +1,7 @@
 ---
 name: specification
 description: 'Generate comprehensive specification documents (PRD/Spec). Use when asked to "write spec", "create PRD", "document requirements", "user stories", "acceptance criteria", "產生規格", "寫需求文件", "specifications", or transforming brainstorm results into formal structured requirements for features.'
-license: Complete terms in LICENSE.txt
+license: See LICENSE.txt in repository root
 ---
 
 # Specification (PRD/Spec Generator)

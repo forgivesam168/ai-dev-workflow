@@ -1,7 +1,7 @@
 ---
 name: implementation-planning
 description: 'Break down specifications into executable implementation plans with TDD integration. Use when asked to "create plan", "break down tasks", "implementation roadmap", "規劃實作", "拆解任務", "執行計畫", or need step-by-step implementation guidance with test strategies and impact analysis.'
-license: Complete terms in LICENSE.txt
+license: See LICENSE.txt in repository root
 ---
 
 # Implementation Planning

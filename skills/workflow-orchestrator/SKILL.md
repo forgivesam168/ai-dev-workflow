@@ -1,7 +1,7 @@
 ---
 name: workflow-orchestrator
 description: 'Orchestrate the six-stage development workflow. Use when user asks "what stage am I at?", "what''s next?", "workflow status", "where should I start?", "工作流程", "下一步是什麼", "我在哪個階段", or wants guidance on the development process. Detects current state by checking changes/ folder and guides users through brainstorm → spec → plan → tdd → review → archive stages.'
-license: Complete terms in LICENSE.txt
+license: See LICENSE.txt in repository root
 ---
 
 # Workflow Orchestrator

@@ -1,7 +1,7 @@
 ---
 name: code-security-review
 description: 'Comprehensive code quality and security audit for financial systems. Use when asked to "review code", "code review", "security audit", "check for issues", "審核程式碼", "檢查安全性", or before merging changes. Focuses on DDD compliance, financial precision (no floats for money), security vulnerabilities, and test coverage.'
-license: Complete terms in LICENSE.txt
+license: See LICENSE.txt in repository root
 ---
 
 # Code & Security Review
