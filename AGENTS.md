@@ -34,7 +34,47 @@ It contains:
 | `/readme` | Tool | Create README |
 | `/learn` | Tool | Learn and improve AI behavior |
 
-## How this repo is structured
+## Skills
+
+Skills provide methodology and toolkits that are automatically loaded into the current agent's context.
+
+### Core Workflow Skills
+
+| Skill | Description | Triggers On | Recommended Agent |
+|-------|-------------|-------------|-------------------|
+| workflow-orchestrator | Flow coordinator: detects current stage and recommends next steps | workflow, what's next | - |
+| brainstorming | Structured requirements exploration and risk classification | brainstorm, explore options | architect / spec |
+| specification | Generate PRD/Spec documents | spec, PRD, requirements | spec-agent |
+| implementation-planning | Break down implementation plan with TDD integration | plan, task breakdown | plan-agent |
+| tdd-workflow | TDD methodology (Red-Green-Refactor) | TDD, test-driven | coder-agent |
+| code-security-review | Code quality and security audit | review, audit | code-reviewer-agent |
+| work-archiving | Finalize and archive completed work | archive, finalize | - |
+
+### Tool Skills
+
+| Skill | Description | Triggers On |
+|-------|-------------|-------------|
+| git-commit | Generate Conventional Commits messages | commit |
+| readme-generator | Analyze project and generate README | readme, documentation |
+| ai-learning | Learn project patterns and update instructions | learn |
+
+### Skills Usage
+
+**CLI**:
+```bash
+# View installed skills
+/skills list
+
+# Trigger by natural language (auto-loads)
+> I want to generate spec
+[System auto-loads specification skill]
+```
+
+**VS Code**:
+- Input keywords (auto-loads skill)
+- Or use corresponding slash command (shortcut)
+
+---
 
 ### Source-of-truth vs runtime locations
 - **Source-of-truth (editable):** top‑level folders: `agents/`, `instructions/`, `prompts/`, `skills/`, and `copilot-instructions.md`.

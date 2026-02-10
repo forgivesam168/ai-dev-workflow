@@ -1,19 +1,35 @@
 ---
 name: tdd-workflow
-description: Test-Driven Development workflow enforcement skill. ONLY use when explicitly asked for "TDD methodology", "test-first development", "red-green-refactor cycle", "TDD best practices", or when detailed TDD workflow guidance is requested. NOT automatically triggered for general coding—use coder-agent instead for implementation tasks. Provides comprehensive TDD patterns, coverage requirements, and testing strategies.
+description: Test-Driven Development workflow enforcement skill. Use when explicitly asked for TDD methodology, test-first development, red-green-refactor cycle, or TDD implementation. Triggers on keywords like "start TDD", "test-driven development", "write tests first", or in Chinese "開始 TDD", "測試先行", "TDD 實作". Provides comprehensive TDD patterns, coverage requirements, and Red-Green-Refactor workflow guidance.
 ---
 
 # Test-Driven Development Workflow
 
+> 💡 **Recommended Agent**: `coder-agent` (TDD Implementation Specialist)
+> - **CLI**: Input `/agent` then select `coder-agent`
+> - **VS Code**: Use `@workspace #coder-agent` in Chat
+>
+> **Note**: CLI users use natural language, VS Code users can use `/tdd` shortcut.
+
 This skill ensures all code development follows TDD principles with comprehensive test coverage.
 
-## When to Activate
+## When to Use This Skill
 
-- Writing new features or functionality
-- Fixing bugs or issues
-- Refactoring existing code
-- Adding API endpoints
-- Creating new components
+Use this skill when:
+- Implementation plan is ready and TDD development starts
+- Writing new features following Red-Green-Refactor cycle
+- Fixing bugs (write failing test first to reproduce)
+- Refactoring existing code with test safety net
+
+## Prerequisites
+
+**Required**:
+- Implementation plan (`04-plan.md`) with tasks and test strategies
+
+**Recommended**:
+- Development environment setup
+- Test framework configured
+- Code coverage tools enabled
 
 ## Core Principles
 

@@ -38,6 +38,23 @@
 | 5 | `/code-review` | Code Review + Security Review（並行） |
 | 6 | `/archive` | 驗收歸檔 |
 
+**⚠️ 環境差異說明**:
+
+本工作流程在 **Copilot CLI** 和 **VS Code** 中略有不同：
+
+**Copilot CLI**:
+- 使用**自然語言**觸發 skills（例：「產生 spec」）
+- 使用 `/agent` 選擇角色
+- Skills 自動依關鍵字載入
+- **不支援斜線指令**（如 `/spec`）
+
+**VS Code Copilot Chat**:
+- 可使用**斜線指令**快速觸發（例：`/spec`）
+- 也支援自然語言（同 CLI）
+- Agent 選擇：`@workspace #agent-name`
+
+**詳細使用指南請參考** [README.zh-TW.md - CLI vs VS Code 使用差異](./README.zh-TW.md#-cli-與-vs-code-使用差異)
+
 ---
 
 ## 2) 兩種路徑：標準路 vs 快速路
