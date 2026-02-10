@@ -11,11 +11,13 @@ not be available.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
 
@@ -39,6 +41,14 @@ class SyncResult:
     files_added: List[str]
     files_updated: List[str]
     files_skipped: List[str]
+    files_conflicted: List[str]
+
+
+@dataclass
+class BackupResult:
+    success: bool
+    backup_path: Optional[str]
+    message: str
 
 
 @dataclass
@@ -149,17 +159,27 @@ def write_check(
 
 
 def sync_workflow_files(
-    source: Path, target_root: Path, force: bool
+    source: Path, target_root: Path, force: bool, backup: bool = False
 ) -> SyncResult:
     if not source.exists():
         raise FileNotFoundError(f"Source path not found: {source}")
     target_root.mkdir(parents=True, exist_ok=True)
     target_github = target_root / ".github"
+    
+    # Create backup if requested and target exists
+    if backup and target_github.exists():
+        backup_result = backup_directory(target_github)
+        if backup_result.success:
+            safe_print(f"✅ {backup_result.message}")
+        else:
+            safe_print(f"⚠️  {backup_result.message}")
+    
     target_github.mkdir(parents=True, exist_ok=True)
 
     files_added: List[str] = []
     files_updated: List[str] = []
     files_skipped: List[str] = []
+    files_conflicted: List[str] = []
 
     for item in source.rglob("*"):
         if item.is_dir():
@@ -172,17 +192,22 @@ def sync_workflow_files(
             continue
         destination = target_github / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
+        
         if destination.exists():
-            if force:
+            # Check if files are identical
+            if files_are_identical(item, destination):
+                files_skipped.append(normalized)
+            elif force:
                 shutil.copy2(item, destination)
                 files_updated.append(normalized)
             else:
-                files_skipped.append(normalized)
+                # Conflict detected: file exists and content differs
+                files_conflicted.append(normalized)
         else:
             shutil.copy2(item, destination)
             files_added.append(normalized)
 
-    return SyncResult(files_added, files_updated, files_skipped)
+    return SyncResult(files_added, files_updated, files_skipped, files_conflicted)
 
 
 def initialize_git_repo(target_root: Path) -> GitInitResult:
@@ -206,6 +231,58 @@ def initialize_git_repo(target_root: Path) -> GitInitResult:
     raise RuntimeError("git init executed but .git directory not found")
 
 
+def calculate_file_hash(file_path: Path) -> str:
+    """Calculate SHA256 hash of a file."""
+    sha256 = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        while chunk := f.read(8192):
+            sha256.update(chunk)
+    return sha256.hexdigest()
+
+
+def files_are_identical(file1: Path, file2: Path) -> bool:
+    """Check if two files have identical content."""
+    if not file1.exists() or not file2.exists():
+        return False
+    return calculate_file_hash(file1) == calculate_file_hash(file2)
+
+
+def backup_directory(source: Path, backup_name: Optional[str] = None) -> BackupResult:
+    """Create a timestamped backup of a directory."""
+    if not source.exists():
+        return BackupResult(False, None, f"Source directory not found: {source}")
+    
+    if backup_name is None:
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        backup_name = f"{source.name}.backup-{timestamp}"
+    
+    backup_path = source.parent / backup_name
+    
+    try:
+        shutil.copytree(source, backup_path, dirs_exist_ok=False)
+        return BackupResult(True, str(backup_path), f"Backup created: {backup_path}")
+    except FileExistsError:
+        return BackupResult(False, None, f"Backup already exists: {backup_path}")
+    except Exception as error:
+        return BackupResult(False, None, f"Backup failed: {error}")
+
+
+def check_git_uncommitted_changes(target_root: Path, directory: str = ".github") -> bool:
+    """Check if there are uncommitted changes in a directory."""
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain", directory],
+            cwd=target_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        # If output is not empty, there are uncommitted changes
+        return bool(result.stdout.strip())
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
 def safe_print(text: str) -> None:
     """Print with fallback for encoding errors."""
     try:
@@ -222,12 +299,15 @@ def main() -> None:
     )
     parser.add_argument("--force", action="store_true", help="Force overwrite existing workflow files")
     parser.add_argument("--update", action="store_true", help="Refresh workflow files")
+    parser.add_argument("--backup", action="store_true", help="Create backup before syncing")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
 
     force_mode = args.force or args.update
+    backup_mode = args.backup or args.update  # Always backup in update mode
+    
     if args.update and not args.force:
-        safe_print("ℹ️  Running --update (will overwrite workflow files).")
+        safe_print("ℹ️  Running --update mode (will check for conflicts and create backup).")
 
     repo_root = Path(__file__).resolve().parent.parent
     current_path = Path.cwd()
@@ -273,12 +353,26 @@ def main() -> None:
             print("已取消。")
             sys.exit(0)
 
+    # Check for uncommitted changes if in update mode
+    if args.update:
+        target_github = current_path / ".github"
+        if target_github.exists():
+            has_changes = check_git_uncommitted_changes(current_path, ".github")
+            if has_changes:
+                safe_print("⚠️  檢測到 .github/ 目錄有未提交的變更")
+                print("   建議先提交變更後再執行 --update")
+                response = input("是否繼續更新? (y/n): ").strip().lower()
+                if response != "y":
+                    print("已取消。")
+                    sys.exit(0)
+                print()
+
     print()
     print("同步工作流檔案...")
     print()
 
     try:
-        sync_result = sync_workflow_files(template_source, current_path, force_mode)
+        sync_result = sync_workflow_files(template_source, current_path, force_mode, backup_mode)
     except FileNotFoundError as error:
         safe_print(f"❌ 檔案同步失敗: {error}")
         sys.exit(1)
@@ -288,7 +382,14 @@ def main() -> None:
     if sync_result.files_updated:
         safe_print(f"✅ 更新 {len(sync_result.files_updated)} 個檔案")
     if sync_result.files_skipped:
-        safe_print(f"⏭️  跳過 {len(sync_result.files_skipped)} 個檔案（workflows/CODEOWNERS 等）")
+        safe_print(f"⏭️  跳過 {len(sync_result.files_skipped)} 個檔案（workflows/CODEOWNERS 或內容相同）")
+    if sync_result.files_conflicted:
+        safe_print(f"⚠️  偵測到 {len(sync_result.files_conflicted)} 個衝突檔案（內容不同但未覆蓋）")
+        if args.verbose:
+            for file in sync_result.files_conflicted:
+                print(f"   - {file}")
+        print()
+        print("提示：使用 --force 或 --update 參數強制覆蓋衝突檔案")
     print()
 
     if args.verbose:
