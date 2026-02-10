@@ -43,15 +43,15 @@ copilot
 
 ### 六階段指令對照
 
-| 階段 | CLI 輸入 | VS Code 輸入 | 推薦 Agent |
-|------|---------|------------|-----------|
-| 0. 流程狀態 | "what's next" | - | - |
-| 1. Brainstorm | "開始 brainstorming" | `/brainstorm` | architect / spec |
-| 2. Spec | "產生 spec" | `/spec` | spec-agent |
-| 3. Plan | "規劃實作計畫" | `/create-plan` | plan-agent |
-| 4. TDD | "開始 TDD 實作" | `/tdd` | coder-agent |
-| 5. Review | "review 我的 code" | `/code-review` | code-reviewer-agent |
-| 6. Archive | "archive 這個 change package" | `/archive` | - |
+| 階段 | CLI 輸入（自然語言） | VS Code 輸入（斜線指令） | 推薦 Agent |
+|------|---------------------|--------------------------|-----------|
+| 0. 流程狀態 | what's next / 我想知道目前在哪個階段 | - | - |
+| 1. Brainstorm | 我想開始 brainstorming / 我要開始一個新功能的 brainstorming | `/brainstorm` | architect / spec |
+| 2. Spec | 產生 spec / 幫我寫規格文件 | `/spec` | spec-agent |
+| 3. Plan | 規劃實作計畫 / 幫我拆解任務 | `/create-plan` | plan-agent |
+| 4. TDD | 開始 TDD 實作 / 寫測試並實作 | `/tdd` | coder-agent |
+| 5. Review | review 我的 code / 幫我審核程式碼 | `/code-review` | code-reviewer-agent |
+| 6. Archive | archive 這個 change package / 幫我歸檔 | `/archive` | - |
 
 ---
 
@@ -172,11 +172,14 @@ copilot
 ## 🔧 進階技巧
 
 ### 技巧 1: 查看已安裝的 Skills
-```bash
-# CLI
-/skills list
 
-# 檢視特定 skill 詳細資訊
+CLI（自然語言）:
+
+輸入："列出已安裝的 skills" 或 "show installed skills"，系統會回應可用或已載入的 skills。
+
+VS Code（斜線指令快捷）:
+```bash
+/skills list
 /skills info brainstorming
 ```
 
