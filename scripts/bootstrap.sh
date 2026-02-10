@@ -13,6 +13,10 @@
 
 set -e  # Exit on error
 
+# Set UTF-8 locale for proper encoding (fixes Chinese text display)
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+
 # Version requirements
 MIN_GIT="2.0.0"
 MIN_PYTHON="3.7.0"
@@ -133,7 +137,7 @@ check_git() {
     
     if ! command_exists git; then
         log_error "Git 未安裝"
-        echo "   請安裝: https://git-scm.com/downloads"
+        echo "   Install from: https://git-scm.com/downloads"
         return 1
     fi
     
@@ -160,7 +164,7 @@ check_python() {
     
     if ! command_exists python3 && ! command_exists python; then
         log_info "Python 未安裝（可選）"
-        echo "   安裝: https://www.python.org/downloads/"
+        echo "   Install from: https://www.python.org/downloads/"
         return 0
     fi
     
@@ -205,7 +209,7 @@ check_node() {
     
     if ! command_exists node; then
         log_info "Node.js 未安裝（可選）"
-        echo "   安裝: https://nodejs.org"
+        echo "   Install from: https://nodejs.org"
         return 0
     fi
     
@@ -229,7 +233,7 @@ check_gh() {
     
     if ! command_exists gh; then
         log_info "GitHub CLI 未安裝（可選）"
-        echo "   安裝: https://cli.github.com/"
+        echo "   Install from: https://cli.github.com/"
         return 0
     fi
     
@@ -386,13 +390,13 @@ sync_workflow_files() {
     
     echo ""
     log_info "同步摘要:"
-    echo "   新增: $files_added 個檔案"
-    echo "   更新: $files_updated 個檔案"
-    echo "   跳過: $files_skipped 個檔案"
+    echo "   Added: $files_added files"
+    echo "   Updated: $files_updated files"
+    echo "   Skipped: $files_skipped files"
     
     if [ $files_conflicted -gt 0 ]; then
         log_warning "偵測到 $files_conflicted 個衝突檔案（內容不同但未覆蓋）"
-        echo "   提示：使用 --force 或 --update 參數強制覆蓋"
+        echo "   Tip: Use --force or --update to override"
     fi
     
     return 0
@@ -413,7 +417,7 @@ initialize_git_repo() {
     if git init >/dev/null 2>&1; then
         log_success "Git repository 已初始化"
         echo ""
-        echo "後續步驟:"
+        echo "Next steps:"
         echo "  1. git add ."
         echo "  2. git commit -m 'chore: initialize AI workflow'"
     else
@@ -447,9 +451,9 @@ main() {
         if [ -d "$current_path/.github" ]; then
             repo_root="$current_path"
         else
-            log_error "❌ 找不到 .github 目錄。請確認："
-            echo "   1. 從 ai-dev-workflow 專案根目錄執行此腳本"
-            echo "   2. 或確保當前專案已有 .github/ 結構"
+            log_error "❌ Cannot find .github directory. Please ensure:"
+            echo "   1. Run this script from ai-dev-workflow project root"
+            echo "   2. Or ensure current project has .github/ structure"
             exit 1
         fi
     fi
@@ -457,7 +461,7 @@ main() {
     local template_source="$repo_root/.github"
     
     # Environment checks
-    echo "環境檢測:"
+    echo "Environment Check:"
     
     if ! check_git; then
         echo ""
@@ -474,10 +478,10 @@ main() {
     
     # Check if running inside template repo
     if [ "$current_path" = "$repo_root" ]; then
-        log_warning "警告：正在模板 repo 內執行 bootstrap"
-        read -p "是否繼續（會複製到目前目錄）? (y/n): " response
+        log_warning "Warning: Running bootstrap inside template repo"
+        read -p "Continue (will copy to current directory)? (y/n): " response
         if [ "$response" != "y" ]; then
-            echo "已取消。"
+            echo "Cancelled."
             exit 0
         fi
         echo ""
@@ -487,10 +491,10 @@ main() {
     if [ $UPDATE_MODE -eq 1 ]; then
         if [ -d "$current_path/.github" ]; then
             if check_uncommitted_changes "$current_path" ".github"; then
-                log_warning "檢測到 .github/ 有未提交的修改"
-                read -p "是否繼續更新? (y/n): " continue_update
+                log_warning "Detected uncommitted changes in .github/"
+                read -p "Continue with update? (y/n): " continue_update
                 if [ "$continue_update" != "y" ]; then
-                    echo "取消更新"
+                    echo "Update cancelled"
                     exit 0
                 fi
                 echo ""
@@ -499,13 +503,13 @@ main() {
     fi
     
     # Sync workflow files
-    log_info "同步工作流程檔案..."
+    log_info "Syncing workflow files..."
     if sync_workflow_files "$template_source" "$current_path" $FORCE_MODE $BACKUP_MODE; then
         echo ""
-        log_success "工作流程檔案同步完成"
+        log_success "Workflow files synced successfully"
     else
         echo ""
-        log_error "檔案同步失敗"
+        log_error "File sync failed"
         exit 1
     fi
     
@@ -516,12 +520,12 @@ main() {
     fi
     
     echo ""
-    log_success "Bootstrap 完成！"
+    log_success "Bootstrap completed!"
     echo ""
-    echo "下一步："
-    echo "  1. 查看同步的檔案: ls -la .github/"
-    echo "  2. 提交變更: git add . && git commit -m 'chore: initialize AI workflow'"
-    echo "  3. 開始開發: 參考 .github/WORKFLOW.md"
+    echo "Next Steps:"
+    echo "  1. View synced files: ls -la .github/"
+    echo "  2. Commit changes: git add . && git commit -m 'chore: initialize AI workflow'"
+    echo "  3. Start developing: See .github/WORKFLOW.md"
 }
 
 # Run main function
