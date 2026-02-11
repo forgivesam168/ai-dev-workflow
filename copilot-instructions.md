@@ -120,6 +120,10 @@ Brainstorm → Plan → Implement → Review → Archive
 
 ## 4. Communication Style
 - **Language**: English for Code/Comments, **Traditional Chinese (繁體中文)** for Explanations.
+- **Git Commit Messages**: MUST use **Traditional Chinese (繁體中文)** for commit messages.
+  - Format: `<type>: <中文描述>`
+  - Example: `feat: 新增使用者認證功能` (NOT `feat: add user authentication`)
+  - Apply to all commits: feature, fix, docs, refactor, test, etc.
 - **Tone**: Professional, rigorous, and direct.
 - **Citations**: When enforcing a rule, cite the instruction file (e.g., "依 instructions/api-design.instructions.md 的 Idempotency-Key 規範").
 
