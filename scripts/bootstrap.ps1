@@ -6,12 +6,19 @@ param(
     [switch]$Update,
     [switch]$Backup,
     [switch]$SkipHooks,
-    [switch]$Verbose,
-    [switch]$Quiet
+    [switch]$Quiet,
+    
+    [Parameter(Mandatory=$false)]
+    [string]$RemoteRepo = "https://github.com/forgivesam168/ai-dev-workflow.git",
+    
+    [Parameter(Mandatory=$false)]
+    [string]$TargetPath = ""
 )
 
 # 全域變數
 $script:RepoRoot = Split-Path -Parent $PSScriptRoot
+$script:IsRemoteMode = $false
+$script:TempClonePath = ""
 
 # ============================================================================
 # 環境檢測函數
@@ -248,6 +255,120 @@ function Test-GitHubCLIInstalled {
         Installed = $false
         Version = $null
         MeetsRequirement = $false
+    }
+}
+
+# ============================================================================
+# 遠端下載函數
+# ============================================================================
+
+function Get-RemoteTemplate {
+    <#
+    .SYNOPSIS
+    從遠端 GitHub repo 下載模板到臨時目錄
+    
+    .PARAMETER RemoteRepo
+    GitHub repo URL (e.g., https://github.com/user/repo.git)
+    
+    .OUTPUTS
+    PSCustomObject with properties: Success, TempPath, Message
+    
+    .EXAMPLE
+    $result = Get-RemoteTemplate -RemoteRepo "https://github.com/user/repo.git"
+    if ($result.Success) {
+        $templatePath = $result.TempPath
+    }
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$RemoteRepo
+    )
+    
+    # 建立臨時目錄
+    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $tempPath = Join-Path $env:TEMP "ai-workflow-bootstrap-$timestamp"
+    
+    Write-Host "📥 從遠端下載模板..." -ForegroundColor Cyan
+    Write-Host "   來源: $RemoteRepo" -ForegroundColor Gray
+    Write-Host "   暫存: $tempPath" -ForegroundColor Gray
+    Write-Host ""
+    
+    try {
+        # 使用 shallow clone 加速下載（只下載最新版本）
+        $cloneArgs = @(
+            "clone",
+            "--depth", "1",
+            "--filter=blob:none",  # 不下載 blob，只下載樹結構（更快）
+            "--no-checkout",        # 不自動 checkout
+            $RemoteRepo,
+            $tempPath
+        )
+        
+        $cloneOutput = & git @cloneArgs 2>&1
+        
+        if ($LASTEXITCODE -ne 0) {
+            throw "Git clone failed: $cloneOutput"
+        }
+        
+        # Sparse checkout 只下載 .github/ 目錄和根目錄檔案
+        Push-Location $tempPath
+        try {
+            git sparse-checkout init --cone 2>&1 | Out-Null
+            git sparse-checkout set .github .gitattributes .editorconfig 2>&1 | Out-Null
+            git checkout 2>&1 | Out-Null
+            
+            if ($LASTEXITCODE -ne 0) {
+                throw "Git sparse-checkout failed"
+            }
+        } finally {
+            Pop-Location
+        }
+        
+        Write-Host "✅ 遠端模板下載完成" -ForegroundColor Green
+        Write-Host ""
+        
+        return [PSCustomObject]@{
+            Success = $true
+            TempPath = $tempPath
+            Message = "Remote template downloaded successfully"
+        }
+        
+    } catch {
+        # 清理失敗的臨時目錄
+        if (Test-Path $tempPath) {
+            Remove-Item -Path $tempPath -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        
+        return [PSCustomObject]@{
+            Success = $false
+            TempPath = $null
+            Message = "Failed to download remote template: $($_.Exception.Message)"
+        }
+    }
+}
+
+function Remove-TempDirectory {
+    <#
+    .SYNOPSIS
+    清理臨時目錄
+    
+    .PARAMETER Path
+    臨時目錄路徑
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Path
+    )
+    
+    if (Test-Path $Path) {
+        try {
+            Write-Host "🧹 清理臨時目錄..." -ForegroundColor Gray
+            Remove-Item -Path $Path -Recurse -Force -ErrorAction Stop
+            Write-Host "✅ 臨時目錄已清理" -ForegroundColor Green
+        } catch {
+            Write-Host "⚠️  無法清理臨時目錄: $Path" -ForegroundColor Yellow
+            Write-Host "   請手動刪除: $Path" -ForegroundColor Gray
+        }
     }
 }
 
@@ -756,15 +877,70 @@ function Main {
     Write-Host ""
     
     # ========================================================================
+    # 判斷執行模式（本地或遠端）
+    # ========================================================================
+    
+    # 決定目標路徑
+    $targetProjectPath = if ($TargetPath) { $TargetPath } else { (Get-Location).Path }
+    $templateSourcePath = Join-Path $script:RepoRoot ".github"
+    
+    # 檢查是否需要使用遠端模式
+    $needRemoteMode = $false
+    
+    # 情況 1: 明確指定 RemoteRepo 參數
+    if ($PSBoundParameters.ContainsKey('RemoteRepo')) {
+        $needRemoteMode = $true
+        Write-Host "ℹ️  使用遠端模式（RemoteRepo 參數已指定）" -ForegroundColor Cyan
+    }
+    # 情況 2: 自動偵測 - 源目錄不存在
+    elseif (-not (Test-Path $templateSourcePath)) {
+        $needRemoteMode = $true
+        Write-Host "ℹ️  自動啟用遠端模式（本地模板目錄不存在）" -ForegroundColor Cyan
+        Write-Host "   將從 $RemoteRepo 下載模板" -ForegroundColor Gray
+    }
+    # 情況 3: 腳本在目標專案內執行（不在 scripts/ 目錄下）
+    elseif ($PSScriptRoot -eq $targetProjectPath) {
+        $needRemoteMode = $true
+        Write-Host "ℹ️  自動啟用遠端模式（腳本不在模板 repo 內）" -ForegroundColor Cyan
+        Write-Host "   將從 $RemoteRepo 下載模板" -ForegroundColor Gray
+    }
+    
+    Write-Host ""
+    
+    # ========================================================================
+    # 遠端模式：下載模板
+    # ========================================================================
+    
+    if ($needRemoteMode) {
+        $script:IsRemoteMode = $true
+        
+        # 下載模板到臨時目錄
+        $downloadResult = Get-RemoteTemplate -RemoteRepo $RemoteRepo
+        
+        if (-not $downloadResult.Success) {
+            Write-Host "❌ 遠端模板下載失敗: $($downloadResult.Message)" -ForegroundColor Red
+            exit 1
+        }
+        
+        # 更新來源路徑為臨時目錄
+        $script:TempClonePath = $downloadResult.TempPath
+        $script:RepoRoot = $script:TempClonePath
+        $templateSourcePath = Join-Path $script:TempClonePath ".github"
+        
+        # 驗證下載的模板是否有效
+        if (-not (Test-Path $templateSourcePath)) {
+            Write-Host "❌ 下載的模板無效（缺少 .github/ 目錄）" -ForegroundColor Red
+            Remove-TempDirectory -Path $script:TempClonePath
+            exit 1
+        }
+    }
+    
+    # ========================================================================
     # 檔案同步
     # ========================================================================
     
-    # 取得當前專案根目錄（假設 bootstrap.ps1 在 scripts/ 目錄下）
-    $currentPath = Get-Location
-    $templateSourcePath = Join-Path $script:RepoRoot ".github"
-    
     # 檢查是否在模板 repo 內執行（避免自我覆蓋）
-    if ($currentPath.Path -eq $script:RepoRoot) {
+    if (-not $needRemoteMode -and $targetProjectPath -eq $script:RepoRoot) {
         Write-Host "⚠️  警告：正在模板 repo 內執行 bootstrap" -ForegroundColor Yellow
         Write-Host "   建議：請在目標專案目錄執行此腳本" -ForegroundColor Gray
         $continue = Read-Host "是否繼續（將會複製到目前目錄）? (y/n)"
@@ -776,15 +952,18 @@ function Main {
     
     # 檢查未提交的變更（Update 模式）
     if ($Update) {
-        $targetGithubPath = Join-Path $currentPath.Path ".github"
+        $targetGithubPath = Join-Path $targetProjectPath ".github"
         if (Test-Path $targetGithubPath) {
-            $hasChanges = Test-GitUncommittedChanges -TargetPath $currentPath.Path -Directory ".github"
+            $hasChanges = Test-GitUncommittedChanges -TargetPath $targetProjectPath -Directory ".github"
             if ($hasChanges) {
                 Write-Host "⚠️  檢測到 .github/ 目錄有未提交的變更" -ForegroundColor Yellow
                 Write-Host "   建議先提交變更後再執行 --update" -ForegroundColor Gray
                 $continue = Read-Host "是否繼續更新? (y/n)"
                 if ($continue -ne 'y') {
                     Write-Host "已取消。" -ForegroundColor Gray
+                    if ($script:IsRemoteMode) {
+                        Remove-TempDirectory -Path $script:TempClonePath
+                    }
                     exit 0
                 }
                 Write-Host ""
@@ -797,7 +976,7 @@ function Main {
     
     try {
         # 執行檔案同步
-        $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $currentPath.Path -Force:$forceMode -Backup:$backupMode
+        $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $targetProjectPath -Force:$forceMode -Backup:$backupMode
         
         # 顯示同步結果
         if ($syncResult.FilesAdded.Count -gt 0) {
@@ -814,7 +993,7 @@ function Main {
         
         if ($syncResult.FilesConflicted.Count -gt 0) {
             Write-Host "⚠️  偵測到 $($syncResult.FilesConflicted.Count) 個衝突檔案（內容不同但未覆蓋）" -ForegroundColor Yellow
-            if ($Verbose) {
+            if ($VerbosePreference -eq 'Continue') {
                 foreach ($file in $syncResult.FilesConflicted) {
                     Write-Host "   - $file" -ForegroundColor Gray
                 }
@@ -826,7 +1005,7 @@ function Main {
         Write-Host ""
         
         # 顯示詳細清單（如果 Verbose）
-        if ($Verbose) {
+        if ($VerbosePreference -eq 'Continue') {
             if ($syncResult.FilesAdded.Count -gt 0) {
                 Write-Host "新增的檔案:" -ForegroundColor Cyan
                 $syncResult.FilesAdded | ForEach-Object {
@@ -846,6 +1025,12 @@ function Main {
         
     } catch {
         Write-Host "❌ 檔案同步失敗: $($_.Exception.Message)" -ForegroundColor Red
+        
+        # 清理遠端模式的臨時目錄
+        if ($script:IsRemoteMode -and $script:TempClonePath) {
+            Remove-TempDirectory -Path $script:TempClonePath
+        }
+        
         exit 1
     }
     
@@ -858,7 +1043,7 @@ function Main {
         Write-Host ""
         
         try {
-            $gitResult = Initialize-GitRepo -TargetPath $currentPath.Path
+            $gitResult = Initialize-GitRepo -TargetPath $targetProjectPath
             
             if ($gitResult.IsNew) {
                 Write-Host "✅ Git repository 已初始化" -ForegroundColor Green
@@ -876,6 +1061,16 @@ function Main {
     }
     
     Write-Host "✅ Bootstrap completed!" -ForegroundColor Green
+    Write-Host ""
+    
+    # ========================================================================
+    # 清理臨時目錄（遠端模式）
+    # ========================================================================
+    
+    if ($script:IsRemoteMode -and $script:TempClonePath) {
+        Write-Host ""
+        Remove-TempDirectory -Path $script:TempClonePath
+    }
 }
 
 # 執行主程式

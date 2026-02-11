@@ -34,19 +34,27 @@ node --version
 
 This is the most common use case: adding the AI workflow to your existing project without disrupting your current setup.
 
-#### Option 1: Direct Bootstrap (Quickest)
+#### Option 1: Direct Bootstrap with Auto Remote Mode (Quickest) ⭐ NEW
+
+The bootstrap script now automatically detects when it's not in the template repository and downloads files from GitHub.
 
 **Windows (PowerShell):**
 ```powershell
 # Navigate to your project
 cd C:\Projects\YourProject
 
-# Download and run bootstrap
+# Download and run bootstrap (auto-downloads template from GitHub)
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 .\bootstrap.ps1
 
 # Clean up
 Remove-Item bootstrap.ps1
+```
+
+**Explicit Remote Mode (Custom Repository):**
+```powershell
+# If you have a fork or custom template repository
+.\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/your-template.git"
 ```
 
 **macOS/Linux (Python):**

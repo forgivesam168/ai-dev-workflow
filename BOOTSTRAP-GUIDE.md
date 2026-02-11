@@ -1,14 +1,49 @@
 # Bootstrap Installer User Guide
 
 ## Overview
-The bootstrap installer is a cross-platform tool that initializes the AI development workflow into your project. It supports Windows (PowerShell), Linux, and macOS (Python).
+The bootstrap installer is a cross-platform tool that initializes the AI development workflow into your project. It supports Windows (PowerShell), Linux, and macOS (Python/Bash).
+
+**NEW**: The installer now supports **automatic remote mode** - you can download and run the script directly without cloning the template repository first.
 
 ## Quick Start
 
-### Windows (PowerShell)
+### Remote Mode (Recommended for New Projects) ⭐
+
+Download and run the script directly in your project directory. The script will automatically detect it's not in the template repo and download files from GitHub.
+
+**Windows (PowerShell):**
+```powershell
+# Navigate to your project
+cd C:\Projects\YourProject
+
+# Download and run (auto-downloads from GitHub)
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
+.\bootstrap.ps1
+
+# Or specify custom template repo
+.\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/custom-template.git"
+
+# Clean up
+Remove-Item bootstrap.ps1
+```
+
+**macOS/Linux (Python):**
+```bash
+cd ~/Projects/YourProject
+curl -O https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.py
+python3 bootstrap.py
+rm bootstrap.py
+```
+
+### Local Mode (From Template Repository)
+
+**Windows (PowerShell):**
 ```powershell
 # Standard installation
 .\scripts\bootstrap.ps1
+
+# Install to specific target directory
+.\scripts\bootstrap.ps1 -TargetPath "C:\Projects\MyProject"
 
 # Force overwrite existing files
 .\scripts\bootstrap.ps1 -Force
@@ -20,7 +55,7 @@ The bootstrap installer is a cross-platform tool that initializes the AI develop
 .\scripts\bootstrap.ps1 -Backup
 ```
 
-### Linux/macOS (Python)
+**Linux/macOS (Python):**
 ```bash
 # Standard installation
 python3 scripts/bootstrap.py
@@ -34,6 +69,72 @@ python3 scripts/bootstrap.py --update
 # Manual backup before sync
 python3 scripts/bootstrap.py --backup
 ```
+
+## Parameters Reference
+
+### PowerShell Parameters
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `-Force` | Switch | Overwrite conflicting files without prompting | `.\bootstrap.ps1 -Force` |
+| `-Update` | Switch | Safe update mode (backup + force overwrite) | `.\bootstrap.ps1 -Update` |
+| `-Backup` | Switch | Create backup before sync | `.\bootstrap.ps1 -Backup` |
+| `-SkipHooks` | Switch | Skip Git initialization | `.\bootstrap.ps1 -SkipHooks` |
+| `-Verbose` | Switch | Show detailed file list | `.\bootstrap.ps1 -Verbose` |
+| `-Quiet` | Switch | Minimal output | `.\bootstrap.ps1 -Quiet` |
+| `-RemoteRepo` | String | GitHub repository URL for remote mode | `.\bootstrap.ps1 -RemoteRepo "https://github.com/user/repo.git"` |
+| `-TargetPath` | String | Target project directory (default: current directory) | `.\bootstrap.ps1 -TargetPath "C:\Projects\MyApp"` |
+
+### Python Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `--force` | Flag | Overwrite conflicting files |
+| `--update` | Flag | Safe update mode (backup + force) |
+| `--backup` | Flag | Create backup before sync |
+| `--skip-hooks` | Flag | Skip Git initialization |
+| `--verbose` | Flag | Show detailed file list |
+| `--quiet` | Flag | Minimal output |
+
+## Execution Modes
+
+### 1. Remote Mode (Auto-Detected)
+
+The script automatically enters remote mode when:
+- The `-RemoteRepo` parameter is explicitly provided
+- The script is not located in `scripts/` directory of the template repository
+- The local `.github/` template directory doesn't exist
+
+**What happens in remote mode:**
+1. Creates a temporary directory (`%TEMP%\ai-workflow-bootstrap-<timestamp>`)
+2. Clones the template repository using shallow clone (`--depth 1`)
+3. Uses sparse checkout to download only `.github/`, `.gitattributes`, and `.editorconfig`
+4. Syncs files to your project
+5. Cleans up temporary directory
+
+**Example output:**
+```
+ℹ️  自動啟用遠端模式（腳本不在模板 repo 內）
+   將從 https://github.com/forgivesam168/ai-dev-workflow.git 下載模板
+
+📥 從遠端下載模板...
+   來源: https://github.com/forgivesam168/ai-dev-workflow.git
+   暫存: C:\Users\...\Temp\ai-workflow-bootstrap-20260211-060000
+
+✅ 遠端模板下載完成
+
+同步工作流檔案...
+✅ 新增 104 個檔案
+
+🧹 清理臨時目錄...
+✅ 臨時目錄已清理
+```
+
+### 2. Local Mode
+
+Uses the local template repository files when:
+- The script is executed from `<template-repo>/scripts/bootstrap.ps1`
+- The local `.github/` directory exists at the expected location
 
 ## Phase 2 Features
 

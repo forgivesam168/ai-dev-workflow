@@ -34,19 +34,27 @@ node --version
 
 這是最常見的使用情境：將 AI 工作流加入現有專案而不影響既有設定。
 
-#### 方式 1：直接 Bootstrap（最快）
+#### 方式 1：自動遠端模式 Bootstrap（最快）⭐ NEW
+
+Bootstrap 腳本現在會自動偵測是否在模板 repo 內，並自動從 GitHub 下載檔案。
 
 **Windows (PowerShell):**
 ```powershell
 # 進入你的專案目錄
 cd C:\Projects\YourProject
 
-# 下載並執行 bootstrap
+# 下載並執行 bootstrap（自動從 GitHub 下載模板）
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 .\bootstrap.ps1
 
 # 清理
 Remove-Item bootstrap.ps1
+```
+
+**明確指定遠端 Repo（自訂模板）:**
+```powershell
+# 如果你有 fork 或自訂的模板 repository
+.\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/your-template.git"
 ```
 
 **macOS/Linux (Python):**
