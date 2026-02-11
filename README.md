@@ -77,3 +77,16 @@ Each work item produces a **Change Package** under `changes/<YYYY-MM-DD>-<slug>/
 - Run `pwsh -File .\tools\sync-dotgithub.ps1` after editing instructions.
 
 See `WORKFLOW.md` for detailed workflow documentation.
+
+## 📚 Documentation Overview
+
+| Document | Description | Language |
+|----------|-------------|----------|
+| [INSTALL.md](./INSTALL.md) | Comprehensive installation instructions with environment checks, troubleshooting, and update guidance | English |
+| [INSTALL.zh-TW.md](./INSTALL.zh-TW.md) | 同步的繁體中文安裝指南（含執行策略、遠端模式、常見問題） | 繁體中文 |
+| [ONBOARDING.md](./ONBOARDING.md) | 新人環境準備與 PowerShell 執行策略檢查清單，適合第一次接觸的同事 | 繁體中文 |
+| [REMOTE-INSTALL.md](./REMOTE-INSTALL.md) | 快速一鍵遠端安裝流程（含環境前置檢查與 Bypass 建議） | English |
+| [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) | 進階 bootstrap 參數、模式與運作流程說明 | English |
+| [QUICKSTART.md](./QUICKSTART.md) | 5 分鐘快速入門與工作流演練 | English |
+
+將這些文檔分享給新同事即可讓他們快速完成環境建置與 bootstrap 安裝。
