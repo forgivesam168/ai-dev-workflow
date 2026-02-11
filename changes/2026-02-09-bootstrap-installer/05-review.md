@@ -17,6 +17,7 @@
 - QUICKSTART.md 與相關 anchor 連結已修正（commits c404147, 026ab63）。
 - 已執行 repo-wide link check；報告已儲存於 `link-check-report.json` 及 `link-check-report.txt`（儲存路徑：repo 根目錄）。摘要：files_scanned=213, total_links_checked=487, broken_count=8。請優先檢視報告並決定是否要由我逐一修正這些壞連結。
 - 已更新部分文檔（QUICKSTART, WORKFLOW）來修正不穩定的 anchor，其他壞鏈結尚需人工確認是否要新增 reference 檔或調整連結。
+- 已建立 `skills/work-archiving/SKILL.md`，完整記錄 Stage 6 Archive 流程，並將 `skills/code-security-review/SKILL.md` 的 `../work-archiving/SKILL.md` 連結指回該文件（2026-02-11 link check 已通過）。
 
 (此區為審查狀態更新摘要，詳細問題與解法仍記載於下方各節。)
 
