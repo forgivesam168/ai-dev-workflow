@@ -328,6 +328,111 @@ A: Check for:
 - **Backup overhead**: +1-2 seconds (one-time copy operation)
 - **File comparison**: Near-instant (SHA256 hash caching)
 
+## MCP Server Configuration
+
+The workflow includes Model Context Protocol (MCP) server configurations for enhanced AI capabilities.
+
+### Included MCP Servers
+
+**Configuration files**: `.github/mcp.json` and `.vscode/mcp.json`
+
+The following MCP servers are pre-configured:
+
+| Server | Purpose | Requirements |
+|--------|---------|--------------|
+| `context7` | Library documentation lookup | Node.js + npx |
+| `memory` | Conversation memory across sessions | Node.js + npx |
+
+### Installation
+
+MCP configuration files are automatically installed by bootstrap:
+
+```bash
+# After running bootstrap, this file will exist:
+.github/mcp.json    # For GitHub Copilot CLI
+
+# For VS Code users: manually copy to .vscode/ if needed
+cp .github/mcp.json .vscode/mcp.json
+```
+
+**Note**: `.vscode/mcp.json` is not tracked in Git (excluded by `.gitignore`). VS Code users should manually create this file or rely on the VS Code Copilot extension's global configuration.
+
+### Configuration
+
+The configuration file (`.github/mcp.json`) uses this JSON structure:
+
+```json
+{
+  "mcpServers": {
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "tools": ["*"]
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+**For VS Code users**: Copy `.github/mcp.json` to `.vscode/mcp.json` for editor integration.
+
+### Customization
+
+To add additional MCP servers (e.g., Brave Search, Filesystem):
+
+1. Edit `.github/mcp.json` (and `.vscode/mcp.json` if using VS Code)
+2. Add server configuration following the pattern above
+3. For servers requiring API keys, use environment variables:
+   ```json
+   {
+     "mcpServers": {
+       "brave-search": {
+         "type": "stdio",
+         "command": "npx",
+         "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+         "env": {
+           "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+         },
+         "tools": ["*"]
+       }
+     }
+   }
+   ```
+4. Set environment variables in your shell:
+   ```bash
+   # Windows PowerShell
+   $env:BRAVE_API_KEY = "your-api-key"
+   
+   # Linux/macOS
+   export BRAVE_API_KEY="your-api-key"
+   ```
+
+### Verification
+
+After bootstrap completes:
+
+1. **VS Code**: Restart VS Code, MCP tools should appear in Copilot Chat
+2. **CLI**: Run `copilot` and use `/mcp show` to verify servers are loaded
+3. Check logs if servers fail to start (typically missing Node.js/npx)
+
+### Troubleshooting MCP
+
+**Issue: MCP servers not loading**
+- Ensure Node.js and npx are installed: `node --version && npx --version`
+- Check MCP logs in VS Code: Output → GitHub Copilot Chat
+- Verify JSON syntax: `cat .github/mcp.json | jq .`
+
+**Issue: API key not recognized**
+- Verify environment variable is set: `echo $env:BRAVE_API_KEY` (Windows) or `echo $BRAVE_API_KEY` (Unix)
+- Restart terminal/VS Code after setting environment variables
+- Use absolute paths for sensitive environment files (avoid committing keys)
+
 ## Support
 
 For issues or questions:
