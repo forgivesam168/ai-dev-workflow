@@ -1,11 +1,74 @@
 # Quick Remote Installation Guide
 
-## 🚀 One-Line Installation
+## ⚠️ 新手必讀：環境前置檢查
 
-The bootstrap script now supports **automatic remote mode** - download and run directly without cloning the template repository.
+### 1. PowerShell 執行策略問題 (Windows)
 
-### Windows (PowerShell)
+**問題症狀**：
+```
+.\bootstrap.ps1 : 無法載入，因為在此系統上已停用指令碼執行。
+File cannot be loaded because running scripts is disabled on this system.
+```
 
+**解決方案（三選一）**：
+
+#### 方案 A：Bypass 模式執行（推薦，無需修改系統設定）
+```powershell
+# 單次繞過執行策略，不改變系統設定
+powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+```
+
+#### 方案 B：修改當前使用者執行策略（永久生效）
+```powershell
+# 只需執行一次（需要一般使用者權限）
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# 然後正常執行
+.\bootstrap.ps1
+```
+
+#### 方案 C：使用 Python 或 Bash（跨平台備選方案）
+```bash
+# Python 版本（Windows/macOS/Linux 都可用）
+curl -sO https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.py
+python bootstrap.py
+```
+
+---
+
+### 2. 其他常見環境問題
+
+| 問題 | 檢查方式 | 解決方案 |
+|------|----------|----------|
+| **Git 未安裝** | `git --version` | [下載 Git](https://git-scm.com/downloads) |
+| **PowerShell 版本過舊** | `$PSVersionTable.PSVersion` | [下載 PowerShell 7+](https://aka.ms/powershell) (建議) |
+| **Node.js 未安裝** | `node --version` | [下載 Node.js 16+](https://nodejs.org) (MCP 伺服器需要) |
+| **網路代理/防火牆** | 測試 `curl https://github.com` | 設定 Git 代理或使用企業內網鏡像 |
+| **中文路徑問題** | 專案路徑包含中文 | 建議使用英文路徑（如 `C:\Projects\`） |
+
+---
+
+## 🚀 推薦安裝方式
+
+### Windows (PowerShell) - 使用 Bypass 模式 ⭐
+
+```powershell
+# 進入你的專案目錄
+cd C:\Projects\YourProject
+
+# 下載腳本
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
+
+# 使用 Bypass 模式執行（不需要修改系統設定）
+powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+
+# 清理
+Remove-Item bootstrap.ps1
+```
+
+### Windows (PowerShell) - 一鍵安裝（需要先設定執行策略）
+
+如果已經設定過 `Set-ExecutionPolicy RemoteSigned`：
 ```powershell
 cd YourProject
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"; .\bootstrap.ps1; Remove-Item bootstrap.ps1

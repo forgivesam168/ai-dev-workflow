@@ -39,22 +39,36 @@ node --version
 Bootstrap 腳本現在會自動偵測是否在模板 repo 內，並自動從 GitHub 下載檔案。
 
 **Windows (PowerShell):**
+
+⚠️ **新手注意**：PowerShell 預設會阻擋腳本執行，請使用 Bypass 模式：
+
 ```powershell
 # 進入你的專案目錄
 cd C:\Projects\YourProject
 
-# 下載並執行 bootstrap（自動從 GitHub 下載模板）
+# 下載 bootstrap 腳本
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
-.\bootstrap.ps1
+
+# 使用 Bypass 模式執行（推薦新手使用）
+powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
 
 # 清理
 Remove-Item bootstrap.ps1
 ```
 
+**替代方案：一次性設定執行策略**（需要一般使用者權限）：
+```powershell
+# 一次性設定（每台電腦只需執行一次）
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# 之後就可以正常執行腳本
+.\bootstrap.ps1
+```
+
 **明確指定遠端 Repo（自訂模板）:**
 ```powershell
 # 如果你有 fork 或自訂的模板 repository
-.\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/your-template.git"
+powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/your-template.git"
 ```
 
 **macOS/Linux (Python):**
@@ -371,6 +385,47 @@ git push
 ---
 
 ## 🆘 疑難排解
+
+### 問題：「此系統已停用指令碼執行」(PowerShell)
+
+**症狀：**
+```
+.\bootstrap.ps1 : 無法載入，因為在此系統上已停用指令碼執行。
+File cannot be loaded because running scripts is disabled on this system.
+```
+
+**原因：** PowerShell 執行策略阻擋未簽名的腳本（Windows 預設安全機制）。
+
+**解決方法（三選一）：**
+
+**方案 A：使用 Bypass 模式（推薦 - 不改變系統設定）**
+```powershell
+# 僅此次執行使用 Bypass，不改變系統設定
+powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+```
+
+**方案 B：設定當前使用者的執行策略（一次性設定）**
+```powershell
+# 允許當前使用者帳號執行已簽名的腳本
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# 之後就可以正常執行
+.\bootstrap.ps1
+```
+
+**方案 C：改用 Python 版本（跨平台替代方案）**
+```bash
+# 下載並執行 Python 版本
+curl -sO https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.py
+python bootstrap.py
+```
+
+**詳細說明：**
+- `Restricted`（受限制）：預設策略，完全禁止執行腳本
+- `RemoteSigned`（遠端簽名）：允許本地腳本和已簽名的下載腳本
+- `Bypass`（繞過）：臨時繞過所有限制，不修改系統設定
+
+---
 
 ### 問題：「Git is required but not found」
 

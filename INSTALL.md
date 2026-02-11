@@ -39,22 +39,36 @@ This is the most common use case: adding the AI workflow to your existing projec
 The bootstrap script now automatically detects when it's not in the template repository and downloads files from GitHub.
 
 **Windows (PowerShell):**
+
+⚠️ **First-time users**: PowerShell may block script execution. Use Bypass mode:
+
 ```powershell
 # Navigate to your project
 cd C:\Projects\YourProject
 
-# Download and run bootstrap (auto-downloads template from GitHub)
+# Download bootstrap script
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
-.\bootstrap.ps1
+
+# Run with Bypass mode (recommended for first-time users)
+powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
 
 # Clean up
 Remove-Item bootstrap.ps1
 ```
 
+**Alternative: Set execution policy once** (requires user permission):
+```powershell
+# One-time setup (only needed once per machine)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Then you can run scripts normally
+.\bootstrap.ps1
+```
+
 **Explicit Remote Mode (Custom Repository):**
 ```powershell
 # If you have a fork or custom template repository
-.\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/your-template.git"
+powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/your-template.git"
 ```
 
 **macOS/Linux (Python):**
@@ -371,6 +385,42 @@ git push
 ---
 
 ## 🆘 Troubleshooting
+
+### Issue: "Scripts are disabled on this system" (PowerShell)
+
+**Symptom:**
+```
+.\bootstrap.ps1 : 無法載入，因為在此系統上已停用指令碼執行。
+File cannot be loaded because running scripts is disabled on this system.
+```
+
+**Cause:** PowerShell execution policy blocks unsigned scripts (default Windows security).
+
+**Solution (Choose One):**
+
+**Option A: Use Bypass mode (Recommended - No system changes)**
+```powershell
+# Run with Bypass for this execution only
+powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+```
+
+**Option B: Set execution policy for current user (One-time setup)**
+```powershell
+# Allow signed scripts for your user account
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Then run normally
+.\bootstrap.ps1
+```
+
+**Option C: Use Python instead (Cross-platform alternative)**
+```bash
+# Download and run Python version
+curl -sO https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.py
+python bootstrap.py
+```
+
+---
 
 ### Issue: "Git is required but not found"
 
