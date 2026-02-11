@@ -380,6 +380,29 @@ function Sync-WorkflowFiles {
         }
     }
     
+    # Copy root-level template files (e.g. .gitattributes, .editorconfig) into target project root
+    $rootFiles = @('.gitattributes', '.editorconfig')
+    foreach ($rf in $rootFiles) {
+        $srcRootFile = Join-Path $script:RepoRoot $rf
+        $dstRootFile = Join-Path $TargetPath $rf
+        if (Test-Path $srcRootFile) {
+            if (-not (Test-Path $dstRootFile)) {
+                Copy-Item -Path $srcRootFile -Destination $dstRootFile -Force
+                $filesAdded += $rf
+            } else {
+                # If exists, compare contents
+                if (Test-FilesIdentical -Path1 $srcRootFile -Path2 $dstRootFile) {
+                    # identical -> skip
+                } elseif ($Force) {
+                    Copy-Item -Path $srcRootFile -Destination $dstRootFile -Force
+                    $filesUpdated += $rf
+                } else {
+                    $filesConflicted += $rf
+                }
+            }
+        }
+    }
+
     return [PSCustomObject]@{
         FilesAdded = $filesAdded
         FilesUpdated = $filesUpdated

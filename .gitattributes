@@ -1,0 +1,37 @@
+# Git attributes for ai-dev-workflow template
+
+# Normalize line endings to LF and mark text files
+* text=auto eol=lf
+
+# Scripts - ensure LF endings
+*.sh text eol=lf
+*.py text eol=lf
+*.ps1 text eol=lf
+*.psm1 text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Config files
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+.editorconfig text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+
+# Linguist overrides
+.github/** linguist-documentation
+*.md linguist-documentation
+scripts/** linguist-detectable

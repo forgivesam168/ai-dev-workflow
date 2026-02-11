@@ -207,6 +207,24 @@ def sync_workflow_files(
             shutil.copy2(item, destination)
             files_added.append(normalized)
 
+    # Also copy root-level template files (e.g. .gitattributes, .editorconfig) into project root
+    root_files = [".gitattributes", ".editorconfig"]
+    for rf in root_files:
+        src_root = source.parent / rf
+        dst_root = target_root / rf
+        if src_root.exists():
+            if not dst_root.exists():
+                shutil.copy2(src_root, dst_root)
+                files_added.append(rf)
+            else:
+                if files_are_identical(src_root, dst_root):
+                    pass
+                elif force:
+                    shutil.copy2(src_root, dst_root)
+                    files_updated.append(rf)
+                else:
+                    files_conflicted.append(rf)
+
     return SyncResult(files_added, files_updated, files_skipped, files_conflicted)
 
 

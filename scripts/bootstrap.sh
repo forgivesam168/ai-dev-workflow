@@ -389,6 +389,33 @@ sync_workflow_files() {
     done < <(find "$source" -type f -print0)
     
     echo ""
+    # Copy root-level template files (e.g. .gitattributes, .editorconfig) into project root
+    template_root="$(dirname "$source")"
+    root_files=(".gitattributes" ".editorconfig")
+    for rf in "${root_files[@]}"; do
+        src_root="$template_root/$rf"
+        dst_root="$target_root/$rf"
+        if [ -f "$src_root" ]; then
+            if [ -f "$dst_root" ]; then
+                if files_identical "$src_root" "$dst_root"; then
+                    log_verbose "Skipped root file (identical): $rf"
+                    # no-op
+                elif [ $force -eq 1 ]; then
+                    cp "$src_root" "$dst_root"
+                    ((files_updated++))
+                    log_verbose "Updated root file: $rf"
+                else
+                    ((files_conflicted++))
+                    log_verbose "Conflict root file: $rf"
+                fi
+            else
+                cp "$src_root" "$dst_root"
+                ((files_added++))
+                log_verbose "Added root file: $rf"
+            fi
+        fi
+    done
+
     log_info "同步摘要:"
     echo "   Added: $files_added files"
     echo "   Updated: $files_updated files"
