@@ -244,7 +244,7 @@ pwsh -File .\tools\sync-dotgithub.ps1
    ```
 
 5. **遇到問題？**
-   - 輸入「help」或查看 [常見問題 FAQ](./README.zh-TW.md#-常見問題-faq)
+   - 輸入「help」或查看 [常見問題 FAQ](./README.zh-TW.md)
    - 使用「what's next」隨時檢查當前階段
 
 ---

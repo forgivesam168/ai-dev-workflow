@@ -53,7 +53,7 @@
 - 也支援自然語言（同 CLI）
 - Agent 選擇：`@workspace #agent-name`
 
-**詳細使用指南請參考** [README.zh-TW.md - CLI vs VS Code 使用差異](./README.zh-TW.md#-cli-與-vs-code-使用差異)
+**詳細使用指南請參考** [README.zh-TW.md - CLI vs VS Code 使用差異](./README.zh-TW.md)
 
 ---
 
