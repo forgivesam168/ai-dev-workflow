@@ -72,7 +72,7 @@ Get-ExecutionPolicy -Scope CurrentUser
 **選項 A：不修改系統設定（推薦新手）**
 ```powershell
 # 執行腳本時使用 Bypass 模式
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 ```
 
 **選項 B：一次性修改執行策略**
@@ -191,7 +191,7 @@ cd C:\Projects\YourProject
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 
 # 3. 執行安裝（使用 Bypass 模式）
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 
 # 4. 清理
 Remove-Item bootstrap.ps1
@@ -257,7 +257,7 @@ ls .github
 
 **解決方法**：使用 Bypass 模式
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 ```
 
 ### 錯誤 2: 「Source path not found」

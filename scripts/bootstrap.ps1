@@ -1,3 +1,4 @@
+#Requires -Version 7.0
 # Bootstrap.ps1 - 跨平台 AI 工作流安裝器
 # 用途：將 AI 開發工作流初始化到任何專案中
 

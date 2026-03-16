@@ -15,7 +15,7 @@ File cannot be loaded because running scripts is disabled on this system.
 #### 方案 A：Bypass 模式執行（推薦，無需修改系統設定）
 ```powershell
 # 單次繞過執行策略，不改變系統設定
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 ```
 
 #### 方案 B：修改當前使用者執行策略（永久生效）
@@ -60,7 +60,7 @@ cd C:\Projects\YourProject
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 
 # 使用 Bypass 模式執行（不需要修改系統設定）
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 
 # 清理
 Remove-Item bootstrap.ps1

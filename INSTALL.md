@@ -50,7 +50,7 @@ cd C:\Projects\YourProject
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 
 # Run with Bypass mode (recommended for first-time users)
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 
 # Clean up
 Remove-Item bootstrap.ps1
@@ -68,7 +68,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 **Explicit Remote Mode (Custom Repository):**
 ```powershell
 # If you have a fork or custom template repository
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/your-template.git"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/your-template.git"
 ```
 
 **macOS/Linux (Python):**
@@ -401,7 +401,7 @@ File cannot be loaded because running scripts is disabled on this system.
 **Option A: Use Bypass mode (Recommended - No system changes)**
 ```powershell
 # Run with Bypass for this execution only
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 ```
 
 **Option B: Set execution policy for current user (One-time setup)**

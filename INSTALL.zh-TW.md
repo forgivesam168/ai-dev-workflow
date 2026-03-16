@@ -50,7 +50,7 @@ cd C:\Projects\YourProject
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 
 # 使用 Bypass 模式執行（推薦新手使用）
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 
 # 清理
 Remove-Item bootstrap.ps1
@@ -68,7 +68,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 **明確指定遠端 Repo（自訂模板）:**
 ```powershell
 # 如果你有 fork 或自訂的模板 repository
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/your-template.git"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -RemoteRepo "https://github.com/your-org/your-template.git"
 ```
 
 **macOS/Linux (Python):**
@@ -401,7 +401,7 @@ File cannot be loaded because running scripts is disabled on this system.
 **方案 A：使用 Bypass 模式（推薦 - 不改變系統設定）**
 ```powershell
 # 僅此次執行使用 Bypass，不改變系統設定
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 ```
 
 **方案 B：設定當前使用者的執行策略（一次性設定）**
