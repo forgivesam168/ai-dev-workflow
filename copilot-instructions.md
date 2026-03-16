@@ -119,7 +119,7 @@ Brainstorm → Plan → Implement → Review → Archive
 - Did I verify input boundaries?
 
 ## 4. Communication Style
-- **Language**: English for Code/Comments, **Traditional Chinese (繁體中文)** for Explanations.
+- **Language**: **ALWAYS use Traditional Chinese (繁體中文)** for ALL explanations, analysis, reasoning, planning, and any non-code text. Only use English for: source code, code comments, variable/function names, and technical identifiers.
 - **Git Commit Messages**: MUST use **Traditional Chinese (繁體中文)** for commit messages.
   - Format: `<type>: <中文描述>`
   - Example: `feat: 新增使用者認證功能` (NOT `feat: add user authentication`)
