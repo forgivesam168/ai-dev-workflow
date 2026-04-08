@@ -957,17 +957,24 @@ function Main {
         if (Test-Path $targetGithubPath) {
             $hasChanges = Test-GitUncommittedChanges -TargetPath $targetProjectPath -Directory ".github"
             if ($hasChanges) {
-                Write-Host "⚠️  檢測到 .github/ 目錄有未提交的變更" -ForegroundColor Yellow
-                Write-Host "   建議先提交變更後再執行 --update" -ForegroundColor Gray
-                $continue = Read-Host "是否繼續更新? (y/n)"
-                if ($continue -ne 'y') {
-                    Write-Host "已取消。" -ForegroundColor Gray
-                    if ($script:IsRemoteMode) {
-                        Remove-TempDirectory -Path $script:TempClonePath
+                if ($Force) {
+                    # -Force 旗標：跳過確認，直接繼續（備份仍會自動建立）
+                    Write-Host "⚠️  檢測到 .github/ 目錄有未提交的變更（-Force 已指定，略過確認）" -ForegroundColor Yellow
+                    Write-Host ""
+                } else {
+                    Write-Host "⚠️  檢測到 .github/ 目錄有未提交的變更" -ForegroundColor Yellow
+                    Write-Host "   提示 1：先執行 'git add .github/ && git commit' 再更新可避免此提示" -ForegroundColor Gray
+                    Write-Host "   提示 2：加上 -Force 旗標可自動跳過此確認" -ForegroundColor Gray
+                    $continue = Read-Host "是否繼續更新? (y/n)"
+                    if ($continue -ne 'y') {
+                        Write-Host "已取消。" -ForegroundColor Gray
+                        if ($script:IsRemoteMode) {
+                            Remove-TempDirectory -Path $script:TempClonePath
+                        }
+                        exit 0
                     }
-                    exit 0
+                    Write-Host ""
                 }
-                Write-Host ""
             }
         }
     }

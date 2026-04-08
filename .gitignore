@@ -48,3 +48,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Bootstrap script (temporary, downloaded on-demand)
+bootstrap.ps1
+bootstrap.py
+bootstrap.sh
