@@ -64,10 +64,19 @@ copilot
 - **coder-agent**: TDD 實作
 
 ### Skills（方法論）
-定義「怎麼做」，例如：
-- **brainstorming**: 結構化需求探索
-- **tdd-workflow**: Red-Green-Refactor 循環
-- **code-security-review**: 程式碼與安全審核
+定義「怎麼做」，每個階段有對應 skill 自動載入：
+
+| 階段 | 自動載入 | 代表 Skills |
+|------|----------|------------|
+| Brainstorm | `brainstorming` | 結構化需求探索、風險分類、決策紀錄 |
+| Spec | `specification`, `prd` | PRD / 規格文件生成、驗收標準 |
+| Plan | `implementation-planning` | 任務拆解、測試策略、影響分析 |
+| Implement | `tdd-workflow` + 語言 patterns | Red-Green-Refactor + `coding-standards`, `backend-patterns`, `frontend-patterns`, `python-patterns` |
+| Review | `code-security-review`, `security-review` | 程式碼品質 + 金融安全審核 |
+| Archive | `work-archiving`, `git-commit` | 歸檔紀錄 + Conventional Commit |
+
+**隨時可引用的輔助 Skills：**
+`excalidraw-diagram-generator` / `web-design-reviewer` / `webapp-testing` / `gh-cli` / `github-issues` / `refactor` / `chrome-devtools` / `microsoft-docs`
 
 ### Instructions（規範）
 定義「遵守什麼標準」，例如：
@@ -144,12 +153,15 @@ copilot
 
 ## ⚠️ 常見錯誤
 
-### ❌ 錯誤 1: 在 CLI 使用斜線指令
+### ❌ 錯誤 1: 在 CLI 使用工作流程 Prompt 的斜線指令
 ```
 > /spec
 [系統無反應]
 ```
-**正確方式**: 使用自然語言 → `產生 spec`
+**正確方式**: 使用自然語言 → `產生 spec`，或使用 skill 引用語法 → `Use the /specification skill`
+
+> 📌 `/spec`、`/create-plan`、`/code-review` 等是 VS Code prompt 捷徑，非 CLI 斜線指令。
+> CLI 內建斜線指令（如 `/plan` 計畫模式、`/review` Code Review）與這些不同。
 
 ### ❌ 錯誤 2: 忘記切換 Agent
 ```

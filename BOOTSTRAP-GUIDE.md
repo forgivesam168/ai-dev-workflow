@@ -333,6 +333,7 @@ python3 scripts/bootstrap.py
 # - .github/instructions/
 # - .github/prompts/
 # - .github/skills/
+# - .github/hooks/   (security hooks for pre-commit checks)
 # - etc.
 ```
 

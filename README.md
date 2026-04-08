@@ -43,17 +43,22 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
    (釐清需求)    (規格)    (計畫)     (TDD)       (Code+Security) (歸檔)
 ```
 
-### Commands
+### Commands (VS Code Slash Commands)
 
-| Stage | Command | Description |
+| Stage | VS Code | Description |
 |-------|---------|-------------|
 | 0 | `/workflow` | **Orchestrator**: Detect current stage, guide next step |
 | 1 | `/brainstorm` | Triage risk, clarify requirements, create change package |
 | 2 | `/spec` | Generate specification document |
-| 3 | `/plan` | Create executable implementation plan |
+| 3 | `/create-plan` | Create executable implementation plan |
 | 4 | `/tdd` | Implement with Red-Green-Refactor |
-| 5 | `/review` | Code Review + Security Review (parallel) |
+| 5 | `/code-review` | Code Review + Security Review (parallel) |
 | 6 | `/archive` | Finalize and document |
+
+> **Copilot CLI users**: The above are VS Code prompt shortcuts (`.github/prompts/`).
+> In CLI, use natural language instead — e.g., "review my code", "create an implementation plan".
+> Note: CLI has its own built-in `/plan` (Plan Mode) and `/review` (code review agent), which are
+> different from these workflow prompts.
 
 ### Workflow Orchestrator
 
@@ -78,15 +83,23 @@ Each work item produces a **Change Package** under `changes/<YYYY-MM-DD>-<slug>/
 
 See `WORKFLOW.md` for detailed workflow documentation.
 
-## 📚 Documentation Overview
+## 📚 Documentation & Reading Path
 
-| Document | Description | Language |
-|----------|-------------|----------|
-| [INSTALL.md](./INSTALL.md) | Comprehensive installation instructions with environment checks, troubleshooting, and update guidance | English |
-| [INSTALL.zh-TW.md](./INSTALL.zh-TW.md) | 同步的繁體中文安裝指南（含執行策略、遠端模式、常見問題） | 繁體中文 |
-| [ONBOARDING.md](./ONBOARDING.md) | 新人環境準備與 PowerShell 執行策略檢查清單，適合第一次接觸的同事 | 繁體中文 |
-| [REMOTE-INSTALL.md](./REMOTE-INSTALL.md) | 快速一鍵遠端安裝流程（含環境前置檢查與 Bypass 建議） | English |
-| [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) | 進階 bootstrap 參數、模式與運作流程說明 | English |
-| [QUICKSTART.md](./QUICKSTART.md) | 5 分鐘快速入門與工作流演練 | English |
+### 🆕 First time? Read in this order:
 
-將這些文檔分享給新同事即可讓他們快速完成環境建置與 bootstrap 安裝。
+| Step | Document | Purpose |
+|------|----------|---------|
+| 1 | [ONBOARDING.md](./ONBOARDING.md) | Environment checklist — Copilot subscription, CLI install, execution policy |
+| 2 | [INSTALL.md](./INSTALL.md) | Detailed installation & troubleshooting guide |
+| 3 | [QUICKSTART.md](./QUICKSTART.md) | **5-minute quick start** — 6-stage workflow + CLI flow demo + skills overview |
+| 4 | [WORKFLOW.md](./WORKFLOW.md) | **Full workflow reference** — paths, skills mapping, decision rules, memory tips |
+
+### 📖 Reference (as needed):
+
+| Document | Purpose |
+|----------|---------|
+| [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) | Advanced bootstrap parameters and deployment modes |
+| [REMOTE-INSTALL.md](./REMOTE-INSTALL.md) | One-click remote installation |
+| [SECURITY.md](./SECURITY.md) | Security guidelines for financial systems |
+| [INSTALL.zh-TW.md](./INSTALL.zh-TW.md) | 繁體中文安裝指南 |
+| [README.zh-TW.md](./README.zh-TW.md) | 完整繁體中文說明（含六階段逐步指引）|

@@ -38,19 +38,49 @@
 | 5 | `/code-review` | Code Review + Security Review（並行） |
 | 6 | `/archive` | 驗收歸檔 |
 
+### Skills 自動對應（CLI 開發心流）
+
+在 Copilot CLI 輸入自然語言，系統**自動載入**對應 skill：
+
+| 階段 | 自動載入 Skills | CLI 觸發語句（範例） | 產出物 |
+|------|----------------|---------------------|--------|
+| 0. 流程狀態 | `workflow-orchestrator` | `我現在在哪個階段？` | 現況偵測 + 下一步建議 |
+| 1. Brainstorm | `brainstorming` | `我要 brainstorm 新功能` | `01-brainstorm.md` |
+| 2. Spec | `specification`, `prd` | `幫我寫規格文件` | `03-spec.md` |
+| 3. Plan | `implementation-planning` | `規劃實作計畫` | `04-plan.md` |
+| 4. Implement | `tdd-workflow` + 語言 patterns | `開始 TDD 實作` | 測試 + 程式碼 |
+| 5. Review | `code-security-review`, `security-review` | `review 我的 code` | Review report |
+| 6. Archive | `work-archiving`, `git-commit` | `archive 這個 change` | `99-archive.md` |
+
+**輔助 Skills（任何階段，依需求引用）：**
+
+| 情境 | Skill | CLI 引用方式 |
+|------|-------|-------------|
+| 架構 / 流程圖 | `excalidraw-diagram-generator` | `幫我畫架構圖` |
+| UI 設計審核 | `web-design-reviewer` | `/web-design-reviewer` |
+| 前端 patterns | `frontend-patterns` | `React 最佳實踐` |
+| 後端 patterns | `backend-patterns` | `API 設計原則` |
+| Python patterns | `python-patterns` | `Python 最佳實踐` |
+| 重構 | `refactor` | `幫我重構這段 code` |
+| 前端功能測試 | `webapp-testing`, `scoutqa-test` | `測試這個網頁` |
+| 瀏覽器除錯 | `chrome-devtools` | `幫我 debug 瀏覽器問題` |
+| GitHub 操作 | `gh-cli`, `github-issues` | `幫我建立 issue` |
+| Microsoft 文件 | `microsoft-docs`, `microsoft-code-reference` | `查 Azure SDK 文件` |
+
 **⚠️ 環境差異說明**:
 
 本工作流程在 **Copilot CLI** 和 **VS Code** 中略有不同：
 
 **Copilot CLI**:
-- 使用**自然語言**觸發 skills（例：「產生 spec」）
-- 使用 `/agent` 選擇角色
-- Skills 自動依關鍵字載入
-- **不支援斜線指令**（如 `/spec`）
+- 使用**自然語言**觸發 skills（例：「產生 spec」、「幫我寫規格文件」）
+- 可用 `/skill-name` 直接引用 skill（例：`/web-design-reviewer`）
+- 使用 `/agent` 選擇角色；`/skills list` 查看已安裝 skills
+- ⚠️ **不支援 Prompt 型斜線指令**（如 `/spec`、`/create-plan`——這些是 VS Code prompt 快捷鍵，非 skill 引用語法）
+- CLI 內建斜線指令（與工作流程 prompts 無關）：`/plan`（啟動計畫模式）、`/review`（內建 Code Review Agent）
 
 **VS Code Copilot Chat**:
-- 可使用**斜線指令**快速觸發（例：`/spec`）
-- 也支援自然語言（同 CLI）
+- 可使用**斜線指令**快速觸發工作流程 prompts（例：`/spec`、`/create-plan`）
+- 也支援自然語言與 `/skill-name` 引用（同 CLI）
 - Agent 選擇：`@workspace #agent-name`
 
 **詳細使用指南請參考** [README.zh-TW.md - CLI vs VS Code 使用差異](./README.zh-TW.md)

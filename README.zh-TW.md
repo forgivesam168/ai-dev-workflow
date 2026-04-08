@@ -45,9 +45,26 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 - 本範本以「通用性」與「保守配置」為原則；新增或移除 skills 應由各團隊依技術棧裁剪。
 - 使用說明與註解建議採繁體中文撰寫以符合團隊內部溝通習慣，程式碼與範例仍以英文為主。
 
-聯絡與貢獻
+## 📚 文件導覽與閱讀路徑
 
-如需協助或想要新增技能，請在本專案建立 issue 或提交 PR，並在 PR 描述中包含測試說明與風險評估。
+### 🆕 第一次使用？按以下順序閱讀：
+
+| 步驟 | 文件 | 說明 |
+|------|------|------|
+| 1 | [ONBOARDING.md](./ONBOARDING.md) | 環境準備 checklist（Copilot 訂閱確認、CLI 安裝、PowerShell 執行策略）|
+| 2 | [INSTALL.zh-TW.md](./INSTALL.zh-TW.md) | 詳細安裝指南（含遠端模式、常見問題排查）|
+| 3 | [QUICKSTART.md](./QUICKSTART.md) | **5 分鐘上手**：六階段流程 + CLI 心流示範 + Skills 對照 |
+| 4 | [WORKFLOW.md](./WORKFLOW.md) | **完整工作流參考**：兩條路徑、Skills 完整對照表、判斷準則、CLI 技巧 |
+
+### 📖 進階參考（依需求查閱）：
+
+| 文件 | 說明 |
+|------|------|
+| [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) | Bootstrap 進階參數與部署模式詳解 |
+| [REMOTE-INSTALL.md](./REMOTE-INSTALL.md) | 一鍵遠端安裝流程 |
+| [SECURITY.md](./SECURITY.md) | 金融系統安全規範與 hooks 說明 |
+
+---
 
 
 ## 建議流程（Brainstorm → Spec → Plan → Implement）
@@ -56,7 +73,7 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 
 1. `/brainstorm`：先釐清需求、限制與替代方案，產出決策紀錄（Decision Log）與 specs 起始檔案
 2. `specs/<YYYY-MM-DD>-<slug>/`：沉澱 `proposal.md / tasks.md / decision-log.md`
-3. `/plan`：由 `plan-agent` 讀取 specs 後，輸出可執行計畫（每步含驗收方式）
+3. `/create-plan`：由 `plan-agent` 讀取 specs 後，輸出可執行計畫（每步含驗收方式）
 4. Implement（TDD）→ PR review
 
 完整流程與判斷準則請見：`WORKFLOW.md`。
@@ -83,17 +100,19 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 ### Copilot CLI 使用方式
 - **Skills 自動載入**: 輸入包含關鍵字的自然語言，系統會自動載入對應 skill
   - 範例：「我要產生 spec」→ 載入 specification skill
+- **Skills 直接引用**: 使用 `/skill-name` 語法在提示中指定 skill
+  - 範例：`Use the /web-design-reviewer skill to check the landing page`
 - **Agent 選擇**: 使用 `/agent` 命令手動選擇 agent
-  - 範例：輸入 `/agent` → 選擇 `spec-agent`
 - **檢視 skills**: 使用 `/skills list` 查看已安裝的 skills
-- **注意**: CLI 不支援斜線指令（如 `/spec`），需使用自然語言觸發
+- ⚠️ **CLI 不支援工作流程 Prompt 的斜線指令**（如 `/spec`、`/create-plan`）——這些是 VS Code prompt 捷徑
+- CLI 有獨立的內建斜線指令：`/plan`（啟動計畫模式, Shift+Tab 亦可切換）、`/review`（內建 Code Review Agent）
 
 ### VS Code Copilot Chat 使用方式
 - **兩種方式**:
-  1. **自然語言**（同 CLI）：輸入關鍵字觸發 skill
-  2. **斜線指令**（快捷方式）：使用 `/spec`, `/tdd`, `/code-review` 等快速指令
+  1. **自然語言**（同 CLI）：輸入關鍵字觸發 skill，或 `/skill-name` 直接引用
+  2. **斜線指令**（快捷方式）：使用工作流程 Prompt 捷徑 `/spec`, `/tdd`, `/code-review`, `/create-plan` 等
 - **Agent 選擇**: 在 Chat 輸入框使用 `@workspace` 並選擇 `#agent-name`
-- **提示**: 斜線指令僅在 VS Code 有效，CLI 中需使用自然語言
+- **提示**: 工作流程 Prompt 斜線指令僅在 VS Code 有效，CLI 需用自然語言或 `/skill-name`
 
 ### 通用規則
 - **Agents** 定義「誰來做」（角色與專長）
