@@ -7,7 +7,7 @@ This repository provides a reusable, finance-grade AI development workflow for G
 - Team constitution and instruction mapping for consistent AI behavior
 - Agent personas: Architect, Plan, Coder, Reviewer, Spec
 - Prompt library (9 commands) for repeatable workflows
-- Skills library (24 specialized capabilities)
+- Skills library (28 specialized capabilities)
 - Initialization script for quick rollout
 
 ## Getting Started
@@ -32,7 +32,7 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 - `agents/` - Persona definitions (5 agents)
 - `instructions/` - Language and domain rules
 - `prompts/` - Slash commands (9 prompts)
-- `skills/` - Skills library (24 skills)
+- `skills/` - Skills library (28 skills)
 - `Init-Project.ps1` - Deployment script
 - `tools/` - Sync scripts
 

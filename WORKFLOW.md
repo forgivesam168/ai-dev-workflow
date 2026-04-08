@@ -140,3 +140,151 @@
 
 ## 8) 快速開始（模板）
 請參考 `changes/README.md` 與 `changes/_template/`。
+
+---
+
+## 9) Copilot Memory 共存策略
+
+### 什麼是 Copilot Memory
+
+Copilot CLI 的 **Memory** 功能會自動從 session 中學習你的偏好與 pattern，並在未來 session 中自動應用。記憶有效期為 **28 天**，到期後自動失效。
+
+### Memory vs Instructions 的定位
+
+| 面向 | Memory | Instructions |
+|------|--------|-------------|
+| 來源 | AI 自動學習 | 人工維護、版本控制 |
+| 確定性 | 非確定性（AI 判斷是否套用） | 確定性（每次載入都生效） |
+| 生命週期 | 28 天過期 | 永久（直到手動刪除） |
+| 範圍 | 個人帳號層級 | 專案 / 組織層級 |
+
+> **衝突優先序**：當 Memory 與 instructions 內容矛盾時，**instructions 優先**。
+> Instructions（`copilot-instructions.md` + `agents/` + `skills/`）是本專案的 **SSOT（單一真實來源）**。
+
+### 管理者操作
+
+```bash
+# 檢視所有 Memory
+gh copilot memory list
+
+# 刪除特定 Memory
+gh copilot memory delete <id>
+
+# 清空全部 Memory
+gh copilot memory clear
+```
+
+也可在 [GitHub Copilot 設定頁面](https://github.com/settings/copilot) 中管理 Memory。
+
+### 建議策略
+
+1. **啟用 Memory**：讓 Copilot 自動學習個人習慣（如偏好的變數命名、慣用框架）
+2. **以 Instructions 為 SSOT**：團隊標準、架構規範、安全規則一律寫在 `copilot-instructions.md`、`agents/`、`skills/`
+3. **定期檢視**：每月檢查 Memory 清單，刪除過時或與團隊規範衝突的項目
+
+---
+
+## 10) Copilot CLI 互動模式
+
+### Plan Mode（計畫模式）
+
+- **觸發**：在 CLI 中按 `Shift+Tab` 切換進入
+- **用途**：AI 只規劃、不直接執行操作，適合複雜任務的設計階段
+- **離開**：再按 `Shift+Tab` 或輸入 `/exit-plan`
+
+> 💡 建議在 `/brainstorm` 和 `/create-plan` 階段使用 Plan Mode，確保 AI 先規劃再行動。
+
+### Autopilot Mode（自動駕駛模式，experimental）
+
+- **觸發**：啟動時加上 `--autopilot` 或 `-y` 旗標
+- **行為**：AI 自動批准所有操作，不請求使用者確認
+- **⚠️ 風險**：不建議在 production 環境使用
+- **適用**：完全信任的自動化 CI/CD 場景
+
+```bash
+# 自動駕駛模式（謹慎使用）
+gh copilot chat --autopilot
+```
+
+### Session 管理
+
+| 操作 | 指令 | 說明 |
+|------|------|------|
+| 繼續上次 session | `gh copilot chat --continue` 或 `/resume` | 恢復上次未完成的對話 |
+| 壓縮 context | `/compact` | 節省 token，適合長 session |
+| 清除 session | `/clear` | 清空對話歷史，重新開始 |
+
+### Context 管理
+
+| 操作 | 指令 | 說明 |
+|------|------|------|
+| 查看當前 context | `/context` | 顯示已載入的檔案與工具 |
+| 手動加入檔案 | `/add <file>` | 將特定檔案加入 context |
+| 自動壓縮 | （自動） | 當 context 接近上限時自動觸發 |
+
+> 💡 長時間工作時，善用 `/compact` 壓縮 context，避免 token 超限導致回應品質下降。
+
+---
+
+## 11) MCP 配置說明
+
+### GitHub MCP Server（內建）
+
+Copilot CLI **預設內建** GitHub MCP Server，無需額外配置即可直接使用 GitHub API 功能：
+
+- Issues / Pull Requests 管理
+- Repository 搜尋與瀏覽
+- Code Search
+- Actions / Workflows 操作
+
+確認已登入即可使用：
+
+```bash
+gh auth status
+```
+
+### 自訂 MCP Server 配置
+
+除內建的 GitHub MCP Server 外，可透過配置檔新增自訂 MCP Server。
+
+**配置檔位置**（依優先序）：
+
+| 位置 | 範圍 | 說明 |
+|------|------|------|
+| `.github/copilot-mcp.json` | 專案層級 | 隨 repo 版控，團隊共用 |
+| `~/.config/gh/copilot-mcp.json` | 使用者層級 | 個人全域設定 |
+
+### 配置格式範例
+
+```json
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "env": {}
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  }
+}
+```
+
+### 常見 MCP Server 範例
+
+| Server | 用途 | 安裝方式 |
+|--------|------|----------|
+| `context7` | 函式庫文件即時查詢 | `npx -y @upstash/context7-mcp@latest` |
+| `sequential-thinking` | 結構化思考輔助 | `npx -y @modelcontextprotocol/server-sequential-thinking` |
+| `brave-search` | 網路搜尋 | 需要 `BRAVE_API_KEY` 環境變數 |
+
+### 驗證 MCP Server
+
+```bash
+# 在 Copilot CLI 中檢視已載入的 MCP Server
+/mcp
+```
+
+> 💡 新增或修改 MCP 配置後，需重新啟動 Copilot CLI 才會生效。

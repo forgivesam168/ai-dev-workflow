@@ -43,3 +43,12 @@ finally {
 }
 
 Write-Host "Done. (.github/** updated)" -ForegroundColor Cyan
+
+# Skills count verification
+$sourceCount = (Get-ChildItem (Join-Path $RepoRoot "skills") -Recurse -Filter "SKILL.md").Count
+$mirrorCount = (Get-ChildItem (Join-Path $RepoRoot ".github/skills") -Recurse -Filter "SKILL.md").Count
+if ($sourceCount -eq $mirrorCount) {
+    Write-Host "✅ Skills in sync: $sourceCount skills" -ForegroundColor Green
+} else {
+    Write-Warning "⚠️ Skills count mismatch: source=$sourceCount, mirror=$mirrorCount"
+}

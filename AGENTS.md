@@ -6,8 +6,25 @@ It contains:
 - Agent personas (`agents/*.agent.md`) — 5 agents
 - Instruction files (`instructions/*.instructions.md`)
 - Prompt library (`prompts/*.prompt.md`) — 10 prompts
-- Skills library (`skills/**/SKILL.md`) — 24 skills
+- Skills library (`skills/**/SKILL.md`) — 28 skills
 - Bootstrap script (`Init-Project.ps1`) to deploy these assets into another project.
+
+## Pointer-Style Guidance Architecture
+
+Context is loaded progressively — heavier files load only when needed:
+
+| Layer | Path | Size Target | Loaded When |
+|-------|------|-------------|-------------|
+| ① Constitution | `copilot-instructions.md` | ≤40 lines (~390 tokens) | Every interaction |
+| ② Repo rules | `AGENTS.md` | — | Every interaction |
+| ③ Agent persona | `agents/*.agent.md` | ≤25 non-empty lines each | Agent selected |
+| ④ Language/domain | `instructions/*.instructions.md` | Varies | File-type matches `applyTo` glob |
+| ⑤ Skills | `skills/*/SKILL.md` | Progressive (L1→L2→L3) | Only when relevant to prompt |
+
+**Skill progressive loading:**
+- **L1 Discovery** — `name` + `description` only (always scanned)
+- **L2 Instructions** — full SKILL.md body (when prompt matches)
+- **L3 Resources** — `scripts/`, `references/`, `templates/` (when explicitly referenced)
 
 ## Agents
 
@@ -34,29 +51,72 @@ It contains:
 | `/readme` | Tool | Create README |
 | `/learn` | Tool | Learn and improve AI behavior |
 
-## Skills
+## Skills (28)
 
 Skills provide methodology and toolkits that are automatically loaded into the current agent's context.
 
-### Core Workflow Skills
+### Core Workflow Skills (7)
 
 | Skill | Description | Triggers On | Recommended Agent |
 |-------|-------------|-------------|-------------------|
-| workflow-orchestrator | Flow coordinator: detects current stage and recommends next steps | workflow, what's next | - |
+| workflow-orchestrator | Flow coordinator: detects current stage and recommends next steps | workflow, what's next | — |
 | brainstorming | Structured requirements exploration and risk classification | brainstorm, explore options | architect / spec |
 | specification | Generate PRD/Spec documents | spec, PRD, requirements | spec-agent |
-| implementation-planning | Break down implementation plan with TDD integration | plan, task breakdown | plan-agent |
+| implementation-planning | Break down implementation plan with TDD integration (includes plan-from-spec) | plan, task breakdown, spec to plan | plan-agent |
 | tdd-workflow | TDD methodology (Red-Green-Refactor) | TDD, test-driven | coder-agent |
-| code-security-review | Code quality and security audit | review, audit | code-reviewer-agent |
-| work-archiving | Finalize and archive completed work | archive, finalize | - |
+| code-security-review | Code quality and security audit for financial systems | review, audit | code-reviewer-agent |
+| work-archiving | Finalize and archive completed work | archive, finalize | — |
 
-### Tool Skills
+### Tool Skills (3)
 
 | Skill | Description | Triggers On |
 |-------|-------------|-------------|
-| git-commit | Generate Conventional Commits messages | commit |
-| readme-generator | Analyze project and generate README | readme, documentation |
-| ai-learning | Learn project patterns and update instructions | learn |
+| git-commit | Conventional Commits message generation with intelligent staging | commit |
+| prd | Generate Product Requirements Documents | PRD, product requirements |
+| make-skill-template | Scaffold new Agent Skills for GitHub Copilot | create a skill, scaffold skill |
+
+### Development Pattern Skills (5)
+
+| Skill | Description | Triggers On |
+|-------|-------------|-------------|
+| coding-standards | Universal standards for TypeScript, JavaScript, React, Node.js | coding standards, best practices |
+| backend-patterns | Backend architecture, API design, DB optimization (Node/Express/Next) | backend, API design |
+| frontend-patterns | React, Next.js, state management, performance, UI patterns | frontend, React patterns |
+| python-patterns | PEP 8, type hints, pytest, TDD for Python | Python, pytest |
+| refactor | Surgical code refactoring without behavior changes | refactor, code smells |
+
+### Microsoft & GitHub Skills (5)
+
+| Skill | Description | Triggers On |
+|-------|-------------|-------------|
+| microsoft-docs | Query official Microsoft documentation | Azure, .NET, Microsoft |
+| microsoft-code-reference | Look up Microsoft API references and verify SDK code | Azure SDK, .NET API |
+| copilot-sdk | Build agentic apps with GitHub Copilot SDK | Copilot SDK, custom agent |
+| gh-cli | GitHub CLI comprehensive reference | gh CLI, GitHub operations |
+| github-issues | Create, update, and manage GitHub issues via MCP | create issue, file bug |
+
+### Testing & QA Skills (3)
+
+| Skill | Description | Triggers On |
+|-------|-------------|-------------|
+| webapp-testing | Test local web apps using Playwright | test webapp, Playwright |
+| scoutqa-test | Exploratory QA testing (smoke, accessibility, e-commerce flows) | test website, accessibility |
+| agentic-eval | Evaluate and improve AI agent outputs (self-critique, rubrics) | evaluate agent, quality loop |
+
+### Security & Review Skills (1)
+
+| Skill | Description | Triggers On |
+|-------|-------------|-------------|
+| security-review | Security checklist for auth, input handling, secrets, payments | security review, auth check |
+
+### Content & Visualization Skills (4)
+
+| Skill | Description | Triggers On |
+|-------|-------------|-------------|
+| excalidraw-diagram-generator | Generate Excalidraw diagrams from natural language | create diagram, flowchart |
+| markdown-to-html | Convert Markdown to HTML (GFM, CommonMark) | convert markdown, render md |
+| web-design-reviewer | Visual inspection of websites to find and fix design issues | review design, check UI |
+| chrome-devtools | Browser automation, debugging, performance via Chrome DevTools MCP | DevTools, browser debug |
 
 ### Skills Usage
 

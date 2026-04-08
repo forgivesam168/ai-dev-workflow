@@ -1,6 +1,6 @@
 ---
 name: implementation-planning
-description: 'Break down specifications into executable implementation plans with TDD integration. Use when asked to "create plan", "break down tasks", "implementation roadmap", "規劃實作", "拆解任務", "執行計畫", or need step-by-step implementation guidance with test strategies and impact analysis.'
+description: 'Break down specifications into executable implementation plans with TDD integration. Use when asked to "create plan", "break down tasks", "implementation roadmap", "規劃實作", "拆解任務", "執行計畫", or need step-by-step implementation guidance with test strategies and impact analysis. Use when asked to "plan from spec", "spec to plan", "generate plan from requirements".'
 license: See LICENSE.txt in repository root
 ---
 
@@ -306,6 +306,17 @@ Or use workflow orchestrator:
 Input: "what's next?"
 [System detects plan complete, recommends TDD stage]
 ```
+
+## When You Have a Spec Ready (Simplified Mode)
+
+If `03-spec.md` is already complete, you can skip straight to task breakdown:
+
+1. **Load the spec**: Review `changes/<slug>/03-spec.md` acceptance criteria
+2. **Map AC → Tasks**: Each acceptance criterion becomes one or more tasks
+3. **Generate plan**: Use the Phase template above, but reference spec sections
+4. **Output**: `changes/<slug>/04-plan.md` linked to spec
+
+> This is the "plan from spec" fast path — spec is already your source of truth.
 
 ## Troubleshooting
 

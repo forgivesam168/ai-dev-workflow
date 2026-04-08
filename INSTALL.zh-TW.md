@@ -184,7 +184,7 @@ cat BOOTSTRAP-GUIDE.md # Bootstrap 使用指南
 ```bash
 # 驗證 .github 目錄
 ls .github/agents/      # 應有 5 個 agent 檔案
-ls .github/skills/      # 應有 24 個 skill 目錄
+ls .github/skills/      # 應有 28 個 skill 目錄
 ls .github/instructions/ # 應有 instruction 檔案
 ls .github/prompts/     # 應有 10 個 prompt 檔案
 
@@ -214,7 +214,7 @@ git add .github/ .gitattributes
 git commit -m "chore: initialize AI development workflow
 
 - 新增 agents (architect, coder, code-reviewer, plan, spec)
-- 新增 24 個 skills 提供專業能力
+- 新增 28 個 skills 提供專業能力
 - 新增 instructions 定義編碼標準
 - 新增 MCP 配置 (context7, memory)
 - 新增 .gitattributes 標準化行尾"
@@ -309,6 +309,60 @@ $env:BRAVE_API_KEY = "your-api-key-here"
 # macOS/Linux
 export BRAVE_API_KEY="your-api-key-here"
 ```
+
+---
+
+## 🤖 自訂模型提供者（Custom Model Providers）
+
+Copilot CLI 支援連接自訂 AI 模型提供者，適用於合規需求或離線開發場景。
+
+### 最低需求
+
+你的模型必須支援：
+- **Context window**：128k+ tokens
+- **Tool calling**：Agent 功能所需
+- **Streaming**：即時輸出所需
+
+### Azure OpenAI
+
+```bash
+# 設定環境變數
+export COPILOT_PROVIDER_TYPE=azure-openai
+export COPILOT_PROVIDER_BASE_URL=https://your-resource.openai.azure.com
+export AZURE_OPENAI_API_KEY=your-api-key
+export AZURE_OPENAI_DEPLOYMENT=gpt-4o
+
+# 使用 Azure OpenAI 啟動 Copilot CLI
+gh copilot chat
+```
+
+### Ollama（本機模型）
+
+適用於完全離線開發：
+
+```bash
+# 下載相容模型
+ollama pull qwen2.5-coder:32b
+
+# 設定 Copilot CLI
+export COPILOT_PROVIDER_TYPE=ollama
+export COPILOT_PROVIDER_BASE_URL=http://localhost:11434
+export COPILOT_PROVIDER_MODEL=qwen2.5-coder:32b
+
+gh copilot chat
+```
+
+> **注意**：本機模型的能力可能不及雲端模型。請確保所選模型支援 tool calling。
+
+### 環境變數參考
+
+| 變數 | 必要 | 說明 |
+|------|------|------|
+| `COPILOT_PROVIDER_TYPE` | 是 | 提供者類型：`azure-openai`、`ollama`、`openai-compatible` |
+| `COPILOT_PROVIDER_BASE_URL` | 是 | API 端點的 Base URL |
+| `COPILOT_PROVIDER_MODEL` | 否 | 模型名稱（依提供者而異） |
+| `AZURE_OPENAI_API_KEY` | 僅 Azure | Azure OpenAI 的 API 金鑰 |
+| `AZURE_OPENAI_DEPLOYMENT` | 僅 Azure | Azure OpenAI 的部署名稱 |
 
 ---
 

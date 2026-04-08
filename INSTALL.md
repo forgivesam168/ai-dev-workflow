@@ -184,7 +184,7 @@ cat BOOTSTRAP-GUIDE.md # Bootstrap usage guide
 ```bash
 # Verify .github directory
 ls .github/agents/      # Should have 5 agent files
-ls .github/skills/      # Should have 24 skill directories
+ls .github/skills/      # Should have 28 skill directories
 ls .github/instructions/ # Should have instruction files
 ls .github/prompts/     # Should have 10 prompt files
 
@@ -214,7 +214,7 @@ git add .github/ .gitattributes
 git commit -m "chore: initialize AI development workflow
 
 - Add agents (architect, coder, code-reviewer, plan, spec)
-- Add 24 skills for specialized capabilities
+- Add 28 skills for specialized capabilities
 - Add instructions for coding standards
 - Add MCP configuration (context7, memory)
 - Add .gitattributes for line ending normalization"
@@ -309,6 +309,60 @@ $env:BRAVE_API_KEY = "your-api-key-here"
 # macOS/Linux
 export BRAVE_API_KEY="your-api-key-here"
 ```
+
+---
+
+## 🤖 Custom Model Providers
+
+Copilot CLI supports connecting to custom AI model providers for compliance or offline scenarios.
+
+### Minimum Requirements
+
+Your model must support:
+- **Context window**: 128k+ tokens
+- **Tool calling**: Required for agent functionality
+- **Streaming**: Required for real-time output
+
+### Azure OpenAI
+
+```bash
+# Set environment variables
+export COPILOT_PROVIDER_TYPE=azure-openai
+export COPILOT_PROVIDER_BASE_URL=https://your-resource.openai.azure.com
+export AZURE_OPENAI_API_KEY=your-api-key
+export AZURE_OPENAI_DEPLOYMENT=gpt-4o
+
+# Start Copilot CLI with Azure OpenAI
+gh copilot chat
+```
+
+### Ollama (Local Models)
+
+For fully offline development:
+
+```bash
+# Start Ollama with a compatible model
+ollama pull qwen2.5-coder:32b
+
+# Configure Copilot CLI
+export COPILOT_PROVIDER_TYPE=ollama
+export COPILOT_PROVIDER_BASE_URL=http://localhost:11434
+export COPILOT_PROVIDER_MODEL=qwen2.5-coder:32b
+
+gh copilot chat
+```
+
+> **Note**: Local models may have reduced capability compared to cloud models. Ensure your chosen model supports tool calling.
+
+### Environment Variables Reference
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `COPILOT_PROVIDER_TYPE` | Yes | Provider type: `azure-openai`, `ollama`, `openai-compatible` |
+| `COPILOT_PROVIDER_BASE_URL` | Yes | Base URL for the API endpoint |
+| `COPILOT_PROVIDER_MODEL` | No | Model name (provider-specific) |
+| `AZURE_OPENAI_API_KEY` | Azure only | API key for Azure OpenAI |
+| `AZURE_OPENAI_DEPLOYMENT` | Azure only | Deployment name in Azure OpenAI |
 
 ---
 

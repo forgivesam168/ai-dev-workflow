@@ -1,0 +1,19 @@
+{
+  "hooks": [
+    {
+      "event": "preToolUse",
+      "script": ".github/hooks/pre-tool-use.sh",
+      "failBehavior": "warn"
+    },
+    {
+      "event": "sessionStart",
+      "script": ".github/hooks/session-start.sh",
+      "failBehavior": "warn"
+    },
+    {
+      "event": "postToolUse",
+      "script": ".github/hooks/post-tool-use.sh",
+      "failBehavior": "warn"
+    }
+  ]
+}
