@@ -414,20 +414,57 @@ copilot
 
 更新到最新工作流程版本：
 
-```bash
-# 進入你的專案目錄
-cd ~/Projects/YourProject
+> **注意**：如果你使用情境 A 方案一（下載→執行→**刪除**），本機已沒有 `bootstrap.ps1`。請重新下載，腳本會自動進入遠端模式，從 GitHub 拉取最新模板。
 
-# 以更新模式執行 bootstrap（自動建立備份）
-pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1 --update
+**Windows (PowerShell) — 重新下載並更新：**
+
+```powershell
+# 進入你的專案目錄
+cd C:\Projects\YourProject
+
+# 重新下載 bootstrap 腳本
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
+
+# 以更新模式執行（自動偵測遠端模式、自動建立備份）
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Update
 
 # 檢視變更
 git diff .github/
 
 # 若滿意則提交
 git add .github/
-git commit -m "chore: update AI workflow to latest version"
+git commit -m "chore: 更新 AI 工作流程至最新版本"
 git push
+
+# 清除腳本
+Remove-Item bootstrap.ps1
+```
+
+**macOS/Linux — 重新下載並更新：**
+
+```bash
+# 進入你的專案目錄
+cd ~/Projects/YourProject
+
+# 重新下載並以更新模式執行
+curl -O https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.py
+python3 bootstrap.py --update
+
+# 檢視並提交
+git diff .github/
+git add .github/
+git commit -m "chore: 更新 AI 工作流程至最新版本"
+git push
+
+# 清除腳本
+rm bootstrap.py
+```
+
+**若你本機有 clone 模板 repo：**
+
+```powershell
+# 直接從本機 clone 執行更新
+pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1 -Update
 ```
 
 **更新模式功能：**
@@ -435,6 +472,7 @@ git push
 - 更新前檢查未提交的變更
 - 若偵測到變更會提示確認
 - 強制覆蓋衝突的檔案
+- 腳本在專案根目錄執行時自動進入遠端模式（不需本機 clone）
 
 ---
 

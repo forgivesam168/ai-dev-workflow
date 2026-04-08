@@ -414,12 +414,19 @@ The system will guide you through the 6-stage workflow.
 
 To update to the latest workflow version:
 
-```bash
-# Navigate to your project
-cd ~/Projects/YourProject
+> **Note**: If you used Scenario A Option 1 (download → run → delete), you no longer have `bootstrap.ps1` locally. Re-download it to your project root and the script will automatically enter Remote Mode, pulling the latest template from GitHub.
 
-# Run bootstrap in update mode (creates automatic backup)
-pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1 --update
+**Windows (PowerShell) — Re-download and update:**
+
+```powershell
+# Navigate to your project
+cd C:\Projects\YourProject
+
+# Re-download bootstrap script
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
+
+# Run in update mode (auto-detects remote mode, creates backup)
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Update
 
 # Review changes
 git diff .github/
@@ -428,6 +435,36 @@ git diff .github/
 git add .github/
 git commit -m "chore: update AI workflow to latest version"
 git push
+
+# Clean up
+Remove-Item bootstrap.ps1
+```
+
+**macOS/Linux — Re-download and update:**
+
+```bash
+# Navigate to your project
+cd ~/Projects/YourProject
+
+# Re-download and run in update mode
+curl -O https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.py
+python3 bootstrap.py --update
+
+# Review and commit
+git diff .github/
+git add .github/
+git commit -m "chore: update AI workflow to latest version"
+git push
+
+# Clean up
+rm bootstrap.py
+```
+
+**If you have the template repo cloned locally:**
+
+```powershell
+# Run update directly from your local clone
+pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1 -Update
 ```
 
 **Update mode features:**
@@ -435,6 +472,7 @@ git push
 - Checks for uncommitted changes before updating
 - Prompts for confirmation if changes detected
 - Force overwrites conflicting files
+- Script auto-detects Remote Mode when run from project root (no local clone needed)
 
 ---
 
