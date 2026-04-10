@@ -1,11 +1,11 @@
 # AI 開發工作流範本（繁體中文）
 
-本範本供團隊迅速部署一致的 AI 開發工作流程，特別為金融級專案設計，包含團隊憲章、Agent 人物、指令/提示庫、技能（Skills）與初始化部署腳本。
+本範本供團隊迅速部署一致的 AI 開發工作流程，適用於各類軟體系統（金融、人資、法遵、稽核、企劃、小工具等），包含團隊憲章、Agent 人物、指令/提示庫、技能（Skills）與初始化部署腳本。
 
 你會得到：
 
 - `copilot-instructions.md`：團隊憲法與行為準則（繁中說明 + 英文程式碼範例）
-- `agents/`：各角色（Architect、Planner、Coder、Reviewer、PRD Specialist）定義
+- `agents/`：各角色（Brainstorm、Architect、Spec、Planner、Coder、Reviewer）定義
 - `instructions/`：語言與領域規則（例如 Python / C# / SQL / API）
 - `prompts/`：標準化 prompt 與工作流程範例
 - `skills/`：可插拔技能（測試、視覺檢查、markdown 轉換等）
@@ -152,8 +152,8 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 ```
 > 我要開始一個新功能的 brainstorming
 [系統載入 brainstorming skill]
-→ 建議使用 architect-agent 或 spec-agent
-→ /agent → 選擇 architect-agent
+→ 建議使用 brainstorm-agent
+→ /agent → 選擇 brainstorm-agent
 ```
 
 **VS Code 使用**:
@@ -265,7 +265,7 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 | 階段 | CLI 關鍵字 | VS Code 快捷 | 推薦 Agent |
 |------|-----------|-------------|-----------|
 | 0. Orchestrator | "workflow", "下一步" | - | - |
-| 1. Brainstorm | "brainstorm", "探索" | `/brainstorm` | architect / spec |
+| 1. Brainstorm | "brainstorm", "探索" | `/brainstorm` | brainstorm-agent |
 | 2. Spec | "spec", "PRD", "規格" | `/spec` | spec-agent |
 | 3. Plan | "plan", "規劃" | `/create-plan` | plan-agent |
 | 4. TDD | "TDD", "實作" | `/tdd` | coder-agent |

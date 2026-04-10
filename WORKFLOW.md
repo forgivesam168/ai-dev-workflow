@@ -42,15 +42,16 @@
 
 在 Copilot CLI 輸入自然語言，系統**自動載入**對應 skill：
 
-| 階段 | 自動載入 Skills | CLI 觸發語句（範例） | 產出物 |
-|------|----------------|---------------------|--------|
-| 0. 流程狀態 | `workflow-orchestrator` | `我現在在哪個階段？` | 現況偵測 + 下一步建議 |
-| 1. Brainstorm | `brainstorming` | `我要 brainstorm 新功能` | `01-brainstorm.md` |
-| 2. Spec | `specification`, `prd` | `幫我寫規格文件` | `03-spec.md` |
-| 3. Plan | `implementation-planning` | `規劃實作計畫` | `04-plan.md` |
-| 4. Implement | `tdd-workflow` + 語言 patterns | `開始 TDD 實作` | 測試 + 程式碼 |
-| 5. Review | `code-security-review`, `security-review` | `review 我的 code` | Review report |
-| 6. Archive | `work-archiving`, `git-commit` | `archive 這個 change` | `99-archive.md` |
+| 階段 | 自動載入 Skills | 推薦 Agent | CLI 觸發語句（範例） | 產出物 |
+|------|----------------|-----------|---------------------|--------|
+| 0. 流程狀態 | `workflow-orchestrator` | Default | `我現在在哪個階段？` | 現況偵測 + 下一步建議 |
+| 1. Brainstorm | `brainstorming` | `brainstorm-agent` | `我要 brainstorm 新功能` | `01-brainstorm.md` `02-decision-log.md` |
+| 2. Spec | `specification`, `prd` | `spec-agent` | `幫我寫規格文件` | `03-spec.md` |
+| 2. Spec（技術架構）| — | `architect-agent` | `幫我設計系統架構` | ADR, 設計文件 |
+| 3. Plan | `implementation-planning` | `plan-agent` | `規劃實作計畫` | `04-plan.md` |
+| 4. Implement | `tdd-workflow` + 語言 patterns | `coder-agent` | `開始 TDD 實作` | 測試 + 程式碼 |
+| 5. Review | `code-security-review`, `security-review` | `code-reviewer` | `review 我的 code` | Review report |
+| 6. Archive | `work-archiving`, `git-commit` | Default | `archive 這個 change` | `99-archive.md` |
 
 **輔助 Skills（任何階段，依需求引用）：**
 

@@ -6,6 +6,10 @@ license: MIT
 
 # Brainstorming
 
+> 💡 **Recommended Agent**: `brainstorm-agent` (Requirements Explorer)
+> - **CLI**: Input `/agent` and select `brainstorm-agent`
+> - **VS Code**: Use `@workspace #brainstorm-agent` in Chat
+
 ## When to Use
 Use this skill at the **start of any request/change** when:
 - Requirements are ambiguous or incomplete

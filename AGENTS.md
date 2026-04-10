@@ -1,9 +1,9 @@
 # AGENTS.md — Team AI Workflow Rules (Template Repo)
 
-This repo is a **finance‑grade AI development workflow template**.
+This repo is a **production‑grade AI development workflow template**.
 It contains:
 - Constitution / global behavior rules for AI assistants (`copilot-instructions.md`)
-- Agent personas (`agents/*.agent.md`) — 5 agents
+- Agent personas (`agents/*.agent.md`) — 6 agents
 - Instruction files (`instructions/*.instructions.md`)
 - Prompt library (`prompts/*.prompt.md`) — 10 prompts
 - Skills library (`skills/**/SKILL.md`) — 28 skills
@@ -28,13 +28,24 @@ Context is loaded progressively — heavier files load only when needed:
 
 ## Agents
 
-| Agent | Description |
-|-------|-------------|
-| `architect.agent.md` | System Architect for design and ADRs |
-| `plan.agent.md` | Strategic planning and task breakdown |
-| `coder.agent.md` | TDD implementation specialist |
-| `code-reviewer.agent.md` | Code quality and security review |
-| `spec.agent.md` | Specification and PRD creation |
+| Agent | Paired Skill | Description |
+|-------|-------------|-------------|
+| `brainstorm.agent.md` | `brainstorming` | Requirements explorer, risk classifier |
+| `architect.agent.md` | `brainstorming` | Cross-stage System Architect for design and ADRs |
+| `spec.agent.md` | `specification` | Specification and PRD creation |
+| `plan.agent.md` | `implementation-planning` | Strategic planning and task breakdown |
+| `coder.agent.md` | `tdd-workflow` | TDD implementation specialist |
+| `code-reviewer.agent.md` | `code-security-review` | Code quality and security review |
+
+### Agent ↔ Skill Integration Pattern
+
+Each agent includes a `## Skill Integration` section that uses a three-layer binding strategy:
+
+1. **Keyword Magnetism** (YAML `description`): Agent descriptions include the same trigger keywords as their paired skill, increasing auto-load probability during L1 Discovery.
+2. **Explicit Directive** (body text): Agent body instructs the model to follow the paired skill's methodology when loaded.
+3. **User Fallback** (slash command tip): Each agent suggests `/skill-name` as a manual trigger if auto-load doesn't activate.
+
+> **Note**: Skill auto-load is probabilistic (model-driven). If the paired skill doesn't load automatically, use the `/skill-name` command shown in the agent's Skill Integration section.
 
 ## Prompts (Slash Commands)
 

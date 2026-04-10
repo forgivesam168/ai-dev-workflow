@@ -46,7 +46,7 @@ copilot
 | 階段 | CLI 輸入（自然語言） | VS Code 輸入（斜線指令） | 推薦 Agent |
 |------|---------------------|--------------------------|-----------|
 | 0. 流程狀態 | what's next / 我想知道目前在哪個階段 | - | - |
-| 1. Brainstorm | 我想開始 brainstorming / 我要開始一個新功能的 brainstorming | `/brainstorm` | architect / spec |
+| 1. Brainstorm | 我想開始 brainstorming / 我要開始一個新功能的 brainstorming | `/brainstorm` | brainstorm-agent |
 | 2. Spec | 產生 spec / 幫我寫規格文件 | `/spec` | spec-agent |
 | 3. Plan | 規劃實作計畫 / 幫我拆解任務 | `/create-plan` | plan-agent |
 | 4. TDD | 開始 TDD 實作 / 寫測試並實作 | `/tdd` | coder-agent |
@@ -59,9 +59,12 @@ copilot
 
 ### Agents（角色）
 定義「誰來做」，例如：
-- **architect-agent**: 系統設計與架構
+- **brainstorm-agent**: 需求探索與風險分類
 - **spec-agent**: 規格文件撰寫
+- **architect-agent**: 系統設計與架構（跨階段技術顧問）
+- **plan-agent**: 實作計畫規劃
 - **coder-agent**: TDD 實作
+- **code-reviewer**: 程式碼品質與安全審核
 
 ### Skills（方法論）
 定義「怎麼做」，每個階段有對應 skill 自動載入：
@@ -72,8 +75,11 @@ copilot
 | Spec | `specification`, `prd` | PRD / 規格文件生成、驗收標準 |
 | Plan | `implementation-planning` | 任務拆解、測試策略、影響分析 |
 | Implement | `tdd-workflow` + 語言 patterns | Red-Green-Refactor + `coding-standards`, `backend-patterns`, `frontend-patterns`, `python-patterns` |
-| Review | `code-security-review`, `security-review` | 程式碼品質 + 金融安全審核 |
+| Review | `code-security-review`, `security-review` | 程式碼品質 + 安全審核 |
 | Archive | `work-archiving`, `git-commit` | 歸檔紀錄 + Conventional Commit |
+
+> 💡 **Skill 沒自動載入？** 可在 CLI 中直接輸入 `/skill-name` 手動觸發，例如 `/brainstorming`、`/implementation-planning`。
+> 每個 Agent 的 Skill Integration 區塊也會提示對應的 skill 指令。
 
 **隨時可引用的輔助 Skills：**
 `excalidraw-diagram-generator` / `web-design-reviewer` / `webapp-testing` / `gh-cli` / `github-issues` / `refactor` / `chrome-devtools` / `microsoft-docs`
@@ -93,7 +99,7 @@ copilot
 ```
 1. CLI 輸入: "我要開發一個新的交易功能"
    → 系統載入 brainstorming skill
-   → 推薦切換到 architect-agent
+   → 推薦切換到 brainstorm-agent
    
 2. 產出 01-brainstorm.md 後，輸入: "產生 spec"
    → 系統載入 specification skill
@@ -223,7 +229,7 @@ pwsh -File .\tools\sync-dotgithub.ps1
    - 驗收與歸檔
 
 3. **[AGENTS.md](./AGENTS.md)** - Agents 與 Skills 對照表
-   - 5 個 Agents 說明
+   - 6 個 Agents 說明
    - 核心與工具 Skills
    - 觸發關鍵字參考
 
