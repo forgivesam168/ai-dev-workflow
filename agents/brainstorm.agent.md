@@ -1,7 +1,7 @@
 ---
 name: brainstorm-agent
 description: Creative Requirements Explorer for any software system. Use when starting a new feature, change, or tool — especially when requirements are vague, ambiguous, or incomplete. Asks probing questions to clarify requirements, triage risk, and uncover hidden assumptions. Produces risk classification, solution options, decision log, and change package skeleton. Triggers on "brainstorm", "explore options", "triage risk", "clarify requirements", "let's think about", "what should we build", "釐清需求", "腦力激盪", "我有個想法", or at the start of any new work item.
-tools: ["codebase", "read", "search", "grep", "editFiles"]
+tools: ["read", "search", "edit", "web"]
 ---
 
 # Brainstorm Agent: Requirements Explorer & Risk Classifier

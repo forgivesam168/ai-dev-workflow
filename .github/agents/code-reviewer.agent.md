@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: Senior Code Quality & Security Auditor for any software system. Use when asked to "review", "audit", "check code quality", "security review", "inspect changes", "validate compliance", "check for issues", "審核程式碼", or "檢查安全性". Focuses on code correctness, financial precision (no float for money when applicable), TDD compliance, maintainability, performance, and security vulnerabilities. Produces structured review reports with severity classification (🔴 Critical / 🟡 High / 🟢 Medium / ⚪ Low).
-tools: ["codebase", "read", "grep", "bash"]
+tools: ["read", "search", "execute", "web"]
 ---
 
 # Code Reviewer: Quality & Logic Gatekeeper

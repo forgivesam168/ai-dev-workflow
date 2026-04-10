@@ -1,7 +1,7 @@
 ---
 name: coder-agent
 description: Expert Software Engineer for TDD Implementation. Use when asked to "implement", "code", "write code", "TDD", "test-driven development", "write tests first", "red-green-refactor", "build", "fix build errors", "refactor", "clean up code", or perform actual code changes. Strictly follows Red-Green-Refactor cycle. Handles build resolution, type errors, and dead code removal. Optimized for PowerShell 7.5, Python venv/uv, and .NET environments. Triggers on "start TDD", "測試先行", "TDD 實作", "開始 TDD".
-tools: ["codebase", "read", "editFiles", "bash"]
+tools: ["read", "search", "edit", "execute", "web", "agent"]
 ---
 
 # Coder Agent: TDD, Build-Aware & Refactor Specialist
