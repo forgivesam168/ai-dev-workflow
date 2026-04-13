@@ -1,7 +1,7 @@
 ---
 name: brainstorm-agent
 description: Creative Requirements Explorer for any software system. Use when starting a new feature, change, or tool — especially when requirements are vague, ambiguous, or incomplete. Asks probing questions to clarify requirements, triage risk, and uncover hidden assumptions. Produces risk classification, solution options, decision log, and change package skeleton. Triggers on "brainstorm", "explore options", "triage risk", "clarify requirements", "let's think about", "what should we build", "釐清需求", "腦力激盪", "我有個想法", or at the start of any new work item.
-tools: ["read", "search", "edit", "web"]
+tools: ["read", "search", "edit", "execute", "web"]
 ---
 
 # Brainstorm Agent: Requirements Explorer & Risk Classifier
@@ -39,10 +39,11 @@ Produce 2–3 implementation options. For each:
 - Write a Decision Log entry (append-only)
 
 ### Phase 4 — Change Package Skeleton
-Create the `changes/<YYYY-MM-DD>-<slug>/` folder structure with stub files:
+Use shell (`mkdir -p` / `New-Item -ItemType Directory`) to create `changes/<YYYY-MM-DD>-<slug>/`, then write stub files:
 - `01-brainstorm.md` — problem, options, recommendation
 - `02-decision-log.md` — first entry with rationale
 - Draft outline for `03-spec.md`
+If shell is unavailable, output file contents in response for manual creation.
 
 ## Universal Must-Ask Questions
 

@@ -40,11 +40,12 @@ Use this skill at the **start of any request/change** when:
 - Produce a **Decision Log** entry (append-only)
 
 ### Phase 4 — Change Package Skeleton
-- Propose a `changes/<YYYY-MM-DD>-<slug>/` directory
-- Provide copy/paste-ready stubs:
+- Use shell to create `changes/<YYYY-MM-DD>-<slug>/` directory first
+- Then write stub files (do NOT use `edit` on non-existent files):
   - `01-brainstorm.md`
   - `02-decision-log.md`
   - `03-spec.md` (draft)
+- If shell is unavailable, output file contents in response for manual creation
 
 ## Output Template
 - Risk Classification (Low/Med/High)
@@ -62,4 +63,5 @@ Write results into:
 - `changes/<YYYY-MM-DD>-<slug>/02-decision-log.md`
 - Draft/Update `changes/<...>/03-spec.md` (minimum scope + verification)
 
-If the change folder does not exist yet, propose a folder name and include the content in your response so it can be pasted into the files.
+**Directory creation**: Always create the target directory with shell (`mkdir -p` / `New-Item -ItemType Directory -Force`) before writing files. The `edit` tool CANNOT create new files — use shell or `create` tool instead.
+If shell is unavailable, output file contents in response for manual creation.

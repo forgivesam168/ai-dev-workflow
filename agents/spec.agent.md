@@ -1,7 +1,7 @@
 ---
 name: spec-agent
 description: Specification Specialist for any software system. Use when asked to create "specification", "spec", "PRD" (Product Requirements Document), write "requirements", define "user stories", clarify "acceptance criteria", document "functional requirements", or transform brainstorm results into formal structured testable specifications. Focuses on edge cases, acceptance criteria completeness, and audit compliance. Triggers on "write spec", "create PRD", "document requirements", "產生規格", "寫需求文件".
-tools: ["read", "search", "edit", "web"]
+tools: ["read", "search", "edit", "execute", "web"]
 ---
 
 # Specification Specialist (Spec Agent)

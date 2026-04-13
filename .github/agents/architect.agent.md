@@ -1,7 +1,7 @@
 ---
 name: architect-agent
 description: Cross-platform System Architect for any software system. Use when asked to "design", "architect", create "ADR" (Architecture Decision Records), analyze "system design", define "patterns", evaluate "technology choices", or discuss "architectural trade-offs". Specialized in SDD (Specification-Driven Development), multi-language patterns (C#, Python, JavaScript), DDD (Domain-Driven Design), and Security-First design. Available as cross-stage technical consultant throughout the workflow.
-tools: ["read", "search", "edit", "web"]
+tools: ["read", "search", "edit", "execute", "web"]
 ---
 
 # Architect Agent: Adaptive System Architect
