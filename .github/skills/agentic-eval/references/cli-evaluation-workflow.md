@@ -1,19 +1,24 @@
-# CLI Evaluation Workflow
+# CLI & VS Code Evaluation Workflow
 
 Step-by-step guide for Tier 2 (external critic via subagent) and Tier 3 (tracked evaluation).
+Covers both **Copilot CLI** and **VS Code Copilot Chat** environments.
 
 ---
 
 ## Tier 2: External Critic via Subagent
 
-Use the `task` tool to delegate evaluation to a separate subagent with a different model perspective.
+Use the `agent` tool to delegate evaluation to a separate subagent with a different model perspective.
 
-### Prerequisites
+---
+
+### CLI Workflow
+
+#### Prerequisites
 - `task` tool available (check with `/skills info agentic-eval`)
-- Optionally: `RUBBER_DUCK_AGENT` experimental flag enabled for rubber-duck agent
+- Optionally: `RUBBER_DUCK_AGENT` experimental flag for the rubber-duck agent
   - Enable: `/experimental on` in CLI, or set `enabledFeatureFlags.RUBBER_DUCK_AGENT: true` in `~/.copilot/config.json`
 
-### Step-by-Step Workflow
+### Step-by-Step Workflow (CLI)
 
 **Step 1 — Generate output**
 ```
@@ -31,7 +36,7 @@ Do NOT pass full file blobs. Pass focused context:
 | Design/Plan | Key decisions + constraints + known trade-offs |
 | Test coverage | Failing test names + assertion messages |
 
-**Step 3 — Invoke critic subagent**
+**Step 3 — Invoke critic subagent (CLI)**
 
 ```
 If RUBBER_DUCK_AGENT is enabled (preferred — uses complementary model):
@@ -96,6 +101,53 @@ Rubric: accuracy, completeness, clarity
 Content excerpt:
 [excerpt]
 ```
+
+---
+
+### VS Code Workflow
+
+#### Prerequisites
+- VS Code Copilot Chat with subagent support (`chat.subagents.enabled: true` in Settings)
+- `agent` tool must be listed in the prompt file or skill's `allowed-tools`
+- Optional: `chat.subagents.allowInvocationsFromSubagents: true` for nested evaluation (default: false)
+
+#### Step-by-Step Workflow (VS Code)
+
+**Step 1 — Generate output**
+Same as CLI — produce the initial artifact.
+
+**Step 2 — Prepare critic payload**
+Same context efficiency rules apply (see table in CLI section).
+
+**Step 3 — Invoke critic subagent (VS Code)**
+
+```
+Use the `agent` tool (runSubagent) with a focused critic prompt.
+The key to adversarial perspective in VS Code is requesting a different model:
+
+Prompt template:
+  "Use [GPT-4o | Claude Haiku | a different model than the current one] to critique
+   this [output type] for [rubric dimensions].
+   Identify weak points, logic errors, and blind spots.
+   Do NOT suggest style fixes. Focus on correctness.
+   [paste focused excerpt — max 800 words]"
+```
+
+> **Why specify a different model?** Model diversity is the VS Code equivalent of rubber-duck's
+> complementary-model mechanism. Different architectures have genuinely different blind spots,
+> producing higher-quality adversarial feedback than the same model critiquing its own output.
+
+**Step 4–5 — Parse, refine, convergence check**
+Same as CLI workflow above.
+
+#### VS Code Model Diversity Reference
+
+| Current model | Recommended critic model |
+|--------------|--------------------------|
+| Claude Sonnet | GPT-4o or GPT-4.1 |
+| GPT-4o | Claude Sonnet or Claude Haiku |
+| Claude Haiku | GPT-4o or Claude Sonnet |
+| Any model | Request "a model with a different architecture" if uncertain |
 
 ---
 

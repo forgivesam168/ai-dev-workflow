@@ -5,17 +5,20 @@ description: >
   iterative critique and refinement. Use this skill when:
   implementing self-critique loops, evaluator-optimizer pipelines,
   rubric-based scoring, LLM-as-judge evaluation, adversarial evaluation,
-  judge-and-refine cycles, or structured output quality improvement.
-  Do NOT use for standard code review (use code-review skill),
+  judge-and-refine cycles, structured output quality improvement,
+  cross-agent evaluation, plan quality review, spec validation before planning,
+  document consistency checking, stage transition quality gate,
+  architect review of plan or spec, verifying a downstream agent can consume
+  an upstream artifact, or inter-stage artifact consistency checks.
+  Do NOT use for standard code review (use code-security-review skill),
   general refactoring (use refactor skill), or security audits.
-allowed-tools: task sql
+allowed-tools: agent sql
 compatibility: >
-  Tier 1 (self-critique/rubric) works in any environment.
-  Tier 2 (external critic via task subagent) requires the task tool.
-  Tier 3 (tracked iterations via sql) uses per-session DB only.
-  Rubber-duck adversarial evaluation requires RUBBER_DUCK_AGENT experimental
-  flag: run /experimental on, or set enabledFeatureFlags.RUBBER_DUCK_AGENT: true
-  in ~/.copilot/config.json.
+  Tier 1 (self-critique/rubric) works in all environments (VS Code, CLI, cloud).
+  Tier 2 (external critic via subagent) requires the agent tool: in CLI use task tool
+  with agent_type; in VS Code use runSubagent / agent tool with explicit model selection
+  for multi-model diversity. Rubber-duck (CLI) requires RUBBER_DUCK_AGENT experimental flag.
+  Tier 3 (tracked iterations via sql) is CLI-only; uses per-session DB.
 ---
 
 # Agentic Evaluation Patterns
@@ -44,15 +47,38 @@ Generate → Evaluate → Critique → Refine → Output
 
 ---
 
+## Integration with 6-Stage AI Development Workflow
+
+This skill integrates at specific **quality inflection points** where context isolation provides value.
+Evaluation strictness is **risk-adaptive** — tied to the brainstorm-agent's Low/Med/High classification.
+
+| Stage Transition | Trigger Agent | Tier | Risk Level |
+|-----------------|---------------|------|------------|
+| Before Spec → handoff | spec-agent (self) | 1 | All |
+| Spec → Plan | plan-agent (cross-eval) | 1 | Med / High |
+| After Plan complete | architect-agent (external) | 2 | Med / High |
+| Before code-reviewer | coder-agent (self) | 1 | All |
+| Review completeness check | architect-agent (meta-review) | 1 | High only |
+
+**Context isolation rules (apply everywhere):**
+- Pass summaries and key excerpts — NEVER full document blobs
+- For specs/plans: AC list + constraints, not full text (≤800 words to any critic)
+- For code: diff + test result summary, not full file content
+- Never include brainstorm conversation history in critic context
+
+See [stage-rubrics.md](./references/stage-rubrics.md) for per-stage rubric dimensions and adversarial prompt templates.
+
+---
+
 ## 3-Tier Evaluation Framework
 
 Choose the tier that matches your environment and quality target:
 
-| Tier | Requires | Best For |
-|------|----------|----------|
-| **1 — Self-Critique** | Nothing (always available) | Quick quality check with rubric |
-| **2 — External Critic** | `task` tool + critic agent | Adversarial second-opinion |
-| **3 — Tracked Evaluation** | `task` + `sql` tools | Multi-iteration with history |
+| Tier | Requires | CLI | VS Code | Best For |
+|------|----------|-----|---------|----------|
+| **1 — Self-Critique** | Nothing | ✅ | ✅ | Quick rubric check |
+| **2 — External Critic** | `agent` tool | ✅ rubber-duck or general-purpose | ✅ `runSubagent` + model selection | Adversarial second opinion |
+| **3 — Tracked Evaluation** | `agent` + `sql` | ✅ | ❌ (no sql tool) | Multi-iteration history |
 
 ---
 
@@ -70,29 +96,33 @@ See [Python implementation patterns](./references/python-patterns.md) for code e
 
 ---
 
-## Tier 2: External Critic via Subagent (Requires `task` tool)
+## Tier 2: External Critic via Subagent (Requires `agent` tool)
 
 Delegate evaluation to a separate subagent using a **different model perspective** for adversarial critique.
 
 **Steps:**
 1. Generate output (code, report, design)
 2. Extract a focused excerpt or summary — do NOT pass entire blobs; pass key sections, diff, or rubric context
-3. Call critic subagent via `task` tool:
-   - If `RUBBER_DUCK_AGENT` flag is enabled: use `agent_type: "rubber-duck"`
-   - Otherwise: use `agent_type: "general-purpose"` with an adversarial system prompt
+3. Call critic subagent:
+   - **CLI — rubber-duck available** (`RUBBER_DUCK_AGENT` flag on): use `task(agent_type: "rubber-duck")`
+   - **CLI — no rubber-duck**: use `task(agent_type: "general-purpose")` with adversarial system prompt
+   - **VS Code**: use `agent` tool (`runSubagent`); explicitly request a different model in the prompt:
+     `"Use [GPT-4o / Claude Haiku] to critique this..."` — model diversity is the key mechanism
 4. Parse critique → identify weak points
 5. Refine output targeting identified weaknesses
 6. Repeat up to 3 iterations
 
-> ⚠️ **rubber-duck availability**: This built-in agent requires the `RUBBER_DUCK_AGENT` experimental
-> flag. If unavailable, `general-purpose` with an adversarial prompt is a valid fallback.
+> ⚠️ **rubber-duck availability (CLI only)**: Requires `RUBBER_DUCK_AGENT` experimental flag.
+> Enable via `/experimental on` or `enabledFeatureFlags.RUBBER_DUCK_AGENT: true` in `~/.copilot/config.json`.
+> In VS Code or without the flag, use `general-purpose` subagent with adversarial prompt — model diversity
+> can be achieved by requesting a specific model different from the main conversation model.
 
-**Context efficiency rules:**
+**Context efficiency rules (apply in all environments):**
 - For code: pass file path + diff excerpt, not full file content
 - For reports: pass the relevant paragraph + evaluation rubric
-- For designs: pass key decisions + constraints, not full spec
+- For designs/plans: pass key decisions + constraints, not full spec
 
-See [CLI evaluation workflow](./references/cli-evaluation-workflow.md) for step-by-step guide.
+See [Evaluation Workflow](./references/cli-evaluation-workflow.md) for step-by-step guide (CLI + VS Code).
 
 ---
 

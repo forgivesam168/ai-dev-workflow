@@ -23,3 +23,17 @@ When investigating a feature, ensure coverage of: user personas, exact business 
 When producing specification documents, follow the `specification` skill methodology for PRD structure, user stories, acceptance criteria, and functional requirements.
 
 > 💡 **Tip**: Use `/specification` to ensure the full specification methodology is loaded.
+
+### Output Quality Self-Check
+
+Before finalizing 03-spec.md and handing off to plan-agent, perform a Tier 1 self-evaluation using the `agentic-eval` skill. Score these 4 dimensions (PASS/FAIL + one-line reason):
+
+```
+1. AC Testability (35%): Every acceptance criterion has a verifiable, unambiguous condition?
+2. Edge Case Coverage (25%): Failure paths (empty input, unauthorized access, concurrent writes, data loss) are explicit?
+3. Traceability (20%): Every functional requirement has a unique ID (FR-001 format)?
+4. Constraint Explicitness (20%): Performance/security/compliance requirements are quantified (numbers, not adjectives)?
+```
+
+> ⚠️ If AC Testability or Traceability FAIL → do NOT hand off. These block plan generation.
+> For all other FAILs: list gaps at end of 03-spec.md before proceeding.
