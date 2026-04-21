@@ -82,9 +82,46 @@ Choose the tier that matches your environment and quality target:
 
 ---
 
+## Iteration Ceilings (NFR-05)
+
+Two distinct ceilings apply depending on context:
+
+### Stage-Transition Gating Loops (max 2 iterations)
+
+Applies when agentic-eval is used as a **stage gate** — i.e., at any of:
+- Spec → Plan handoff (spec-agent self-eval)
+- Plan → Code handoff (plan-agent cross-eval)
+- Code → Review handoff (coder-agent self-eval)
+- Review completeness check (architect-agent meta-review)
+
+**Ceiling**: **max 2 iterations**. After 2 iterations at a stage gate without all dimensions resolving to PASS:
+1. Terminate the loop immediately
+2. Surface all unresolved FAIL dimensions to the human
+3. Do NOT initiate a third iteration autonomously
+
+**Rationale**: Stage gates must not become infinite loops. 2 iterations provide one self-correction opportunity. If unresolved after 2, human judgment is required.
+
+### General-Purpose Refinement Loops (max 3–5 iterations)
+
+Applies when agentic-eval is used for **non-gate iterative improvement** — e.g.:
+- Draft document improvement
+- Report quality refinement
+- Iterative clarification outside stage transitions
+
+**Ceiling**: **max 3–5 iterations** (Tier 1 self-critique default; adjust based on quality target).
+
+### Summary Table
+
+| Loop Type | Context | Max Iterations | Unresolved Action |
+|-----------|---------|---------------|-------------------|
+| Stage-transition gate | spec/plan/code/review handoff | **2** | Terminate; surface to human |
+| General-purpose refinement | draft improvement, non-gate loops | 3–5 | Stop; output best available |
+
+---
+
 ## Tier 1: Self-Critique / Rubric (Always Available)
 
-Define a rubric, score the output, refine on FAIL dimensions. Max 3–5 iterations.
+Define a rubric, score the output, refine on FAIL dimensions. Max 3–5 iterations (general-purpose) or max 2 iterations (stage gate — see NFR-05 above).
 
 **Steps:**
 1. Define criteria and score threshold (e.g., 0.8 / 5-point scale)

@@ -79,7 +79,7 @@ Each agent includes a `## Skill Integration` section that uses a three-layer bin
 | `/readme` | Tool | Create README |
 | `/learn` | Tool | Learn and improve AI behavior |
 
-## Skills (30)
+## Skills (31)
 
 Skills provide methodology and toolkits that are automatically loaded into the current agent's context.
 
@@ -132,6 +132,7 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 | webapp-testing | Test local web apps using Playwright | test webapp, Playwright |
 | scoutqa-test | Exploratory QA testing (smoke, accessibility, e-commerce flows) | test website, accessibility |
 | agentic-eval | Evaluate and improve AI agent outputs (self-critique, rubrics) | evaluate agent, quality loop |
+| debug | Systematic debugging for build/test failures, unexpected behavior, drift errors; escalates after 2 failed cycles | debug, fix build, tests failing, investigate failure |
 
 ### Security & Review Skills (1)
 

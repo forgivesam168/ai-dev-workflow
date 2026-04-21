@@ -38,6 +38,7 @@ Before handing off to code-reviewer, run Tier 1 self-evaluation using `agentic-e
 > 🔴 Financial Precision FAIL → **STOP immediately**. Fix float/double before any other action.
 > All other FAILs: fix the specific dimension only, then re-score.
 > Do NOT invoke Tier 2 — code-reviewer is the independent Tier 2 gate.
+> Stage-transition agentic-eval loops are bounded to **max 2 iterations**; if unresolved, terminate and escalate to human (NFR-05).
 
 ## Subagent Status Protocol
 

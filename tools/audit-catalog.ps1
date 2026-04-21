@@ -24,7 +24,7 @@ $ErrorActionPreference = 'Stop'
 # Phase 5 update: 30 → 31  (debug added)
 $ExpectedAgentCount  = 6
 $ExpectedPromptCount = 10
-$ExpectedSkillCount  = 30   # <-- update here when adding new skills
+$ExpectedSkillCount  = 31   # <-- update here when adding new skills
 
 # ─── Required change-package files (canonical source: changes.instructions.md)
 $RequiredChangeFiles = @(

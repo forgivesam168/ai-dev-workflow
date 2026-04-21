@@ -41,6 +41,7 @@ Rubrics and adversarial prompts: [`stage-rubrics.md`](../skills/agentic-eval/ref
 1. Tier 1: score rubric dimensions (PASS/FAIL + one-line evidence)
 2. ≥2 FAIL → Tier 2: use `agent` tool; pass artifact excerpt ≤800 words + adversarial prompt only
 3. Append synthesis to `changes/.../02-decision-log.md` (append-only)
+4. Stage-gate agentic-eval calls (spec/plan/review handoffs) are bounded to **max 2 iterations**; escalate to human if unresolved (NFR-05)
 
 **#review meta-review FAIL path:**
 - All PASS → output `REVIEW ACCEPTED`; signal to proceed to archive
