@@ -6,7 +6,7 @@ This repository provides a reusable, finance-grade AI development workflow for G
 
 - Team constitution and instruction mapping for consistent AI behavior
 - Agent personas: Architect, Plan, Coder, Reviewer, Spec
-- Prompt library (9 commands) for repeatable workflows
+- Prompt library (10 commands) for repeatable workflows
 - Skills library (28 specialized capabilities)
 - Initialization script for quick rollout
 
@@ -29,9 +29,9 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 ## Structure
 
 - `copilot-instructions.md` - Team constitution
-- `agents/` - Persona definitions (5 agents)
+- `agents/` - Persona definitions (6 agents)
 - `instructions/` - Language and domain rules
-- `prompts/` - Slash commands (9 prompts)
+- `prompts/` - Slash commands (10 prompts)
 - `skills/` - Skills library (28 skills)
 - `Init-Project.ps1` - Deployment script
 - `tools/` - Sync scripts

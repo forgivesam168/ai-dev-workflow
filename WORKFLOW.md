@@ -132,12 +132,14 @@
 
 `changes/<YYYY-MM-DD>-<slug>/`
 
-檔案結構：
+檔案結構（詳見 `instructions/changes.instructions.md` 為準）：
+- `00-intake.md`（初始評估）
 - `01-brainstorm.md`（需求釐清 + 選項分析）
 - `02-decision-log.md`（關鍵決策與理由，**append-only**）
 - `03-spec.md`（規格、安全需求、驗收標準）
 - `04-plan.md`（可執行步驟 + 測試策略 + 影響分析）
-- `05-review.md`（Code Review + Security Review 結果）
+- `05-test-plan.md`（測試計畫）
+- `06-impact-analysis.md`（棕地 / 高風險）
 - `99-archive.md`（驗收 + 歸檔）
 
 > **核心原則：** 需求變動時，更新 spec；決策變動時，追加 decision log（不要覆寫歷史）。
