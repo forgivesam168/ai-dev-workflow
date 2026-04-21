@@ -264,6 +264,9 @@ obj/
 *.user
 *.suo
 .env
+
+# AI workflow memory (repo-local; opt-in per project — remove this line to commit your memory)
+.ai-workflow-memory/
 "@
 if (!(Test-Path ".gitignore")) {
     Set-Content -Path ".gitignore" -Value $GitIgnoreContent -Encoding utf8
