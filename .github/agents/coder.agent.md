@@ -33,17 +33,8 @@ When implementing features, follow the `tdd-workflow` skill methodology for Red-
 
 ### Pre-Review Self-Evaluation
 
-Before handing off to code-reviewer, perform a Tier 1 self-evaluation using the `agentic-eval` skill.
-Pass: git diff + test output summary + spec AC list. Score these 5 dimensions (PASS/FAIL + evidence):
+Before handing off to code-reviewer, run Tier 1 self-evaluation using `agentic-eval`. Apply the **#code rubric** in [`stage-rubrics.md`](../skills/agentic-eval/references/stage-rubrics.md). Pass: git diff + test output tail + spec AC list.
 
-```
-1. Green Build (30%): All tests pass, no skipped or pending tests?
-2. Financial Precision (25%): No float/double used for money? (use grep to verify)
-3. Spec AC Coverage (25%): Every FR-ID has a corresponding test (not just code)?
-4. Dead Code Absence (10%): No unused imports/variables in the diff?
-5. Environment Compatibility (10%): No Linux-only commands or hardcoded paths/credentials?
-```
-
-> 🔴 If Financial Precision FAILS → **STOP**. Fix before proceeding. This is always a blocking issue.
-> For all other FAILs: fix targeting only the failed dimension, then re-score.
-> Do NOT invoke a Tier 2 critic here — code-reviewer is the independent Tier 2 gate.
+> 🔴 Financial Precision FAIL → **STOP immediately**. Fix float/double before any other action.
+> All other FAILs: fix the specific dimension only, then re-score.
+> Do NOT invoke Tier 2 — code-reviewer is the independent Tier 2 gate.

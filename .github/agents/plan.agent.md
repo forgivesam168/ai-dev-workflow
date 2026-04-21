@@ -36,19 +36,10 @@ Related skills: `brainstorming` (for option analysis) · `specification` (for re
 
 ### Spec Evaluation Before Planning
 
-Before generating 04-plan.md, evaluate the spec quality from a **planner's perspective**.
-You are NOT the author of the spec — this is cross-agent validation.
+Before writing 04-plan.md, cross-validate the received spec from a **planner's perspective** (you did not write it).
+Key question per AC: *"Can I write a concrete, testable plan step for this?"* If NO → it is a gap.
 
-Key question for each requirement: *"Can I write a concrete, testable plan step for this?"*
-If the answer is NO → that requirement is underspecified. List it as a gap before proceeding.
+Apply the **#spec cross-eval adversarial prompt** from [`stage-rubrics.md`](../skills/agentic-eval/references/stage-rubrics.md).
 
-Use the `agentic-eval` skill Tier 1 methodology. Score these 4 dimensions (PASS/FAIL + reason):
-```
-1. AC Testability (35%): Every AC has a verifiable, unambiguous condition?
-2. Edge Case Coverage (25%): Failure paths (empty, unauthorized, concurrent) are explicit?
-3. Traceability (20%): Every functional requirement has a unique ID (FR-001 format)?
-4. Constraint Explicitness (20%): Performance/security/compliance requirements are quantified?
-```
-
-If ≥2 dimensions FAIL → add `⚠️ Spec Gaps Requiring Clarification` section at top of 04-plan.md.
-Do NOT halt execution — proceed with best available information and flag uncertainty explicitly.
+> If ≥2 ACs fail the executability test → add `⚠️ Spec Gaps` section at top of 04-plan.md.
+> Do NOT halt — proceed with best available info and flag uncertainty explicitly.
