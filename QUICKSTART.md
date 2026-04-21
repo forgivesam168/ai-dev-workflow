@@ -81,6 +81,23 @@ copilot
 > 💡 **Skill 沒自動載入？** 可在 CLI 中直接輸入 `/skill-name` 手動觸發，例如 `/brainstorming`、`/implementation-planning`。
 > 每個 Agent 的 Skill Integration 區塊也會提示對應的 skill 指令。
 
+**品質閘門（agentic-eval）— 階段交接前的自動品質驗證：**
+
+各 agent 在完成主技能後，會自動執行 `agentic-eval` 做一道品質驗證，**阻止有缺陷的產出物流入下一階段**。使用者不需要手動觸發——agent 會自己做，並告知結果。
+
+| 觸發時機 | 執行 Agent | 驗證內容 | FAIL 時的行為 |
+|---------|-----------|---------|-------------|
+| Spec 完成 → handoff 前 | spec-agent（自評）| AC 是否可測試、需求是否可追溯 | 自動修正後再 handoff；嚴重問題直接阻擋 |
+| Plan 開始前（收到 spec）| plan-agent（交叉驗證）| spec 從規劃者視角能否寫出具體步驟 | 在 04-plan.md 頂部標記 gap，繼續執行 |
+| Code 完成 → Review 前 | coder-agent（自評）| Green Build、Financial Precision、AC 覆蓋 | **Financial Precision FAIL = 強制停止**，不得進入 Review |
+| Plan/Spec 完成後（中高風險）| architect-agent（外部仲裁）| 架構合規、依賴順序、規格覆蓋 | 啟動子代理對抗批評，修正後再進行 |
+
+> ⚠️ **Financial Precision 是唯一的強制阻擋規則**：若 coder-agent 偵測到使用 float/double 處理金額，
+> 會明確拒絕進入 Review 並要求修正。其他 FAIL 維度則標記後繼續執行。
+>
+> 💡 **中高風險變更**：Plan 完成後可主動請 architect-agent 做架構仲裁：
+> 輸入「請 architect-agent 審查這份 plan」或切換到 `/agent architect-agent`。
+
 **隨時可引用的輔助 Skills：**
 `excalidraw-diagram-generator` / `web-design-reviewer` / `webapp-testing` / `gh-cli` / `github-issues` / `refactor` / `chrome-devtools` / `microsoft-docs`
 
@@ -100,23 +117,36 @@ copilot
 1. CLI 輸入: "我要開發一個新的交易功能"
    → 系統載入 brainstorming skill
    → 推薦切換到 brainstorm-agent
-   
+   → 風險判定為「High」→ 走標準路徑
+
 2. 產出 01-brainstorm.md 後，輸入: "產生 spec"
    → 系統載入 specification skill
    → 推薦切換到 spec-agent
-   
+   → 產出 03-spec.md
+   → ✅ [品質閘門] spec-agent 自動執行 AC 可測性自評
+      若 Testability FAIL → 自動修正後再 handoff
+
 3. 產出 03-spec.md 後，輸入: "規劃實作計畫"
+   → plan-agent 先從規劃者視角交叉驗證 spec
+      發現無法寫出具體步驟的需求 → 在 04-plan.md 頂部標記 gap
    → 系統載入 implementation-planning skill
    → 推薦切換到 plan-agent
-   
+   → 產出 04-plan.md
+   → ✅ [品質閘門] 可請 architect-agent 做架構仲裁（高風險強烈建議）
+      輸入：「請 architect-agent 審查這份 plan」
+
 4. 產出 04-plan.md 後，輸入: "開始 TDD 實作"
    → 系統載入 tdd-workflow skill
    → 推薦切換到 coder-agent
-   
-5. 程式碼完成後，輸入: "review 我的 code"
+   → 完成實作
+   → ✅ [品質閘門] coder-agent 自動執行 Pre-Review 自評
+      🔴 Financial Precision FAIL → 強制停止，不得進入 Review
+      其他 FAIL → 修正後繼續
+
+5. 品質自評通過後，輸入: "review 我的 code"
    → 系統載入 code-security-review skill
    → 推薦切換到 code-reviewer-agent
-   
+
 6. Review 通過後，輸入: "archive"
    → 產生 99-archive.md 與 WORK_LOG 條目
 ```

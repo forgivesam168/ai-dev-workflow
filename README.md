@@ -75,6 +75,21 @@ Use `/workflow` for guided progression:
 
 Each work item produces a **Change Package** under `changes/<YYYY-MM-DD>-<slug>/`.
 
+### Quality Gates (Automatic)
+
+Between stages, agents automatically validate output quality before handing off using `agentic-eval`. **No manual triggers needed** — agents run these checks internally and report results.
+
+| Trigger | Runs In | What It Checks | If FAIL |
+|---------|---------|----------------|---------|
+| After Spec → before Plan handoff | spec-agent self-eval | AC testability, requirement traceability | Auto-correct or block handoff |
+| Before Plan writes tasks | plan-agent cross-validate | Can spec be broken into executable steps? | Gap markers at top of 04-plan.md |
+| After Code → before Review | coder-agent self-eval | Green build, Financial Precision, AC coverage | **Financial Precision = hard stop** |
+| After Plan/Spec (Med/High risk) | architect-agent arbitration | Architectural compliance, spec coverage | Requires manual request; triggers subagent critique |
+
+> ⚠️ **The only hard-stop rule**: float/double used for money — coder-agent refuses to proceed to Review. Fix the precision issue first.
+>
+> 💡 **Architect arbitration** is the only gate that requires user action. After plan completes on Med/High risk work, switch to architect-agent and say: "请对这份 plan 做架构仲裁" or "arbitrate this plan".
+
 ## Notes
 
 - Keep instructions in Traditional Chinese for explanations as defined in the constitution.

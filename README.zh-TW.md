@@ -262,15 +262,31 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 
 ### 快速參考表
 
-| 階段 | CLI 關鍵字 | VS Code 快捷 | 推薦 Agent |
-|------|-----------|-------------|-----------|
-| 0. Orchestrator | "workflow", "下一步" | - | - |
-| 1. Brainstorm | "brainstorm", "探索" | `/brainstorm` | brainstorm-agent |
-| 2. Spec | "spec", "PRD", "規格" | `/spec` | spec-agent |
-| 3. Plan | "plan", "規劃" | `/create-plan` | plan-agent |
-| 4. TDD | "TDD", "實作" | `/tdd` | coder-agent |
-| 5. Review | "review", "審核" | `/code-review` | code-reviewer-agent |
-| 6. Archive | "archive", "歸檔" | `/archive` | - |
+| 階段 | CLI 關鍵字 | VS Code 快捷 | 推薦 Agent | 品質閘門 |
+|------|-----------|-------------|-----------|---------|
+| 0. Orchestrator | "workflow", "下一步" | - | - | - |
+| 1. Brainstorm | "brainstorm", "探索" | `/brainstorm` | brainstorm-agent | - |
+| 2. Spec | "spec", "PRD", "規格" | `/spec` | spec-agent | ✅ 自評（AC 可測性）|
+| 3. Plan | "plan", "規劃" | `/create-plan` | plan-agent | ✅ 交叉驗證 + 可請 architect 仲裁 |
+| 4. TDD | "TDD", "實作" | `/tdd` | coder-agent | ✅ 自評（🔴 Financial Precision 強制）|
+| 5. Review | "review", "審核" | `/code-review` | code-reviewer-agent | - |
+| 6. Archive | "archive", "歸檔" | `/archive` | - | - |
+
+### ✅ 品質閘門（agentic-eval）
+
+各 agent 在完成主技能後，會自動觸發 `agentic-eval` 在階段交接前做一道品質驗證，**防止有缺陷的產出物流入下一階段**。使用者不需要手動觸發—agent 自動執行並告知結果。
+
+| 觸發時機 | 執行 Agent | 使用者會看到什麼 |
+|---------|-----------|----------------|
+| Spec 完成後 → 交給 plan-agent 前 | spec-agent 自評 | AC 可測性評分 + 自動修正（或警告）|
+| Plan 開始前 → 收到 spec 後 | plan-agent 交叉驗證 | spec gap 標記於 04-plan.md 頂部，繼續執行 |
+| Code 完成後 → Review 前 | coder-agent 自評 | 品質分數 + Financial Precision 檢查 |
+| Plan 完成後（中高風險）| architect-agent 外部仲裁 | 架構合規報告（需使用者手動請求）|
+
+> ⚠️ **唯一強制阻擋**：coder-agent 偵測到 float/double 處理金額 → 強制停止，不得進入 Review，必須修正後再繼續。
+>
+> 💡 **architect-agent 仲裁**是唯一需要使用者主動請求的品質閘門。Plan 完成後，切換到 architect-agent 並輸入：
+> 「請對這份 plan 做架構仲裁」或「請審查 04-plan.md 的架構合規性」。
 
 ---
 
@@ -301,3 +317,8 @@ A: 執行 `pwsh -File .\tools\sync-dotgithub.ps1` 將 source 複製到 `.github/
 
 ### Q8: CLI 和 VS Code 可以混用嗎？
 A: 可以！兩者共享相同的 agents、skills 和 instructions。選擇你習慣的工具即可。
+
+### Q9: 品質閘門是什麼？我需要手動做什麼嗎？
+A: 品質閘門是 agent 在階段交接前的自動品質驗證（由 `agentic-eval` skill 驅動）。大多數情況下你什麼都不用做—agent 自動執行並告知結果。你只需要注意兩件事：
+- **🔴 Financial Precision FAIL**：coder-agent 偵測到 float/double 處理金額時，會拒絕進入 Review，你必須修正後再繼續
+- **🟡 Architect 仲裁（中高風險）**：這是唯一需要你主動請求的閘門。Plan 完成後，切換到 architect-agent 並說「請對這份 plan 做架構仲裁」
