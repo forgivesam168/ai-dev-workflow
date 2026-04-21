@@ -1,5 +1,16 @@
 # Decision Log
 
+## 2026-04-21 — Plan quality gate: agentic-eval Tier 2 evaluation passed (plan→code handoff)
+- Context:
+  - Post-plan agentic-eval stage-transition quality check (plan-agent → coder-agent handoff).
+  - Risk level: High. Tier 2 (external rubber-duck critic) applied. Stage-gate iteration cap: 2 (NFR-05).
+- Evaluation summary:
+  - Iteration 1: GATE FAILED — Step Verifiability FAIL (cross-cutting actions lacked observable outcomes); Dependency Order FAIL (sync and constant-update ordering implicit); Risk Identification FAIL (Tasks 1.3, 3.2, 5.2 had no risk notes).
+  - Fixes applied: added `check-sync.ps1` verification to sync protocol; added explicit `$ExpectedSkillCount` update sequencing in Dependencies; added risk+mitigation blocks to Tasks 1.3, 3.2, 5.2; added Phase 3/5 exit criteria with explicit count-update and audit-script verification.
+  - Iteration 2: **GATE PASSED** — all four rubric dimensions pass.
+- Verdict: **PLAN HANDOFF APPROVED** — proceed to coder-agent TDD implementation.
+- NFR-05 compliance: gate resolved within 2-iteration cap; no human escalation required.
+
 ## 2026-04-21 — Adopt Foundation-First optimization path for the workflow template
 - Decision:
   - Use a staged optimization strategy centered on governance and platform foundations before larger workflow productization.
@@ -53,7 +64,30 @@
 - Delta spec pattern (OpenSpec): noted as future design consideration; not added as a requirement this wave.
   - Reason: delta specs require a `specs/` vs `changes/` architecture refactor — too broad for this change package.
 
-## 2026-04-21 — Architect evaluation of brainstorm/spec planning maturity
+## 2026-04-21 — Architect spec review: targeted AC corrections before plan handoff
+- Trigger: architect-agent cross-stage quality evaluation of `03-spec.md` against `#spec` rubric and plan-agent derivability test.
+- Rubric result:
+  - AC Testability: **PASS WITH NOTES** — ACs present but AC-3/4/5/6 lacked deliverable file specifications; plan-agent would have stalled.
+  - Scope Boundary: **PASS** — Goals, Non-Goals, Minimum Scope, Constraints all clearly separated.
+  - Traceability: **PASS** — FR-01–FR-15, NFR-01–05, AC-1–9 fully mapped.
+  - Financial Precision: **PASS** — Not applicable (governance change, no money fields).
+- Corrections made to `03-spec.md` (all targeted, no scope changes):
+  - **AC-3**: Added `docs/install-surface-design.md` as deliverable; locked install-plan output format, install-apply conflict behavior, doctor verdict format, and JSON manifest minimum schema (`schema_version: 1`, `installed_at`, `source_ref`, `components[]`).
+  - **AC-4**: Added `skills/explore/SKILL.md` as deliverable; replaced "or equivalent" with enumerated trigger phrases; required explicit list (no open-ended equivalents).
+  - **AC-5**: Added `skills/gate-check/SKILL.md` + `scripts/run-gate-check.ps1` stub as deliverables; added minimum check set; clarified three-layer ordering scope as **code→review handoff only**; added `GATE PASSED WITH NOTES` escalation path (log to change package, then proceed); explicitly deferred two-stage review ordering to Wave 5 (was incorrectly included in AC-5 scope).
+  - **AC-6**: Added `docs/repo-memory-design.md` as deliverable; defined opt-in mechanism (`--enable-memory` flag); specified `.github/**` mirror exclusion.
+  - **AC-7**: Replaced "at least one agent file" with explicit list of all three: `agents/coder-agent.md`, `agents/plan-agent.md`, `agents/architect-agent.md`; added sync verification.
+  - **AC-8**: Replaced "e.g., after N failed debug cycles" with concrete threshold: **2 consecutive failed cycles**, no third autonomous cycle. Added `skills/debug/SKILL.md` as deliverable.
+  - **AC-9**: Strengthened to require SKILL.md to explicitly distinguish stage-transition (2-iter) vs. general-purpose (3–5-iter) ceilings; named two specific agent files that must reference the limit.
+  - **NFR-05**: Expanded "stage-transition" definition from 2 examples to exhaustive list of all 4 stage-gate transition points to resolve ambiguity against agentic-eval integration table (5 transitions listed).
+- Copilot feasibility verification (official documentation):
+  - All FR features feasible under Copilot CLI/VS Code skill model (SKILL.md + execute tool + agent tool).
+  - rubber-duck Tier 2 critic requires `RUBBER_DUCK_AGENT` experimental flag in CLI; VS Code uses `runSubagent` instead — iteration cap enforcement must be prompt-based, not platform-enforced.
+  - Tier 3 sql tracking is CLI-only (already documented in agentic-eval SKILL.md; no spec change needed).
+  - File-based `.ai-workflow-memory/` is the correct pattern; Copilot has no native cross-session persistence.
+- Handoff status:
+  - **SPEC HANDOFF UNBLOCKED** — all critical AC gaps resolved; plan-agent can now derive concrete implementation steps for all ACs.
+
 - Context:
   - Evaluated `01-brainstorm.md` and `03-spec.md` against the `agentic-eval` stage rubrics for `#brainstorm` and `#spec`.
   - Objective: determine whether this change package is ready to hand off into implementation planning.
