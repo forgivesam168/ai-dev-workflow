@@ -1,14 +1,42 @@
-# Financial Engineering Team - AI Development Constitution
+# AI Development Workflow Template — Constitution
 
-You are an advanced AI developer part of a **Financial Securities Team**. Your output MUST adhere to the strict standards defined in this repository's instruction files.
+This is a **domain-agnostic workflow template** deployable to any software system (financial, HR, legal, compliance, audit, small tools, etc.). The financial safety rules below are **illustrative defaults for financial deployments**. When maintaining this template itself, apply domain-appropriate rules — do not assume a financial context.
 
-> **SSOT（單一真實來源）**：所有規範文件以 `instructions/**` 與 `agents/**` 為準。同步鏡像請跑 `pwsh -File .\tools\sync-dotgithub.ps1`。
+You are an AI developer working with this repository. Your output MUST adhere to the strict standards defined in this repository's instruction files.
+
+> **SSOT（單一真實來源）**：所有規範文件以 `instructions/**` 與 `agents/**` 為準。
+>
+> **修改任何 `agents/`、`skills/`、`instructions/`、`prompts/`、`copilot-instructions.md` 後必須：**
+> 1. 執行 `pwsh -File .\tools\sync-dotgithub.ps1`（同步至 `.github/**`）
+> 2. 將 source 與 `.github/**` 一併納入同一個 commit
+>
+> ⛔ 禁止：只 commit source 不 sync；或 sync 後不 commit。
 
 ## Instruction Layers
 
 > For language/framework coding rules see `instructions/*.instructions.md`.
 > For agent personas and triggers see `agents/*.agent.md`.
 > For the 6-stage workflow see `WORKFLOW.md` and `skills/workflow-orchestrator/`.
+
+## Documentation Audience
+
+| 使用者說明文件（對外） | 內部參考文件（維護者）|
+|---|---|
+| `QUICKSTART.md`, `README.md`, `README.zh-TW.md` | `AGENTS.md`, `WORKFLOW.md`, `agents/*.md`, `skills/*/SKILL.md` |
+
+工作流程行為有變動時（新增功能、調整品質閘門等），**使用者說明文件也必須同步更新**。
+
+## Agent Tool Aliases（CLI 官方）
+
+合法 alias：`read`、`edit`、`search`、`execute`、`web`、`agent`、`todo`
+
+| Alias | 用途 | 注意事項 |
+|-------|------|---------|
+| `edit` | 修改**已存在**的檔案 | 檔案不存在會報 ENOENT；請用 `execute`（shell）建立新目錄與新檔 |
+| `execute` | 執行 shell 指令 | 建立 `changes/` 子目錄或新文件時必備 |
+| `agent` | 子代理委派（task tool） | 只賦予需要委派子代理的 agent（如 coder-agent）|
+
+⛔ 禁止使用非官方名稱：`editFiles`、`codebase`、`bash`、`grep`（不是合法 alias）
 
 ## Safety Rules (Non-Negotiable)
 
@@ -33,4 +61,4 @@ You are an advanced AI developer part of a **Financial Securities Team**. Your o
 - **Citations**: When enforcing a rule, cite the instruction file (e.g., "依 instructions/api-design.instructions.md 的 Idempotency-Key 規範").
 
 ---
-> **Final Reminder**: You are building financial systems handling real money. **Precision and Security are not optional.**
+> **Final Reminder**: Financial Precision and Security rules are mandatory for financial deployments. For all other domains, adapt the safety checklist to the relevant risk profile. **Precision and Security are always non-optional — only the domain changes.**
