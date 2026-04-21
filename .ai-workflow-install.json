@@ -1,0 +1,297 @@
+{
+  "schema_version": 1,
+  "installed_at": "2026-04-22T07:35:57.6846201+08:00",
+  "source_ref": "de979b1",
+  "components": [
+    {
+      "name": "copilot-instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6538893+08:00",
+      "source_hash": "sha256:6524E87B90BD8CFBFCB5084458768C5374D9138215DDAD9D88D3C54D5A5BB244"
+    },
+    {
+      "name": "agents/architect.agent.md",
+      "installed_at": "2026-04-22T07:35:57.6549558+08:00",
+      "source_hash": "sha256:20F49A4F6A709403AE018F76DBC1D6603FEA166EE5452570BC5BF49E7CA3F28F"
+    },
+    {
+      "name": "agents/brainstorm.agent.md",
+      "installed_at": "2026-04-22T07:35:57.6554838+08:00",
+      "source_hash": "sha256:666EFFE1EF218957C22F928E04BCEE01F8083047B487E922848E7D110FF68ED9"
+    },
+    {
+      "name": "agents/code-reviewer.agent.md",
+      "installed_at": "2026-04-22T07:35:57.6561579+08:00",
+      "source_hash": "sha256:FEF52DABC1A78B73C10D1BB4F98F8E9FFFF34BF8D009A969DEA25B249B4E571B"
+    },
+    {
+      "name": "agents/coder.agent.md",
+      "installed_at": "2026-04-22T07:35:57.6567466+08:00",
+      "source_hash": "sha256:F7AEEB8BD38F2C434008ED3A50736217DDAD600E6F5CC9452EB4D591C4E3D761"
+    },
+    {
+      "name": "agents/plan.agent.md",
+      "installed_at": "2026-04-22T07:35:57.6574319+08:00",
+      "source_hash": "sha256:258FB82FA7CC6920925C2602E7B9369A6A22CA6145F5DD1B430B194BAA82A1A1"
+    },
+    {
+      "name": "agents/spec.agent.md",
+      "installed_at": "2026-04-22T07:35:57.6581688+08:00",
+      "source_hash": "sha256:A8CEEFD8B70C554AB963F664C1BFC1029520B2F14781056CF9539601AB23370E"
+    },
+    {
+      "name": "instructions/agent-skills.instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6589138+08:00",
+      "source_hash": "sha256:C5548099A868BD2478BB9FA43ACB63413EDC366DB8200615BA7C4F799D1788D7"
+    },
+    {
+      "name": "instructions/api-design.instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6596371+08:00",
+      "source_hash": "sha256:2163B55A9B0AB51F8A9067AB9F4F0D5314967CE76C51CEC79CFF67C2817ED504"
+    },
+    {
+      "name": "instructions/aspnet-rest-apis.instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6603357+08:00",
+      "source_hash": "sha256:476D67DDBE473CFB16C4D80B90C5D3D7BE841B34324BC321901969C6ED1F14E9"
+    },
+    {
+      "name": "instructions/changes.instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6610591+08:00",
+      "source_hash": "sha256:C5506748294AB0144430806553AA40D8A9B4BFDE4067B7CCA0B7614F1BA0A67A"
+    },
+    {
+      "name": "instructions/code-review.instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6618375+08:00",
+      "source_hash": "sha256:F390306D091B1193F8075BC47A980715BE1FD295C6F2653628C71122188D56D5"
+    },
+    {
+      "name": "instructions/csharp.instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6625323+08:00",
+      "source_hash": "sha256:129C38DC2B73E45A0371EFC1C09039B6C0ADCC9AEF18F53E1EB88E148A6B6BFF"
+    },
+    {
+      "name": "instructions/dotnet-architecture-good-practices.instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6630279+08:00",
+      "source_hash": "sha256:68D136631B04CD1875D2030CFF88B12FAB74C9F1E6471D1B4AB63FABD37206CC"
+    },
+    {
+      "name": "instructions/openspec.instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6635679+08:00",
+      "source_hash": "sha256:195D979565C0F29ED51C532BFD248FBFDF745325EAED97760B79C2994CC3781F"
+    },
+    {
+      "name": "instructions/python.instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6640950+08:00",
+      "source_hash": "sha256:3B062BB9784FF00F8E2A2B644FD8A0C6C36AF785A4F01D8437348161E3EC068C"
+    },
+    {
+      "name": "instructions/sql.instructions.md",
+      "installed_at": "2026-04-22T07:35:57.6646410+08:00",
+      "source_hash": "sha256:6E7A66E3D4F5A62CCCFC47324002AE10E61EB6660F041C2D6D11B3C2A58D0C07"
+    },
+    {
+      "name": "prompts/archive.prompt.md",
+      "installed_at": "2026-04-22T07:35:57.6651795+08:00",
+      "source_hash": "sha256:E15DAFD25F43047B7E48FC5D4578FA45ABE94F880020ECA0346C860F43162695"
+    },
+    {
+      "name": "prompts/brainstorm.prompt.md",
+      "installed_at": "2026-04-22T07:35:57.6657157+08:00",
+      "source_hash": "sha256:65E5A9B76B8443AD4F26123EBE9C31EE6F2E8DF794816205E2FF8AE4ABF558C3"
+    },
+    {
+      "name": "prompts/code-review.prompt.md",
+      "installed_at": "2026-04-22T07:35:57.6662334+08:00",
+      "source_hash": "sha256:88569A11319B70ADEA31089FE07E4ECF62D7BC350CA2EC63F12DFC6BBE2BABE0"
+    },
+    {
+      "name": "prompts/commit-gen.prompt.md",
+      "installed_at": "2026-04-22T07:35:57.6667615+08:00",
+      "source_hash": "sha256:42B43336914C0E215E0A2DBF524115C1CB2E605BB35974968A3742D20D943E16"
+    },
+    {
+      "name": "prompts/create-plan.prompt.md",
+      "installed_at": "2026-04-22T07:35:57.6672806+08:00",
+      "source_hash": "sha256:52242047B161E609A961D049503231C0AE29C2D43F362FCBD45F9D89619A102D"
+    },
+    {
+      "name": "prompts/create-readme.prompt.md",
+      "installed_at": "2026-04-22T07:35:57.6678060+08:00",
+      "source_hash": "sha256:12912E7709CF79F1D69CFBB7851A40758DEA8827AC6853F14499EC238EC8ABCE"
+    },
+    {
+      "name": "prompts/learn.prompt.md",
+      "installed_at": "2026-04-22T07:35:57.6683159+08:00",
+      "source_hash": "sha256:9452924A7E0BEE8C3AB7A557CA9FC60949A13E32C70FFA827B20352BF93F35D9"
+    },
+    {
+      "name": "prompts/spec.prompt.md",
+      "installed_at": "2026-04-22T07:35:57.6688352+08:00",
+      "source_hash": "sha256:6EAEC0FE881EA5D6F16343AECA4A02722B1C0B16C5060EAF7951B7E3F3C820EB"
+    },
+    {
+      "name": "prompts/tdd.prompt.md",
+      "installed_at": "2026-04-22T07:35:57.6693465+08:00",
+      "source_hash": "sha256:8D628A25BD1A435B1C20E87DE99B7676B80F439EEC4353E3D33F076DB4EB2130"
+    },
+    {
+      "name": "prompts/workflow.prompt.md",
+      "installed_at": "2026-04-22T07:35:57.6698777+08:00",
+      "source_hash": "sha256:D8DAE8688C75CBAFA6F0AA9A6FDB2ED563830FF6D9684C9EFA66D61B93FA6DFE"
+    },
+    {
+      "name": "skills/agentic-eval/",
+      "installed_at": "2026-04-22T07:35:57.6708764+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/backend-patterns/",
+      "installed_at": "2026-04-22T07:35:57.6713768+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/brainstorming/",
+      "installed_at": "2026-04-22T07:35:57.6720085+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/chrome-devtools/",
+      "installed_at": "2026-04-22T07:35:57.6724838+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/code-security-review/",
+      "installed_at": "2026-04-22T07:35:57.6729767+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/coding-standards/",
+      "installed_at": "2026-04-22T07:35:57.6734215+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/copilot-sdk/",
+      "installed_at": "2026-04-22T07:35:57.6738595+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/debug/",
+      "installed_at": "2026-04-22T07:35:57.6743268+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/excalidraw-diagram-generator/",
+      "installed_at": "2026-04-22T07:35:57.6748145+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/explore/",
+      "installed_at": "2026-04-22T07:35:57.6753060+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/frontend-patterns/",
+      "installed_at": "2026-04-22T07:35:57.6757619+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/gate-check/",
+      "installed_at": "2026-04-22T07:35:57.6762237+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/gh-cli/",
+      "installed_at": "2026-04-22T07:35:57.6766478+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/git-commit/",
+      "installed_at": "2026-04-22T07:35:57.6770736+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/github-issues/",
+      "installed_at": "2026-04-22T07:35:57.6775150+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/implementation-planning/",
+      "installed_at": "2026-04-22T07:35:57.6779471+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/make-skill-template/",
+      "installed_at": "2026-04-22T07:35:57.6784478+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/markdown-to-html/",
+      "installed_at": "2026-04-22T07:35:57.6788903+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/microsoft-code-reference/",
+      "installed_at": "2026-04-22T07:35:57.6793348+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/microsoft-docs/",
+      "installed_at": "2026-04-22T07:35:57.6797670+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/prd/",
+      "installed_at": "2026-04-22T07:35:57.6802146+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/python-patterns/",
+      "installed_at": "2026-04-22T07:35:57.6806378+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/refactor/",
+      "installed_at": "2026-04-22T07:35:57.6810548+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/scoutqa-test/",
+      "installed_at": "2026-04-22T07:35:57.6814886+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/security-review/",
+      "installed_at": "2026-04-22T07:35:57.6819049+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/specification/",
+      "installed_at": "2026-04-22T07:35:57.6823382+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/tdd-workflow/",
+      "installed_at": "2026-04-22T07:35:57.6827535+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/web-design-reviewer/",
+      "installed_at": "2026-04-22T07:35:57.6831825+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/webapp-testing/",
+      "installed_at": "2026-04-22T07:35:57.6836107+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/work-archiving/",
+      "installed_at": "2026-04-22T07:35:57.6840227+08:00",
+      "source_hash": null
+    },
+    {
+      "name": "skills/workflow-orchestrator/",
+      "installed_at": "2026-04-22T07:35:57.6844425+08:00",
+      "source_hash": null
+    }
+  ]
+}

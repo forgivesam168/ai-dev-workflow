@@ -142,19 +142,33 @@ foreach ($c in $components) {
     $appliedCount++
 }
 
-# ─── Write sync manifest ──────────────────────────────────────────────────
-if ($appliedCount -gt 0) {
-    $gitRef = & git -C $RepoRoot rev-parse --short HEAD 2>$null
-    $manifestPath = Join-Path $RepoRoot '.ai-workflow-install.json'
-    [ordered]@{
-        schema_version = 1
-        installed_at   = (Get-Date -Format 'o')
-        source_ref     = if ($gitRef) { $gitRef } else { 'unknown' }
-        components     = @($applied)
-    } | ConvertTo-Json -Depth 4 | Set-Content -Path $manifestPath -Encoding UTF8
-    Write-Host ''
-    Write-Host "📄 Manifest written: .ai-workflow-install.json" -ForegroundColor Cyan
+# ─── Write sync manifest (always — records current deployed state) ────────
+$gitRef = & git -C $RepoRoot rev-parse --short HEAD 2>$null
+
+# Enumerate everything currently in .github/** to record full deployed state
+$deployedComponents = [System.Collections.Generic.List[PSCustomObject]]::new()
+foreach ($c in $components) {
+    if (Test-Path $c.dstPath) {
+        $hash = if ($c.type -eq 'file') {
+            "sha256:$((Get-FileHash $c.dstPath -Algorithm SHA256).Hash)"
+        } else { $null }
+        $deployedComponents.Add([PSCustomObject]@{
+            name         = $c.name
+            installed_at = (Get-Date -Format 'o')
+            source_hash  = $hash
+        })
+    }
 }
+
+$manifestPath = Join-Path $RepoRoot '.ai-workflow-install.json'
+[ordered]@{
+    schema_version = 1
+    installed_at   = (Get-Date -Format 'o')
+    source_ref     = if ($gitRef) { $gitRef } else { 'unknown' }
+    components     = @($deployedComponents)
+} | ConvertTo-Json -Depth 4 | Set-Content -Path $manifestPath -Encoding UTF8
+Write-Host ''
+Write-Host "📄 Manifest written: .ai-workflow-install.json ($($deployedComponents.Count) components)" -ForegroundColor Cyan
 
 # ─── Optional: enable memory skeleton ────────────────────────────────────
 if ($EnableMemory) {
