@@ -47,6 +47,23 @@ Each agent includes a `## Skill Integration` section that uses a three-layer bin
 
 > **Note**: Skill auto-load is probabilistic (model-driven). If the paired skill doesn't load automatically, use the `/skill-name` command shown in the agent's Skill Integration section.
 
+### agentic-eval 品質閘門（次要整合層）
+
+在各 agent 完成**主要 skill** 之後，`agentic-eval` skill 作為次要整合層介入，在階段交接點提供品質驗證，確保產出物符合下游 agent 的期望品質。
+
+| Agent | 主要 Skill 完成後 → agentic-eval | 目的與效益 | Tier | 風險閾值 |
+|-------|----------------------------------|-----------|------|---------|
+| `spec-agent` | `specification` → 03-spec.md | AC 可測性 + 邊界覆蓋自評；**Testability / Traceability FAIL 則阻擋 handoff**，防止不完整規格流入計畫階段 | 1 | 所有風險 |
+| `plan-agent` | `implementation-planning` → 04-plan.md | 從規劃者視角交叉驗證 spec 可行性，找出「無法寫出具體步驟」的需求並標記 gap | 1 | Med / High |
+| `coder-agent` | `tdd-workflow` → 實作完成 | 交 code-reviewer 前確認 Financial Precision + Green Build；**Financial Precision FAIL = 強制停止**，不得進入 Review | 1 | 所有風險 |
+| `architect-agent` | `brainstorming` → Spec/Plan/Review | 跨階段品質仲裁：從架構視角評估規格完整性、計畫邊界合規、Review 完整性；≥2 維度 FAIL 則委派 Tier 2 子代理對抗性批評 | 1 / 2 | Med / High |
+
+**不適用情境：**
+- `brainstorm-agent`：發散思維階段刻意不評估，保護創意探索空間
+- `code-reviewer`：本身即獨立 Tier 2 閘門，不需再套用 agentic-eval
+
+> 詳細 rubric 維度與 adversarial prompt template 見 [`skills/agentic-eval/references/stage-rubrics.md`](./skills/agentic-eval/references/stage-rubrics.md)。
+
 ## Prompts (Slash Commands)
 
 | Command | Stage | Description |

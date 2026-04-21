@@ -33,3 +33,22 @@ When producing plans, follow the `implementation-planning` skill methodology for
 > 💡 **Tip**: Use `/implementation-planning` to ensure the full planning methodology is loaded.
 
 Related skills: `brainstorming` (for option analysis) · `specification` (for requirements reference)
+
+### Spec Evaluation Before Planning
+
+Before generating 04-plan.md, evaluate the spec quality from a **planner's perspective**.
+You are NOT the author of the spec — this is cross-agent validation.
+
+Key question for each requirement: *"Can I write a concrete, testable plan step for this?"*
+If the answer is NO → that requirement is underspecified. List it as a gap before proceeding.
+
+Use the `agentic-eval` skill Tier 1 methodology. Score these 4 dimensions (PASS/FAIL + reason):
+```
+1. AC Testability (35%): Every AC has a verifiable, unambiguous condition?
+2. Edge Case Coverage (25%): Failure paths (empty, unauthorized, concurrent) are explicit?
+3. Traceability (20%): Every functional requirement has a unique ID (FR-001 format)?
+4. Constraint Explicitness (20%): Performance/security/compliance requirements are quantified?
+```
+
+If ≥2 dimensions FAIL → add `⚠️ Spec Gaps Requiring Clarification` section at top of 04-plan.md.
+Do NOT halt execution — proceed with best available information and flag uncertainty explicitly.

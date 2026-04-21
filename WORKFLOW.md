@@ -53,6 +53,20 @@
 | 5. Review | `code-security-review`, `security-review` | `code-reviewer` | `review 我的 code` | Review report |
 | 6. Archive | `work-archiving`, `git-commit` | Default | `archive 這個 change` | `99-archive.md` |
 
+**品質閘門（agentic-eval）— 階段交接點自動驗證：**
+
+在特定階段完成主要 skill 後，相關 agent 會呼叫 `agentic-eval` skill 進行品質驗證，防止有缺陷的產出物流入下一階段：
+
+| 觸發時機 | 執行 Agent | 達成目標 | Tier | 風險閾值 |
+|---------|-----------|---------|------|---------|
+| Spec 完成 → handoff 前 | `spec-agent`（自評）| 確保 AC 可測性與可追溯性；FAIL 則**阻擋 handoff**，防止不完整規格進入計畫 | 1 | 所有 |
+| Plan 開始前（收到 spec 後）| `plan-agent`（交叉評估）| 從規劃者視角驗證 spec 可執行性，標記「無法寫出具體步驟」的需求 gap | 1 | Med / High |
+| Plan 完成後 | `architect-agent`（外部仲裁）| 架構合規 + 規格覆蓋仲裁；≥2 維度 FAIL 啟動 Tier 2 子代理對抗批評 | 1 / 2 | Med / High |
+| Code Review 送出前 | `coder-agent`（自評）| 確認 Financial Precision + Green Build；**Financial Precision FAIL = 強制停止** | 1 | 所有 |
+| Review 完成後 | `architect-agent`（Meta 審查）| 確認 Review 是否完整，高風險變更的最後品質關卡 | 1 | High only |
+
+> 詳細 rubric 見 [`skills/agentic-eval/references/stage-rubrics.md`](./skills/agentic-eval/references/stage-rubrics.md)
+
 **輔助 Skills（任何階段，依需求引用）：**
 
 | 情境 | Skill | CLI 引用方式 |
