@@ -43,3 +43,12 @@ Apply the **#spec cross-eval adversarial prompt** from [`stage-rubrics.md`](../s
 
 > If ≥2 ACs fail the executability test → add `⚠️ Spec Gaps` section at top of 04-plan.md.
 > Do NOT halt — proceed with best available info and flag uncertainty explicitly.
+
+## Subagent Status Protocol
+
+| Status | Meaning | Example |
+|--------|---------|---------|
+| `DONE` | Task completed; no concerns | Plan delivered; all ACs have concrete steps |
+| `DONE_WITH_CONCERNS` | Completed but issues noted for caller | Plan complete but 1 AC has unclear acceptance criteria |
+| `NEEDS_CONTEXT` | Blocked; awaiting clarifying info | Missing `03-spec.md`; cannot proceed without spec |
+| `BLOCKED` | Cannot proceed; hard blocker requires human | Spec has ≥3 ambiguous ACs; escalating to human |

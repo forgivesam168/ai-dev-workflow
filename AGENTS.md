@@ -6,7 +6,7 @@ It contains:
 - Agent personas (`agents/*.agent.md`) — 6 agents
 - Instruction files (`instructions/*.instructions.md`)
 - Prompt library (`prompts/*.prompt.md`) — 10 prompts
-- Skills library (`skills/**/SKILL.md`) — 28 skills
+- Skills library (`skills/**/SKILL.md`) — 30 skills
 - Bootstrap script (`Init-Project.ps1`) to deploy these assets into another project.
 
 ## Pointer-Style Guidance Architecture
@@ -79,11 +79,11 @@ Each agent includes a `## Skill Integration` section that uses a three-layer bin
 | `/readme` | Tool | Create README |
 | `/learn` | Tool | Learn and improve AI behavior |
 
-## Skills (28)
+## Skills (30)
 
 Skills provide methodology and toolkits that are automatically loaded into the current agent's context.
 
-### Core Workflow Skills (7)
+### Core Workflow Skills (9)
 
 | Skill | Description | Triggers On | Recommended Agent |
 |-------|-------------|-------------|-------------------|
@@ -94,6 +94,8 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 | tdd-workflow | TDD methodology (Red-Green-Refactor) | TDD, test-driven | coder-agent |
 | code-security-review | Code quality and security audit for financial systems | review, audit | code-reviewer-agent |
 | work-archiving | Finalize and archive completed work | archive, finalize | — |
+| explore | Read-only codebase investigation before committing to a change package | explore, investigate, scan risks | — |
+| gate-check | Deterministic pre-review gate: sync drift + catalog parity + build/lint/test | gate check, pre-review check | coder-agent |
 
 ### Tool Skills (3)
 

@@ -38,3 +38,12 @@ Before handing off to code-reviewer, run Tier 1 self-evaluation using `agentic-e
 > 🔴 Financial Precision FAIL → **STOP immediately**. Fix float/double before any other action.
 > All other FAILs: fix the specific dimension only, then re-score.
 > Do NOT invoke Tier 2 — code-reviewer is the independent Tier 2 gate.
+
+## Subagent Status Protocol
+
+| Status | Meaning | Example |
+|--------|---------|---------|
+| `DONE` | Task completed; no concerns | All tests pass, deliverable committed |
+| `DONE_WITH_CONCERNS` | Completed but issues noted for caller | Tests pass but coverage dropped below 80% |
+| `NEEDS_CONTEXT` | Blocked; awaiting clarifying info | Spec AC-3 is ambiguous about conflict resolution |
+| `BLOCKED` | Cannot proceed; hard blocker requires human | Build fails after 2 fix attempts; escalating |

@@ -48,3 +48,12 @@ Rubrics and adversarial prompts: [`stage-rubrics.md`](../skills/agentic-eval/ref
 - ≥2 FAIL or Financial Precision FAIL → route back to coder-agent to fix, then full re-review
 
 > 💡 **Tip**: Use `/agentic-eval` to load the full evaluation skill and adversarial prompt templates.
+
+## Subagent Status Protocol
+
+| Status | Meaning | Example |
+|--------|---------|---------|
+| `DONE` | Task completed; no concerns | Architecture review complete; no blocking issues |
+| `DONE_WITH_CONCERNS` | Completed but issues noted for caller | Plan accepted with 1 architectural risk logged |
+| `NEEDS_CONTEXT` | Blocked; awaiting clarifying info | Tech stack unknown; cannot recommend patterns |
+| `BLOCKED` | Cannot proceed; hard blocker requires human | ≥2 FAIL dimensions after Tier 2; escalating |
