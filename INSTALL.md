@@ -150,7 +150,7 @@ cd my-new-project
 rm -rf .git
 git init -b main
 
-# Deploy workflow assets using bootstrap (local mode)
+# Deploy workflow assets (bootstrap auto-downloads latest version from GitHub)
 pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 
 # Commit initial setup
