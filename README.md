@@ -1,6 +1,6 @@
 # AI Development Workflow Template
 
-This repository provides a reusable, finance-grade AI development workflow for GitHub Copilot CLI and VS Code.
+This repository provides a reusable AI development workflow for GitHub Copilot CLI and VS Code, suitable for any software domain (financial, HR, legal, compliance, audit, small tools, etc.).
 
 ## What You Get
 
@@ -8,23 +8,28 @@ This repository provides a reusable, finance-grade AI development workflow for G
 - Agent personas: Architect, Plan, Coder, Reviewer, Spec
 - Prompt library (10 commands) for repeatable workflows
 - Skills library (28 specialized capabilities)
-- Initialization script for quick rollout
+- Bootstrap installer for deploying to any project
 
 ## Getting Started
 
-1. Copy this template into your repository.
-2. Run the initialization script:
+Navigate to your target project directory and run:
 
 ```powershell
-pwsh -File .\Init-Project.ps1
+# Download and run (auto-fetches template from GitHub)
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
+Remove-Item bootstrap.ps1
 ```
 
-Optional parameters:
+To update an existing project to the latest template:
 
 ```powershell
-pwsh -File .\Init-Project.ps1 -Include copilot,agents,instructions,prompts,skills,project-files
-pwsh -File .\Init-Project.ps1 -Exclude skills
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Update
+Remove-Item bootstrap.ps1
 ```
+
+See [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) for all parameters and advanced options.
 
 ## Structure
 
@@ -33,7 +38,7 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 - `instructions/` - Language and domain rules
 - `prompts/` - Slash commands (10 prompts)
 - `skills/` - Skills library (28 skills)
-- `Init-Project.ps1` - Deployment script
+- `bootstrap.ps1` - Deployment & update installer
 - `tools/` - Sync scripts
 
 ## 6-Stage Workflow

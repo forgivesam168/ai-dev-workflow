@@ -1,6 +1,6 @@
 # AI 開發工作流範本（繁體中文）
 
-本範本供團隊迅速部署一致的 AI 開發工作流程，適用於各類軟體系統（金融、人資、法遵、稽核、企劃、小工具等），包含團隊憲章、Agent 人物、指令/提示庫、技能（Skills）與初始化部署腳本。
+本範本供團隊迅速部署一致的 AI 開發工作流程，適用於各類軟體系統（金融、人資、法遵、稽核、企劃、小工具等），包含團隊憲章、Agent 人物、指令/提示庫、技能（Skills）與 Bootstrap 部署安裝器。
 
 你會得到：
 
@@ -9,26 +9,27 @@
 - `instructions/`：語言與領域規則（例如 Python / C# / SQL / API）
 - `prompts/`：標準化 prompt 與工作流程範例
 - `skills/`：可插拔技能（測試、視覺檢查、markdown 轉換等）
-- `Init-Project.ps1`：將範本部署到新專案的初始化腳本
+- `bootstrap.ps1`：將範本部署到任何專案的安裝器（支援首次部署與版本更新）
 
 快速上手
 
-1. 將此範本內容複製或合併到目標儲存庫的根目錄。
-2. 使用 PowerShell 執行初始化腳本以部署預設檔案與結構：
+前往目標專案目錄，執行以下指令（自動從 GitHub 拉取範本）：
 
 ```powershell
-pwsh -File .\Init-Project.ps1
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
+Remove-Item bootstrap.ps1
 ```
 
-可選參數範例：
+若要更新既有專案至最新版本：
 
 ```powershell
-# 只部署指定元件
-pwsh -File .\Init-Project.ps1 -Include copilot,agents,instructions,prompts,skills,project-files
-
-# 部署全部但排除 skills
-pwsh -File .\Init-Project.ps1 -Exclude skills
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Update
+Remove-Item bootstrap.ps1
 ```
+
+詳細參數說明請見 [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md)。
 
 目錄說明
 
@@ -37,7 +38,7 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 - `instructions/`：技術、流程與安全規範
 - `prompts/`：可重複使用的 prompt 範例
 - `skills/`：技能說明、腳本與參考資料
-- `Init-Project.ps1`：自動部署腳本（可傳入 Include/Exclude 參數）
+- `bootstrap.ps1`：部署與更新安裝器
 
 注意事項
 

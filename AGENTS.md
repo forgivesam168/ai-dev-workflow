@@ -7,7 +7,7 @@ It contains:
 - Instruction files (`instructions/*.instructions.md`)
 - Prompt library (`prompts/*.prompt.md`) — 10 prompts
 - Skills library (`skills/**/SKILL.md`) — 30 skills
-- Bootstrap script (`Init-Project.ps1`) to deploy these assets into another project.
+- Bootstrap installer (`bootstrap.ps1`) to deploy these assets into any project.
 
 ## Pointer-Style Guidance Architecture
 
@@ -182,11 +182,21 @@ pwsh -File .\tools\sync-dotgithub.ps1
 ```
 
 ## Usage in other repositories
-To deploy this template into another repo, run:
+To deploy this template into another repo, run bootstrap from the target project directory:
 
 ```powershell
-pwsh -File .\Init-Project.ps1
+# Download and run (auto-fetches from GitHub)
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
+Remove-Item bootstrap.ps1
+
+# To update an existing project
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Update
+Remove-Item bootstrap.ps1
 ```
+
+Maintainers of this template repo update via `git pull` — no scripts needed.
 
 ## Safety defaults (recommended)
 - Never commit secrets or credentials.

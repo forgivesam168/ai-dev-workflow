@@ -139,19 +139,19 @@ pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1
    cd your-new-project
    ```
 
-#### Option 2: Manual Clone and Initialize
+#### Option 2: Manual Clone and Bootstrap
 
 ```bash
-# Clone the template
+# Clone the template as a starting point
 git clone https://github.com/forgivesam168/ai-dev-workflow.git my-new-project
 cd my-new-project
 
-# Remove original git history (optional)
+# Remove original git history and start fresh
 rm -rf .git
-git init
+git init -b main
 
-# Deploy workflow to .github/
-pwsh .\Init-Project.ps1
+# Deploy workflow assets using bootstrap (local mode)
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 
 # Commit initial setup
 git add .
