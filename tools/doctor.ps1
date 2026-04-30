@@ -16,17 +16,23 @@
     pwsh -File .\tools\doctor.ps1
 #>
 param(
-    [string]$RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path
+    [string]$RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path,
+    # Target mode: audit deployed state at another repo (reads its manifest)
+    [string]$Target   = ""
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$IsTargetMode = $Target -ne ""
+$CheckRoot    = if ($IsTargetMode) { (Resolve-Path $Target -ErrorAction Stop).Path } else { $RepoRoot }
+
 $issues  = [System.Collections.Generic.List[string]]::new()
 $notes   = [System.Collections.Generic.List[string]]::new()
 $passing = [System.Collections.Generic.List[string]]::new()
 
-# ─── Check 1: Source vs .github/** parity ─────────────────────────────────
+# ─── Check 1: Source vs .github/** parity (self mode only) ───────────────
+if (-not $IsTargetMode) {
 Write-Host 'Check 1: Source vs .github/** parity...' -ForegroundColor Cyan
 
 $syncMap = @(
@@ -72,11 +78,12 @@ if ($driftItems.Count -gt 0) {
     $skillCount  = (Get-ChildItem (Join-Path $RepoRoot 'skills')  -Directory).Count
     $passing.Add("Source vs .github/** parity: $agentCount agents, $promptCount prompts, $skillCount skills — all in sync")
 }
+} # end if (-not $IsTargetMode) — Check 1
 
 # ─── Check 2: Manifest parity ─────────────────────────────────────────────
 Write-Host 'Check 2: Manifest parity...' -ForegroundColor Cyan
 
-$manifestPath = Join-Path $RepoRoot '.ai-workflow-install.json'
+$manifestPath = Join-Path $CheckRoot '.ai-workflow-install.json'
 if (-not (Test-Path $manifestPath)) {
     $notes.Add('No .ai-workflow-install.json found — manifest check skipped (run install-apply to create one)')
 } else {
@@ -84,20 +91,22 @@ if (-not (Test-Path $manifestPath)) {
     $staleItems  = @()
     foreach ($comp in $manifest.components) {
         if (-not $comp.name) { continue }
-        $name   = $comp.name.TrimEnd('/')
-        $target = Join-Path $RepoRoot ".github/$name"
-        if (-not (Test-Path $target)) {
+        $name       = $comp.name.TrimEnd('/')
+        $deployedAt = Join-Path $CheckRoot ".github/$name"
+        if (-not (Test-Path $deployedAt)) {
             $staleItems += "$name : recorded in manifest but not found in .github/"
         }
     }
     if ($staleItems.Count -gt 0) {
         foreach ($s in $staleItems) { $issues.Add("Manifest drift: $s") }
     } else {
-        $passing.Add("Manifest parity: $($manifest.components.Count) component(s) all present (source_ref: $($manifest.source_ref))")
+        $sourceInfo = if ($manifest.source_ref) { " (source_ref: $($manifest.source_ref))" } else { "" }
+        $passing.Add("Manifest parity: $($manifest.components.Count) component(s) all present$sourceInfo")
     }
 }
 
-# ─── Check 3: Catalog integrity ───────────────────────────────────────────
+# ─── Check 3: Catalog integrity (self mode only) ─────────────────────────
+if (-not $IsTargetMode) {
 Write-Host 'Check 3: Catalog integrity...' -ForegroundColor Cyan
 
 $auditScript = Join-Path $PSScriptRoot 'audit-catalog.ps1'
@@ -111,11 +120,14 @@ if (-not (Test-Path $auditScript)) {
         $issues.Add('Catalog integrity FAIL (run tools/audit-catalog.ps1 for details)')
     }
 }
+} # end if (-not $IsTargetMode) — Check 3
 
 # ─── Verdict ──────────────────────────────────────────────────────────────
+$modeLabel = if ($IsTargetMode) { "部署稽核模式 → $CheckRoot" } else { "自身模式" }
 Write-Host ''
 Write-Host '╔══════════════════════════════════════════════════════════════╗'
-Write-Host '║              AI Workflow Template — Doctor                   ║'
+Write-Host '║            AI Workflow Template — 健康檢查 (Doctor)          ║'
+Write-Host "║  模式：$($modeLabel.PadRight(49))║"
 Write-Host '╚══════════════════════════════════════════════════════════════╝'
 Write-Host ''
 

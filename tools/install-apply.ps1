@@ -22,15 +22,23 @@ param(
     [switch]$Force,
     [switch]$EnableMemory,
     [switch]$DryRun,
-    [string]$RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path
+    [string]$RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path,
+    # Deploy mode: copy to a different repo's .github/
+    [string]$Target   = ""
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# Self mode: deploy to this template repo's .github/**
+# Deploy mode (-Target <path>): deploy to another repo's .github/**
+$DeployRoot = if ($Target) { (Resolve-Path $Target -ErrorAction Stop).Path } else { $RepoRoot }
+
 if ($DryRun) {
-    Write-Host 'DryRun mode — delegating to install-plan.' -ForegroundColor Cyan
-    & (Join-Path $PSScriptRoot 'install-plan.ps1') -RepoRoot $RepoRoot
+    Write-Host 'DryRun 模式 — 委派 install-plan 預覽。' -ForegroundColor Cyan
+    $planArgs = @{ RepoRoot = $RepoRoot }
+    if ($Target) { $planArgs['Target'] = $Target }
+    & (Join-Path $PSScriptRoot 'install-plan.ps1') @planArgs
     exit $LASTEXITCODE
 }
 
@@ -63,8 +71,8 @@ function Get-DirStatus([string]$src, [string]$dst) {
 $components = [System.Collections.Generic.List[PSCustomObject]]::new()
 
 function Add-Component([string]$name, [string]$relSrc, [string]$relDst, [string]$type) {
-    $src    = Join-Path $RepoRoot $relSrc
-    $dst    = Join-Path $RepoRoot $relDst
+    $src    = Join-Path $RepoRoot  $relSrc
+    $dst    = Join-Path $DeployRoot $relDst
     $status = if ($type -eq 'dir') { Get-DirStatus $src $dst } else { Get-FileStatus $src $dst }
     $components.Add([PSCustomObject]@{
         name    = $name
@@ -102,9 +110,11 @@ $applied  = [System.Collections.Generic.List[PSCustomObject]]::new()
 $appliedCount = 0
 $skippedCount = 0
 
+$modeLabel = if ($Target) { "部署模式 → $DeployRoot" } else { "自身模式 → .github/**" }
 Write-Host ''
 Write-Host '╔══════════════════════════════════════════════════════════════╗'
-Write-Host '║            AI Workflow Template — Install Apply              ║'
+Write-Host '║          AI Workflow Template — 安裝執行 (Install Apply)     ║'
+Write-Host "║  模式：$($modeLabel.PadRight(49))║"
 Write-Host '╚══════════════════════════════════════════════════════════════╝'
 Write-Host ''
 
@@ -160,7 +170,7 @@ foreach ($c in $components) {
     }
 }
 
-$manifestPath = Join-Path $RepoRoot '.ai-workflow-install.json'
+$manifestPath = Join-Path $DeployRoot '.ai-workflow-install.json'
 [ordered]@{
     schema_version = 1
     installed_at   = (Get-Date -Format 'o')
@@ -172,7 +182,7 @@ Write-Host "📄 Manifest written: .ai-workflow-install.json ($($deployedCompone
 
 # ─── Optional: enable memory skeleton ────────────────────────────────────
 if ($EnableMemory) {
-    $memDir     = Join-Path $RepoRoot '.ai-workflow-memory'
+    $memDir     = Join-Path $DeployRoot '.ai-workflow-memory'
     $journalDir = Join-Path $memDir 'session-journal'
 
     foreach ($d in @($memDir, $journalDir)) {

@@ -13,11 +13,17 @@
 #>
 param(
     [switch]$Json,
-    [string]$RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path
+    [string]$RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path,
+    # Deploy mode: copy to a different repo's .github/
+    [string]$Target   = ""
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Self mode: deploy to this template repo's .github/**
+# Deploy mode (-Target <path>): deploy to another repo's .github/**
+$DeployRoot = if ($Target) { (Resolve-Path $Target -ErrorAction Stop).Path } else { $RepoRoot }
 
 # ─── Status helpers ────────────────────────────────────────────────────────
 function Get-FileStatus([string]$src, [string]$dst) {
@@ -48,8 +54,8 @@ function Get-DirStatus([string]$src, [string]$dst) {
 $components = [System.Collections.Generic.List[PSCustomObject]]::new()
 
 function Add-Component([string]$name, [string]$relSrc, [string]$relDst, [string]$type) {
-    $src    = Join-Path $RepoRoot $relSrc
-    $dst    = Join-Path $RepoRoot $relDst
+    $src    = Join-Path $RepoRoot  $relSrc
+    $dst    = Join-Path $DeployRoot $relDst
     $status = if ($type -eq 'dir') { Get-DirStatus $src $dst } else { Get-FileStatus $src $dst }
     $components.Add([PSCustomObject]@{
         name   = $name
@@ -85,9 +91,11 @@ if ($Json) {
     exit 0
 }
 
+$modeLabel = if ($Target) { "部署模式 → $DeployRoot" } else { "自身模式 → .github/**" }
 Write-Host ''
 Write-Host '╔══════════════════════════════════════════════════════════════╗'
-Write-Host '║            AI Workflow Template — Install Plan               ║'
+Write-Host '║          AI Workflow Template — 安裝預覽 (Install Plan)      ║'
+Write-Host "║  模式：$($modeLabel.PadRight(49))║"
 Write-Host '╚══════════════════════════════════════════════════════════════╝'
 Write-Host ''
 
