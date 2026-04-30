@@ -47,7 +47,45 @@ Use this skill at the **start of any request/change** when:
   - `03-spec.md` (draft)
 - If shell is unavailable, output file contents in response for manual creation
 
+## Must-Ask Questions
+
+Apply to **every project** regardless of domain:
+
+| Category | Question | Purpose |
+|----------|----------|---------|
+| **Problem** | What problem are we solving? How is it handled today? | Avoid solving the wrong problem |
+| **Users** | Who will use this? What are the different roles? | Define personas |
+| **Non-goals** | What are we explicitly NOT doing in this iteration? | Prevent scope creep |
+| **Failure scenario** | If this feature breaks, what's the worst case? | Risk awareness |
+| **Existing system** | What existing components will this touch or depend on? | Greenfield vs brownfield |
+| **Acceptance** | How will we know it's done? How will we verify it works? | Seed acceptance criteria |
+| **Rollback** | If we ship this and it causes problems, can we revert? | Safety net |
+
+## Conditional Follow-up Questions
+
+Trigger these based on the user's answers:
+
+| Trigger | Follow-up Questions |
+|---------|---------------------|
+| Involves money / pricing | Precision rules? Which currencies? Rounding strategy? Idempotency? |
+| Involves personal data | Privacy requirements? Who can access? Retention policy? |
+| Involves permissions / roles | Who can read, write, approve? Audit trail needed? |
+| Brownfield system | Which modules are affected? Dependent systems? Migration needed? |
+| Multi-system integration | API contracts? Failure/retry behavior? Eventual consistency acceptable? |
+| Scheduled / batch processing | What if it runs twice? Timeout handling? Partial failure recovery? |
+| Reporting / audit | Who reads the reports? How far back must data be queryable? |
+| Workflow / approvals | What are the state transitions? Who can approve or reject? |
+
+## Risk Classification
+
+| Level | Criteria | Recommended Path |
+|-------|----------|--------------------|
+| **Low** | Single file or isolated component, no existing users, no data flow changes, easily reverted | Fast Path: Plan → TDD → Review |
+| **Med** | Multiple files, touches existing features, some external dependencies | Standard Path: Spec → Plan → TDD → Review → Archive |
+| **High** | Cross-module, security/permissions, data migration, regulatory, or production-critical | Standard Path (mandatory): all 6 stages, CODEOWNERS review |
+
 ## Output Template
+
 - Risk Classification (Low/Med/High)
 - Workflow Path Recommendation (Standard/Fast)
 - Questions (if needed)
@@ -56,6 +94,22 @@ Use this skill at the **start of any request/change** when:
 - Recommendation
 - Decision Log
 - Change Package Skeleton (file stubs)
+
+### Brainstorm Summary Format
+
+Use this structure in `01-brainstorm.md`:
+
+```markdown
+## Brainstorm Summary
+
+**Problem**: [one sentence]
+**Risk Level**: Low / Med / High
+**Workflow Path**: Fast / Standard
+**Chosen Approach**: [option name and one-line reason]
+**Open Questions**: [anything still unresolved]
+**Assumptions**: [what we're assuming to be true]
+**Non-goals**: [explicitly out of scope]
+```
 
 ## Output Mapping (Change Package)
 Write results into:

@@ -51,12 +51,10 @@ If not already covered in brainstorm, ask about:
 - Schema/API contract requirements
 - Integration points with existing systems
 
-**Financial Systems Specific**:
-- Money handling: precision requirements (decimal places)
-- Storage format: integer minor units or decimal string?
-- Idempotency: which operations must be idempotent?
-- Audit trail: what needs to be logged?
-- Timezone: how to handle date/time?
+**Domain-Specific (if applicable)**:
+- **Financial**: Money precision (decimal places)? Integer minor units or decimal string? Which operations must be idempotent? Audit trail requirements? Timezone strategy?
+- **Personal Data / GDPR**: Data retention policy? Access control tiers? Right to deletion?
+- **Regulatory / Compliance**: Approval workflow required? Non-repudiation? Audit log format?
 
 ### Step 2: Generate Structured Spec
 
@@ -248,10 +246,9 @@ The generated `03-spec.md` should be:
 - ✅ Security and performance considerations
 - ✅ Error handling and edge cases documented
 
-**Financial Systems Must Have**:
-- ✅ Money precision specified (NO floats)
-- ✅ Idempotency documented for transactions
-- ✅ Audit trail requirements defined
+**Domain-Specific Must Have (if applicable)**:
+- ✅ **Financial**: Money precision specified (NO floats); Idempotency documented for transactions; Audit trail defined
+- ✅ **Personal Data**: Retention policy and deletion workflow documented
 
 **Nice to Have**:
 - API contracts with request/response examples
@@ -304,7 +301,7 @@ Input: "what's next?"
 - **No**: For simple CRUD operations or straightforward features
 - Use tools like Excalidraw or Mermaid for quick diagrams
 
-## Financial Systems Best Practices
+## Financial Systems Best Practices *(if applicable)*
 
 ### Money Handling
 **DON'T**:

@@ -31,6 +31,19 @@ Use this skill when:
 - Test framework configured
 - Code coverage tools enabled
 
+## Environment Standards
+
+The coder-agent delegates environment configuration here. Always apply these before starting TDD:
+
+| Language / Stack | Runtime | Tool |
+|-----------------|---------|------|
+| **PowerShell** | PowerShell 7.5+ (`$PSVersionTable.PSVersion`) | `pwsh`, not `powershell` |
+| **Python** | Isolated venv via `uv` or standard `venv` | `uv venv && uv pip install ...` preferred; fallback `python -m venv .venv` |
+| **.NET / C#** | .NET SDK (`dotnet --version`) | `dotnet test`, `dotnet build` |
+| **Node / TypeScript** | Node 20+ | `npm ci` for reproducible installs |
+
+**File size constraint**: Keep implementation files **200–400 lines**. If a file exceeds 400 lines, extract into modules before the next task. Oversized files are a refactoring signal, not a style preference.
+
 ## Core Principles
 
 ### 1. Tests BEFORE Code
@@ -419,6 +432,25 @@ npm test && npm run lint
 - Fast test execution (< 30s for unit tests)
 - E2E tests cover critical user flows
 - Tests catch bugs before production
+
+---
+
+## Pre-Review Self-Eval Gate
+
+Run this **before handing off to `code-reviewer`**. All 🔴 items must PASS.
+
+| Check | How to Verify | Threshold |
+|-------|--------------|-----------|
+| 🔴 **Build passes** | `dotnet build` / `npm run build` / `python -m pytest --collect-only` exits 0 | **HARD STOP** if fail |
+| 🔴 **All tests green** | `dotnet test` / `npm test` / `pytest` — zero failures, zero skipped | **HARD STOP** if fail |
+| 🔴 **Coverage ≥80%** | Coverage report (lcov/Coverlet) shows ≥80% line coverage | Block if below |
+| 🟡 **No float for money** | Search `grep -rn "float\|double" --include="*.cs"` on financial domain files | Fix before review |
+| 🟡 **No secrets committed** | `git diff --cached` — no API keys, tokens, passwords | Fix before review |
+| 🟡 **File sizes ≤400 lines** | `wc -l` or `(Get-Content file).Count` on edited files | Refactor if exceeded |
+
+**If any 🔴 check fails**: stop, fix, re-run. Do NOT send to code-reviewer with a red build.
+
+**After all PASS**: Report status as `DONE` or `DONE_WITH_CONCERNS` per Subagent Status Protocol.
 
 ---
 

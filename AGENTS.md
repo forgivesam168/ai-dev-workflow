@@ -3,10 +3,10 @@
 This repo is a **production‑grade AI development workflow template**.
 It contains:
 - Constitution / global behavior rules for AI assistants (`copilot-instructions.md`)
-- Agent personas (`agents/*.agent.md`) — 6 agents
+- Agent personas (`agents/*.agent.md`) — 9 agents
 - Instruction files (`instructions/*.instructions.md`)
 - Prompt library (`prompts/*.prompt.md`) — 10 prompts
-- Skills library (`skills/**/SKILL.md`) — 30 skills
+- Skills library (`skills/**/SKILL.md`) — 31 skills
 - Bootstrap script (`Init-Project.ps1`) to deploy these assets into another project.
 
 ## Pointer-Style Guidance Architecture
@@ -36,6 +36,9 @@ Context is loaded progressively — heavier files load only when needed:
 | `plan.agent.md` | `implementation-planning` | Strategic planning and task breakdown |
 | `coder.agent.md` | `tdd-workflow` | TDD implementation specialist |
 | `code-reviewer.agent.md` | `code-security-review` | Code quality and security review |
+| `pm.agent.md` | `workflow-orchestrator` | Project Manager: cross-session state tracking, workflow routing, PRD drafting |
+| `frontend-designer.agent.md` | `frontend-patterns` | Frontend UI/UX Designer: component spec, accessibility, design system alignment |
+| `dba.agent.md` | `sql.instructions.md` | Database Architect: schema design, migration safety, query optimization |
 
 ### Agent ↔ Skill Integration Pattern
 

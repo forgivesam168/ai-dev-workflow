@@ -20,6 +20,10 @@ Use this skill when:
 - Stakeholders need a unified "source of truth" for project scope
 - User asks to "write a PRD", "document requirements", or "plan a feature"
 
+> 📍 **Stage Position**: Optional — after Brainstorm (`01-brainstorm.md`), before Spec (`03-spec.md`).  
+> For strategic or multi-stakeholder projects that require cross-department alignment. Most internal systems can skip PRD and go directly to Spec.  
+> **Triggered by**: PM agent · **Output**: `changes/<YYYY-MM-DD>-<slug>/00-prd.md`
+
 ---
 
 ## Operational Workflow
@@ -141,3 +145,15 @@ You **MUST** follow this exact structure for the output:
 
 - **Benchmark**: Test with 50 common developer questions.
 - **Pass Rate**: 90% must match expected citations.
+
+---
+
+## Output
+
+Write to `changes/<YYYY-MM-DD>-<slug>/00-prd.md`.
+
+## Next Step
+
+After PRD is reviewed and confirmed by stakeholders:
+- Forward to **spec-agent** to create `03-spec.md` (engineering spec with AC and data contracts)
+- **Architect reviews PRD** for technical feasibility before spec stage begins

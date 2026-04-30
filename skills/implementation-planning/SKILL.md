@@ -31,6 +31,28 @@ Use this skill when:
 - `01-brainstorm.md` for context and chosen approach
 - `02-decision-log.md` for architectural decisions
 
+## Workflow Path Selection
+
+Determine the path **before** planning:
+
+| Path | When | Required Inputs |
+|------|------|----------------|
+| **Standard** (Med/High risk) | Spec exists (`03-spec.md`), multi-file change, brownfield | `01-brainstorm.md`, `02-decision-log.md`, `03-spec.md` |
+| **Fast** (Low risk only) | Isolated change, no existing users, easily reverted | `01-brainstorm.md` (or inline requirements) |
+
+**Missing artifacts behavior**: If `03-spec.md` is absent on a Standard path, **stop** and ask the user to run the spec stage first. Do NOT infer spec from conversation alone.
+
+## Spec Cross-Validation
+
+Before Step 1, test each acceptance criterion (AC) in the spec:
+
+> *"Can I write a concrete, testable implementation step for this AC?"*
+
+- If **YES** → proceed
+- If **NO** → mark that AC as a gap, surface it to the user, and request clarification before continuing
+
+This prevents ambiguous ACs from producing unverifiable plan tasks.
+
 ## Step-by-Step Workflow
 
 ### Step 1: Requirements Review
