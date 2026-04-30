@@ -5,7 +5,7 @@
 你會得到：
 
 - `copilot-instructions.md`：團隊憲法與行為準則（繁中說明 + 英文程式碼範例）
-- `agents/`：各角色（Brainstorm、Architect、Spec、Planner、Coder、Reviewer）定義
+- `agents/`：各角色（PM、Brainstorm、Architect、Spec、Planner、Coder、Reviewer、Frontend Designer、DBA）定義，共 9 個
 - `instructions/`：語言與領域規則（例如 Python / C# / SQL / API）
 - `prompts/`：標準化 prompt 與工作流程範例
 - `skills/`：可插拔技能（測試、視覺檢查、markdown 轉換等）
@@ -81,8 +81,9 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 
 ## 工作流程摘要（建議給新手看）
 
-- **標準路**：Intake → Brainstorm → Spec → Plan → Implement(TDD) → Review → Archive  
-- **快速路**：Intake → Plan → Implement → Review（僅低風險）
+- 🔴 **策略路**：Brainstorm → PRD → Spec → Plan → Implement(TDD) → Review → Archive（跨部門 / 多利害關係人）
+- 🟡 **標準路**：Brainstorm → Spec → Plan → Implement(TDD) → Review → Archive（中高風險）
+- 🟢 **快速路**：Plan → Implement → Review（僅低風險小修）
 
 每次需求/變更都建立一個 **Change Package**：
 - `changes/<YYYY-MM-DD>-<slug>/`

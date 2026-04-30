@@ -27,6 +27,11 @@ copilot
 1. Brainstorm → 2. Spec → 3. Plan → 4. TDD → 5. Review → 6. Archive
 ```
 
+> 💡 **三種路徑**：  
+> 🔴 策略路（PRD）：Brainstorm → **PRD** → Spec → Plan → TDD → Review（跨部門/多利害關係人，使用 `pm-agent` 起草 PRD）  
+> 🟡 標準路：Brainstorm → Spec → Plan → TDD → Review（預設，中高風險）  
+> 🟢 快速路：Plan → Implement → Review（低風險小修，跳過 Brainstorm + Spec）
+
 每個階段完成後，輸入「what's next」查看下一步。
 
 ### Step 4: 使用推薦的 Agent
@@ -58,13 +63,20 @@ copilot
 ## 💡 重要概念
 
 ### Agents（角色）
-定義「誰來做」，例如：
+定義「誰來做」，目前共 9 個角色：
+
+**工作流核心角色：**
+- **pm-agent**: 跨 session 專案狀態追蹤、工作流程路由、PRD 起草（策略型專案）
 - **brainstorm-agent**: 需求探索與風險分類
-- **spec-agent**: 規格文件撰寫
 - **architect-agent**: 系統設計與架構（跨階段技術顧問）
+- **spec-agent**: 規格文件撰寫
 - **plan-agent**: 實作計畫規劃
 - **coder-agent**: TDD 實作
 - **code-reviewer**: 程式碼品質與安全審核
+
+**專業角色（依需求引用）：**
+- **frontend-designer-agent**: UI/UX 設計規格、Component spec、無障礙設計（WCAG 2.1 AA）
+- **dba-agent**: Schema 設計、Migration 安全、資料庫查詢效能優化
 
 ### Skills（方法論）
 定義「怎麼做」，每個階段有對應 skill 自動載入：
@@ -259,7 +271,7 @@ pwsh -File .\tools\sync-dotgithub.ps1
    - 驗收與歸檔
 
 3. **[AGENTS.md](./AGENTS.md)** - Agents 與 Skills 對照表
-   - 6 個 Agents 說明
+   - 9 個 Agents 說明（含 PM、Frontend Designer、DBA）
    - 核心與工具 Skills
    - 觸發關鍵字參考
 

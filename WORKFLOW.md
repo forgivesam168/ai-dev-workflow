@@ -44,8 +44,9 @@
 
 | 階段 | 自動載入 Skills | 推薦 Agent | CLI 觸發語句（範例） | 產出物 |
 |------|----------------|-----------|---------------------|--------|
-| 0. 流程狀態 | `workflow-orchestrator` | Default | `我現在在哪個階段？` | 現況偵測 + 下一步建議 |
+| 0. 流程狀態 | `workflow-orchestrator` | `pm-agent` | `我現在在哪個階段？所有專案進度？` | 現況偵測 + 下一步建議 + 跨 session 狀態追蹤 |
 | 1. Brainstorm | `brainstorming` | `brainstorm-agent` | `我要 brainstorm 新功能` | `01-brainstorm.md` `02-decision-log.md` |
+| 1.5. PRD（選用）| `prd` | `pm-agent` | `幫我起草 PRD` | `00-prd.md`（策略型專案）|
 | 2. Spec | `specification`, `prd` | `spec-agent` | `幫我寫規格文件` | `03-spec.md` |
 | 2. Spec（技術架構）| — | `architect-agent` | `幫我設計系統架構` | ADR, 設計文件 |
 | 3. Plan | `implementation-planning` | `plan-agent` | `規劃實作計畫` | `04-plan.md` |
@@ -73,6 +74,8 @@
 |------|-------|-------------|
 | 架構 / 流程圖 | `excalidraw-diagram-generator` | `幫我畫架構圖` |
 | UI 設計審核 | `web-design-reviewer` | `/web-design-reviewer` |
+| UI/UX 設計規格 | `frontend-patterns` | `請 frontend-designer-agent 設計 component spec` |
+| 資料庫設計 / Schema 審閱 | — | `請 dba-agent 設計 schema / 優化查詢` |
 | 前端 patterns | `frontend-patterns` | `React 最佳實踐` |
 | 後端 patterns | `backend-patterns` | `API 設計原則` |
 | Python patterns | `python-patterns` | `Python 最佳實踐` |
@@ -102,7 +105,17 @@
 
 ---
 
-## 2) 兩種路徑：標準路 vs 快速路
+## 2) 三種路徑：策略路 / 標準路 / 快速路
+
+### C. 策略路（跨部門 / 多利害關係人專案）
+> **Brainstorm → PRD → Spec → Plan → Implement(TDD) → Review → Archive**
+
+適用情境：
+- 跨部門溝通（管理層、業務、IT 共同確認範圍與優先序）
+- 多利害關係人需要業務對齊（KPI、商業目標、成本效益）
+- 公司內部大型系統採購或客製化開發
+
+**PRD**（`changes/<slug>/00-prd.md`）由 `pm-agent` 起草，`architect-agent` 審閱技術可行性後才進 Spec 階段。
 
 ### A. 標準路（建議：中高風險 / 棕地 / 跨模組）
 > **Brainstorm → Spec → Plan → Implement(TDD) → Review → Archive**

@@ -5,9 +5,9 @@ This repository provides a reusable, finance-grade AI development workflow for G
 ## What You Get
 
 - Team constitution and instruction mapping for consistent AI behavior
-- Agent personas: Architect, Plan, Coder, Reviewer, Spec
+- Agent personas: Architect, Plan, Coder, Reviewer, Spec, PM, Frontend Designer, DBA (9 agents)
 - Prompt library (10 commands) for repeatable workflows
-- Skills library (28 specialized capabilities)
+- Skills library (31 specialized capabilities)
 - Initialization script for quick rollout
 
 ## Getting Started
@@ -29,10 +29,10 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 ## Structure
 
 - `copilot-instructions.md` - Team constitution
-- `agents/` - Persona definitions (6 agents)
+- `agents/` - Persona definitions (9 agents)
 - `instructions/` - Language and domain rules
 - `prompts/` - Slash commands (10 prompts)
-- `skills/` - Skills library (28 skills)
+- `skills/` - Skills library (31 skills)
 - `Init-Project.ps1` - Deployment script
 - `tools/` - Sync scripts
 
@@ -70,8 +70,9 @@ Use `/workflow` for guided progression:
 
 ### Workflow Paths
 
-- **Standard path**: Brainstorm → Spec → Plan → Implement (TDD) → Review → Archive
-- **Fast path**: Brainstorm → Plan → Implement → Review (low-risk only, skip Spec)
+- 🔴 **Strategic path**: Brainstorm → PRD → Spec → Plan → Implement (TDD) → Review → Archive *(multi-stakeholder / cross-department projects)*
+- 🟡 **Standard path**: Brainstorm → Spec → Plan → Implement (TDD) → Review → Archive
+- 🟢 **Fast path**: Plan → Implement → Review *(low-risk only; skip Brainstorm + Spec)*
 
 Each work item produces a **Change Package** under `changes/<YYYY-MM-DD>-<slug>/`.
 
