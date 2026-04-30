@@ -6,8 +6,9 @@ param(
     [switch]$Force,
     [switch]$Update,
     [switch]$Backup,
-    [switch]$SkipHooks,
-    [switch]$Quiet,
+    [switch]$SkipHooks,   # 跳過 git init 步驟（參數名稱保留以向後相容）
+    [switch]$Quiet,       # 抑制所有進度輸出（適合 CI 環境）
+    [switch]$EnableMemory, # 建立 .ai-workflow-memory/ 骨架（opt-in 記憶功能）
     
     [Parameter(Mandatory=$false)]
     [string]$RemoteRepo = "https://github.com/forgivesam168/ai-dev-workflow.git",
@@ -17,9 +18,32 @@ param(
 )
 
 # 全域變數
-$script:RepoRoot = Split-Path -Parent $PSScriptRoot
+# Auto-detect RepoRoot: 腳本在 repo 根目錄時 $PSScriptRoot 即為 root；
+# 在子目錄（如 scripts/）時向上一層取 parent。
+$script:RepoRoot = if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot ".github"))) {
+    $PSScriptRoot                      # 腳本位於 repo 根目錄
+} elseif ($PSScriptRoot) {
+    Split-Path -Parent $PSScriptRoot   # 腳本位於子目錄（如 scripts/）
+} else {
+    (Get-Location).Path                # 互動模式 fallback
+}
 $script:IsRemoteMode = $false
 $script:TempClonePath = ""
+
+# -Quiet 模式：在 script scope 覆寫 Write-Host，抑制所有進度輸出。
+# Write-Error / Write-Warning 不受影響，錯誤訊息仍正常顯示。
+if ($Quiet) {
+    function script:Write-Host {
+        param(
+            [object]$Object,
+            [switch]$NoNewline,
+            [System.ConsoleColor]$ForegroundColor,
+            [System.ConsoleColor]$BackgroundColor,
+            [object[]]$Separator
+        )
+        # 靜音模式：捨棄所有標準進度輸出
+    }
+}
 
 # ============================================================================
 # 環境檢測函數
@@ -287,7 +311,7 @@ function Get-RemoteTemplate {
     
     # 建立臨時目錄
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-    $tempPath = Join-Path $env:TEMP "ai-workflow-bootstrap-$timestamp"
+    $tempPath = Join-Path ([System.IO.Path]::GetTempPath()) "ai-workflow-bootstrap-$timestamp"
     
     Write-Host "📥 從遠端下載模板..." -ForegroundColor Cyan
     Write-Host "   來源: $RemoteRepo" -ForegroundColor Gray
@@ -575,7 +599,12 @@ function Initialize-GitRepo {
     try {
         Push-Location $TargetPath
         
-        $initOutput = git init 2>&1
+        # 嘗試 -b main 指定預設分支（需 git >= 2.28）；舊版以 symbolic-ref 回退
+        $initOutput = git init -b main 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            $initOutput = git init 2>&1
+            git symbolic-ref HEAD refs/heads/main 2>&1 | Out-Null
+        }
         
         Pop-Location
         
@@ -773,14 +802,15 @@ function Write-EnvironmentCheck {
     param(
         [string]$Name,
         [PSCustomObject]$Result,
-        [string]$InstallUrl = ""
+        [string]$InstallUrl = "",
+        [string]$MinVersion = "2.0"
     )
     
     if ($Result.Installed) {
         if ($Result.MeetsRequirement) {
             Write-Host "✅ $Name $($Result.Version) detected" -ForegroundColor Green
         } else {
-            Write-Host "⚠️  $Name $($Result.Version) (建議升級到 >= 2.0)" -ForegroundColor Yellow
+            Write-Host "⚠️  $Name $($Result.Version) (建議升級到 >= $MinVersion)" -ForegroundColor Yellow
             if ($InstallUrl) {
                 Write-Host "   Install: $InstallUrl" -ForegroundColor Gray
             }
@@ -791,6 +821,99 @@ function Write-EnvironmentCheck {
             Write-Host "   請安裝: $InstallUrl" -ForegroundColor Yellow
         }
     }
+}
+
+# ============================================================================
+# Repo Memory 初始化
+# ============================================================================
+
+function Initialize-RepoMemory {
+    <#
+    .SYNOPSIS
+    建立 .ai-workflow-memory/ 骨架（opt-in 記憶功能）
+    
+    .PARAMETER TargetPath
+    目標專案目錄
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$TargetPath
+    )
+    
+    $memDir     = Join-Path $TargetPath '.ai-workflow-memory'
+    $journalDir = Join-Path $memDir 'session-journal'
+
+    foreach ($d in @($memDir, $journalDir)) {
+        if (-not (Test-Path $d)) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
+    }
+
+    $contextFile = Join-Path $memDir 'PROJECT_CONTEXT.md'
+    if (-not (Test-Path $contextFile)) {
+        @'
+# Project Context
+
+> This file is maintained by AI agents. Update when project fundamentals change.
+
+## Project Overview
+<!-- Describe the project purpose and scope -->
+
+## Tech Stack
+<!-- List key technologies, frameworks, languages -->
+
+## Key Decisions
+<!-- Log major architectural or design decisions -->
+
+## Important Files
+<!-- Reference key files and their purpose -->
+'@ | Set-Content -Path $contextFile -Encoding UTF8
+    }
+
+    $stateFile = Join-Path $memDir 'CURRENT_STATE.md'
+    if (-not (Test-Path $stateFile)) {
+        @"
+# Current State
+
+> Updated at the end of each AI session.
+
+**Last Updated**: $(Get-Date -Format 'yyyy-MM-dd')
+**Current Stage**: Initial setup
+
+## What's Done
+- Memory skeleton initialized via: bootstrap.ps1 -EnableMemory
+
+## What's Next
+<!-- Describe the next planned action -->
+
+## Open Questions
+<!-- List any unresolved questions or decisions -->
+"@ | Set-Content -Path $stateFile -Encoding UTF8
+    }
+
+    $gitkeep = Join-Path $journalDir '.gitkeep'
+    if (-not (Test-Path $gitkeep)) { '' | Set-Content -Path $gitkeep -Encoding UTF8 }
+
+    # 更新 .gitignore：只 gitignore session-journal，讓 PROJECT_CONTEXT 與 CURRENT_STATE 納入版控
+    $gitignorePath = Join-Path $TargetPath '.gitignore'
+    $journalIgnoreEntry = '.ai-workflow-memory/session-journal/'
+    $fullDirIgnoreEntry = '.ai-workflow-memory/'
+
+    if (Test-Path $gitignorePath) {
+        $ignoreContent = Get-Content $gitignorePath -Raw
+        if ($ignoreContent -match [regex]::Escape($fullDirIgnoreEntry)) {
+            # 已有完整目錄 ignore → 替換為只 ignore journal
+            $ignoreContent = $ignoreContent -replace [regex]::Escape($fullDirIgnoreEntry), $journalIgnoreEntry
+            Set-Content -Path $gitignorePath -Value $ignoreContent.TrimEnd() -Encoding UTF8
+        } elseif (-not ($ignoreContent -match [regex]::Escape($journalIgnoreEntry))) {
+            Add-Content -Path $gitignorePath -Value "`n# Repo Memory - session journal only (PROJECT_CONTEXT and CURRENT_STATE are committed)`n$journalIgnoreEntry"
+        }
+    } else {
+        @"
+# Repo Memory - session journal only (PROJECT_CONTEXT and CURRENT_STATE are committed)
+$journalIgnoreEntry
+"@ | Set-Content -Path $gitignorePath -Encoding UTF8
+    }
+
+    Write-Host "🧠 Memory skeleton initialized: .ai-workflow-memory/" -ForegroundColor Magenta
 }
 
 # ============================================================================
@@ -814,19 +937,19 @@ function Main {
     Write-Host "環境檢測:" -ForegroundColor Cyan
     
     $git = Test-GitInstalled
-    Write-EnvironmentCheck -Name "Git" -Result $git -InstallUrl "https://git-scm.com/downloads"
+    Write-EnvironmentCheck -Name "Git" -Result $git -InstallUrl "https://git-scm.com/downloads" -MinVersion "2.28"
     
     $python = Test-PythonInstalled
-    Write-EnvironmentCheck -Name "Python" -Result $python -InstallUrl "https://www.python.org/downloads/"
+    Write-EnvironmentCheck -Name "Python" -Result $python -InstallUrl "https://www.python.org/downloads/" -MinVersion "3.7"
     
     $powershell = Test-PowerShellVersion
-    Write-EnvironmentCheck -Name "PowerShell" -Result $powershell -InstallUrl "https://aka.ms/powershell"
+    Write-EnvironmentCheck -Name "PowerShell" -Result $powershell -InstallUrl "https://aka.ms/powershell" -MinVersion "5.1"
     
     $node = Test-NodeJSInstalled
-    Write-EnvironmentCheck -Name "Node.js" -Result $node -InstallUrl "https://nodejs.org"
+    Write-EnvironmentCheck -Name "Node.js" -Result $node -InstallUrl "https://nodejs.org" -MinVersion "16.0"
 
     $ghCLI = Test-GitHubCLIInstalled
-    Write-EnvironmentCheck -Name "GitHub CLI" -Result $ghCLI -InstallUrl "https://cli.github.com/"
+    Write-EnvironmentCheck -Name "GitHub CLI" -Result $ghCLI -InstallUrl "https://cli.github.com/" -MinVersion "2.0"
     
     Write-Host ""
     
@@ -1047,7 +1170,8 @@ function Main {
     # ========================================================================
     
     if (-not $SkipHooks) {
-        Write-Host "檢查 Git 初始化..." -ForegroundColor Cyan
+        Write-Host "檢查 Git repository 初始化..." -ForegroundColor Cyan
+        Write-Host "   （使用 -SkipHooks 可略過此步驟）" -ForegroundColor Gray
         Write-Host ""
         
         try {
@@ -1064,6 +1188,23 @@ function Main {
         } catch {
             Write-Host "⚠️  Git 初始化失敗: $($_.Exception.Message)" -ForegroundColor Yellow
             Write-Host "   您可以稍後手動執行 'git init'" -ForegroundColor Gray
+            Write-Host ""
+        }
+    }
+    
+    # ========================================================================
+    # Repo Memory 初始化（opt-in）
+    # ========================================================================
+    
+    if ($EnableMemory) {
+        Write-Host "初始化 Repo Memory..." -ForegroundColor Cyan
+        Write-Host ""
+        
+        try {
+            Initialize-RepoMemory -TargetPath $targetProjectPath
+            Write-Host ""
+        } catch {
+            Write-Host "⚠️  Repo Memory 初始化失敗: $($_.Exception.Message)" -ForegroundColor Yellow
             Write-Host ""
         }
     }

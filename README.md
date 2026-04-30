@@ -1,43 +1,45 @@
 # AI Development Workflow Template
 
-This repository provides a reusable, finance-grade AI development workflow for GitHub Copilot CLI and VS Code.
+This repository provides a reusable AI development workflow for GitHub Copilot CLI and VS Code, suitable for any software domain (financial, HR, legal, compliance, audit, small tools, etc.).
 
 ## What You Get
 
 - Team constitution and instruction mapping for consistent AI behavior
-- Agent personas: Architect, Plan, Coder, Reviewer, Spec, PM, Frontend Designer, DBA (9 agents)
+- Agent personas: Architect, Plan, Coder, Reviewer, Spec
 - Prompt library (10 commands) for repeatable workflows
-- Skills library (31 specialized capabilities)
-- Initialization script for quick rollout
+- Skills library (28 specialized capabilities)
+- Bootstrap installer for deploying to any project
 - **Repo Memory** for persistent project context across sessions (opt-in)
 
 ## Getting Started
 
-1. Copy this template into your repository.
-2. Run the initialization script:
+Navigate to your target project directory and run:
 
 ```powershell
-pwsh -File .\Init-Project.ps1
+# Download and run (auto-fetches template from GitHub)
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
+Remove-Item bootstrap.ps1
 ```
 
-Optional parameters:
+To update an existing project to the latest template:
 
 ```powershell
-pwsh -File .\Init-Project.ps1 -Include copilot,agents,instructions,prompts,skills,project-files
-pwsh -File .\Init-Project.ps1 -Exclude skills
-
-# Enable Repo Memory for persistent context across sessions
-pwsh -File .\Init-Project.ps1 -EnableMemory
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Update
+Remove-Item bootstrap.ps1
 ```
+
+See [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) for all parameters and advanced options.
 
 ## Structure
 
 - `copilot-instructions.md` - Team constitution
-- `agents/` - Persona definitions (9 agents)
+- `agents/` - Persona definitions (6 agents)
 - `instructions/` - Language and domain rules
 - `prompts/` - Slash commands (10 prompts)
-- `skills/` - Skills library (31 skills)
-- `Init-Project.ps1` - Deployment script
+- `skills/` - Skills library (28 skills)
+- `bootstrap.ps1` - Deployment & update installer
 - `tools/` - Sync scripts
 
 ## 6-Stage Workflow
@@ -74,9 +76,8 @@ Use `/workflow` for guided progression:
 
 ### Workflow Paths
 
-- 🔴 **Strategic path**: Brainstorm → PRD → Spec → Plan → Implement (TDD) → Review → Archive *(multi-stakeholder / cross-department projects)*
-- 🟡 **Standard path**: Brainstorm → Spec → Plan → Implement (TDD) → Review → Archive
-- 🟢 **Fast path**: Plan → Implement → Review *(low-risk only; skip Brainstorm + Spec)*
+- **Standard path**: Brainstorm → Spec → Plan → Implement (TDD) → Review → Archive
+- **Fast path**: Brainstorm → Plan → Implement → Review (low-risk only, skip Spec)
 
 Each work item produces a **Change Package** under `changes/<YYYY-MM-DD>-<slug>/`.
 
@@ -101,32 +102,30 @@ Between stages, agents automatically validate output quality before handing off 
 - Update the skill set per your tech stack and product needs.
 - Run `pwsh -File .\tools\sync-dotgithub.ps1` after editing instructions.
 
+See `WORKFLOW.md` for detailed workflow documentation.
+
 ## Repo Memory (Opt-In)
 
 Repo Memory lets the AI retain project context across sessions — no re-explaining your tech stack or current stage every time.
 
-**Enable it:**
+**Enable it** (add `-EnableMemory` flag):
 ```powershell
-# During init (new project)
-pwsh -File .\Init-Project.ps1 -EnableMemory
-
-# Or on existing projects
-pwsh -File .\tools\install-apply.ps1 -EnableMemory
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -EnableMemory
+Remove-Item bootstrap.ps1
 ```
 
 **What gets created:**
 ```
 .ai-workflow-memory/
-├── PROJECT_CONTEXT.md   # Tech stack, key architectural decisions
-├── CURRENT_STATE.md     # Active work status, updated each session
-└── session-journal/     # Append-only per-session logs (gitignored by default)
+├── PROJECT_CONTEXT.md   # Tech stack, key architectural decisions (committed)
+├── CURRENT_STATE.md     # Active work status, updated each session (committed)
+└── session-journal/     # Append-only per-session logs (gitignored)
 ```
 
 **How it works:** The AI reads `PROJECT_CONTEXT.md` and `CURRENT_STATE.md` before starting any analysis or implementation. At session end, it updates `CURRENT_STATE.md` with stage and next steps.
 
 > See `docs/repo-memory-design.md` for full design specification.
-
-See `WORKFLOW.md` for detailed workflow documentation.
 
 ## 📚 Documentation & Reading Path
 

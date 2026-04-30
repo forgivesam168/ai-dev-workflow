@@ -260,7 +260,7 @@ pwsh -File .\tools\sync-dotgithub.ps1
 
 ```powershell
 # 新專案初始化時啟用
-pwsh -File .\Init-Project.ps1 -EnableMemory
+pwsh -File .\scripts\bootstrap.ps1 -EnableMemory
 
 # 現有專案（只建立記憶骨架，不重新部署元件）
 pwsh -File .\tools\install-apply.ps1 -EnableMemory

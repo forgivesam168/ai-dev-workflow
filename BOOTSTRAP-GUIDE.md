@@ -3,7 +3,16 @@
 ## Overview
 The bootstrap installer is a cross-platform tool that initializes the AI development workflow into your project. It supports Windows (PowerShell), Linux, and macOS (Python/Bash).
 
-**NEW**: The installer now supports **automatic remote mode** - you can download and run the script directly without cloning the template repository first.
+## 選擇你的使用方式
+
+| 你是誰 | 建議方式 | 理由 |
+|--------|---------|------|
+| **一般使用者**（第一次安裝） | Remote Mode — 從網路下載 `bootstrap.ps1` 執行 | 不需要 clone template repo，開箱即用 |
+| **一般使用者**（之後更新） | 同上，重新下載執行加 `-Update` | 每次都取得最新版本 |
+| **Template 維護者**（你） | Local Mode — 直接執行 `.\scripts\bootstrap.ps1` | 已有 clone，不需要連網，可搭配 `-TargetPath` 指向任意專案 |
+
+> **維護者**：指 clone 了這個 template repo 並用 `git pull` 維護它的人。
+> 部署到其他專案時，直接執行本地的 `.\scripts\bootstrap.ps1 -TargetPath <目標路徑>`，無需每次下載。
 
 ## Quick Start
 
