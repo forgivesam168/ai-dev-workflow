@@ -20,14 +20,14 @@
 pwsh -File .\Init-Project.ps1
 ```
 
-可選參數範例：
+可選參數：
 
 ```powershell
-# 只部署指定元件
 pwsh -File .\Init-Project.ps1 -Include copilot,agents,instructions,prompts,skills,project-files
-
-# 部署全部但排除 skills
 pwsh -File .\Init-Project.ps1 -Exclude skills
+
+# 啟用 Repo Memory（跨 session 持久記憶）
+pwsh -File .\Init-Project.ps1 -EnableMemory
 ```
 
 目錄說明
@@ -44,6 +44,31 @@ pwsh -File .\Init-Project.ps1 -Exclude skills
 - 請勿將敏感資訊（API 金鑰、密碼等）提交到版本控制，務必使用環境變數或專用的密鑰管理服務。
 - 本範本以「通用性」與「保守配置」為原則；新增或移除 skills 應由各團隊依技術棧裁剪。
 - 使用說明與註解建議採繁體中文撰寫以符合團隊內部溝通習慣，程式碼與範例仍以英文為主。
+
+## 🧠 Repo Memory（跨 Session 記憶功能，可選）
+
+Repo Memory 讓 AI 在每次 Session 開始前自動讀取專案背景，避免每次重新解釋技術棧或當前進度。
+
+**啟用方式：**
+```powershell
+# 新專案初始化時啟用
+pwsh -File .\Init-Project.ps1 -EnableMemory
+
+# 現有專案（不重新部署元件）
+pwsh -File .\tools\install-apply.ps1 -EnableMemory
+```
+
+**會建立的結構：**
+```
+.ai-workflow-memory/
+├── PROJECT_CONTEXT.md    # 技術棧、架構決策摘要（納入版控）
+├── CURRENT_STATE.md      # 當前工作狀態，每個 session 結束後更新（納入版控）
+└── session-journal/      # 逐 session 的流水帳記錄（預設 gitignore）
+```
+
+**運作原理：** AI 在開始任何分析或實作前，會優先讀取 `PROJECT_CONTEXT.md` 與 `CURRENT_STATE.md`。Session 結束時更新 `CURRENT_STATE.md`，記錄當前階段與下一步。
+
+> 詳細設計說明請見 `docs/repo-memory-design.md`。
 
 ## 📚 文件導覽與閱讀路徑
 

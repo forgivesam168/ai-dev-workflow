@@ -12,6 +12,16 @@ You are an AI developer working with this repository. Your output MUST adhere to
 >
 > ⛔ 禁止：只 commit source 不 sync；或 sync 後不 commit。
 
+## Repo Memory (Opt-In)
+
+If `.ai-workflow-memory/` exists in the repo root, **read these files before starting any analysis, planning, or implementation**:
+- `.ai-workflow-memory/PROJECT_CONTEXT.md` — stable context (tech stack, key architectural decisions)
+- `.ai-workflow-memory/CURRENT_STATE.md` — active work status and next steps
+
+At session end (significant progress made): update `CURRENT_STATE.md` and append `.ai-workflow-memory/session-journal/YYYY-MM-DD-<slug>.md`.
+
+> Enable: `pwsh -File .\tools\install-apply.ps1 -EnableMemory`
+
 ## Instruction Layers
 
 > For language/framework coding rules see `instructions/*.instructions.md`.

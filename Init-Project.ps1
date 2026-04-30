@@ -5,7 +5,8 @@
 param(
     [string]$TemplateSource = $PSScriptRoot,
     [string[]]$Include = @(),
-    [string[]]$Exclude = @()
+    [string[]]$Exclude = @(),
+    [switch]$EnableMemory
 )
 
 # 設定來源路徑 (Template 位置)
@@ -256,6 +257,11 @@ if (!(Test-Path ".git")) {
 }
 
 # 建立預設 .gitignore (避免上傳敏感資訊)
+$memoryGitignoreEntry = if ($EnableMemory) {
+    "# AI workflow memory — session journals are local; PROJECT_CONTEXT.md and CURRENT_STATE.md are committed`n.ai-workflow-memory/session-journal/"
+} else {
+    "# AI workflow memory (repo-local; opt-in per project — remove this line to commit your memory)`n.ai-workflow-memory/"
+}
 $GitIgnoreContent = @"
 .vs/
 .vscode/
@@ -265,11 +271,18 @@ obj/
 *.suo
 .env
 
-# AI workflow memory (repo-local; opt-in per project — remove this line to commit your memory)
-.ai-workflow-memory/
+$memoryGitignoreEntry
 "@
 if (!(Test-Path ".gitignore")) {
     Set-Content -Path ".gitignore" -Value $GitIgnoreContent -Encoding utf8
+} elseif ($EnableMemory) {
+    # Idempotent: upgrade full .ai-workflow-memory/ ignore to session-journal/ only
+    $existing = Get-Content ".gitignore" -Raw
+    if ($existing -match '\.ai-workflow-memory/' -and $existing -notmatch '\.ai-workflow-memory/session-journal/') {
+        $updated = $existing -replace '(?m)^# AI workflow memory.*\n\.ai-workflow-memory/[^\n]*', "# AI workflow memory — session journals are local; PROJECT_CONTEXT.md and CURRENT_STATE.md are committed`n.ai-workflow-memory/session-journal/"
+        Set-Content -Path ".gitignore" -Value $updated.TrimEnd() -Encoding utf8
+        Write-Host "📝 .gitignore 已更新：改為只忽略 session-journal/" -ForegroundColor Cyan
+    }
 }
 
 # 執行首次提交（檢查是否有變更與 git config）
@@ -306,3 +319,15 @@ if ($hasChanges) {
 
 
 Write-Host "`n🚀 專案初始化成功！現在可以啟動 VS Code 並進入 Agent Mode。" -ForegroundColor Yellow
+
+# ─── Memory skeleton (委派給 install-apply -EnableMemory -MemoryOnly) ─────
+if ($EnableMemory) {
+    $installApply = Join-Path $TemplateSource 'tools\install-apply.ps1'
+    if (Test-Path $installApply) {
+        Write-Host "`n🧠 啟用 Repo Memory..." -ForegroundColor Magenta
+        & $installApply -EnableMemory -MemoryOnly -RepoRoot $TemplateSource -Target (Get-Location).Path
+    } else {
+        Write-Host "⚠️  找不到 tools/install-apply.ps1，請手動執行:" -ForegroundColor Yellow
+        Write-Host "   pwsh -File .\tools\install-apply.ps1 -EnableMemory" -ForegroundColor Yellow
+    }
+}

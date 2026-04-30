@@ -254,9 +254,23 @@ pwsh -File .\tools\sync-dotgithub.ps1
 - VS Code: 用於實作、review、除錯
 - 兩者共享相同的 agents、skills、instructions
 
----
+### 技巧 4: 啟用 Repo Memory（跨 Session 記憶）
 
-## 📚 完整指南
+讓 AI 在每次 session 開始前自動讀取專案背景與當前工作狀態，不必重複解釋你的技術棧或進度：
+
+```powershell
+# 新專案初始化時啟用
+pwsh -File .\Init-Project.ps1 -EnableMemory
+
+# 現有專案（只建立記憶骨架，不重新部署元件）
+pwsh -File .\tools\install-apply.ps1 -EnableMemory
+```
+
+啟用後，`.ai-workflow-memory/` 目錄會建立 `PROJECT_CONTEXT.md`（技術棧/架構摘要）與 `CURRENT_STATE.md`（當前工作狀態）。AI 會在開始任何分析前自動讀取這些檔案，並在 session 結束時更新。
+
+> 詳見 `docs/repo-memory-design.md`。
+
+---
 
 想深入了解更多？查看這些文檔：
 

@@ -6,21 +6,27 @@
     Default: skip existing files (preserves local customizations in adopter repos).
     Use -Force to overwrite files that differ from source.
     Use -EnableMemory to create .ai-workflow-memory/ skeleton.
+    Use -MemoryOnly to only create the memory skeleton, skipping component deployment.
     Idempotent: re-running is safe.
 .PARAMETER Force
     Overwrite target files that differ from source.
 .PARAMETER EnableMemory
     Initialize .ai-workflow-memory/ skeleton (opt-in per AC-3).
+.PARAMETER MemoryOnly
+    Skip component deployment; only create the .ai-workflow-memory/ skeleton.
+    Requires -EnableMemory to have any effect.
 .PARAMETER DryRun
     Delegates to install-plan.ps1 without making any changes.
 .EXAMPLE
     pwsh -File .\tools\install-apply.ps1
     pwsh -File .\tools\install-apply.ps1 -Force
     pwsh -File .\tools\install-apply.ps1 -EnableMemory
+    pwsh -File .\tools\install-apply.ps1 -EnableMemory -MemoryOnly
 #>
 param(
     [switch]$Force,
     [switch]$EnableMemory,
+    [switch]$MemoryOnly,
     [switch]$DryRun,
     [string]$RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path,
     # Deploy mode: copy to a different repo's .github/
@@ -106,6 +112,7 @@ if ($missing.Count -gt 0) {
 }
 
 # ─── Apply ────────────────────────────────────────────────────────────────
+if (-not $MemoryOnly) {
 $applied  = [System.Collections.Generic.List[PSCustomObject]]::new()
 $appliedCount = 0
 $skippedCount = 0
@@ -180,7 +187,14 @@ $manifestPath = Join-Path $DeployRoot '.ai-workflow-install.json'
 Write-Host ''
 Write-Host "📄 Manifest written: .ai-workflow-install.json ($($deployedComponents.Count) components)" -ForegroundColor Cyan
 
-# ─── Optional: enable memory skeleton ────────────────────────────────────
+# ─── Summary ──────────────────────────────────────────────────────────────
+Write-Host ''
+$driftCount = @($components | Where-Object { $_.status -like 'EXISTS (overwrite*' }).Count
+Write-Host "Summary: $appliedCount applied  |  $skippedCount skipped" -ForegroundColor Cyan
+if (-not $Force -and $driftCount -gt 0) {
+    Write-Host "ℹ️  $driftCount component(s) differ from source (use -Force to overwrite)." -ForegroundColor Yellow
+}
+} # end if (-not $MemoryOnly)
 if ($EnableMemory) {
     $memDir     = Join-Path $DeployRoot '.ai-workflow-memory'
     $journalDir = Join-Path $memDir 'session-journal'
@@ -237,11 +251,4 @@ if ($EnableMemory) {
     Write-Host "🧠 Memory skeleton initialized: .ai-workflow-memory/" -ForegroundColor Magenta
 }
 
-# ─── Summary ──────────────────────────────────────────────────────────────
-Write-Host ''
-$driftCount = @($components | Where-Object { $_.status -like 'EXISTS (overwrite*' }).Count
-Write-Host "Summary: $appliedCount applied  |  $skippedCount skipped" -ForegroundColor Cyan
-if (-not $Force -and $driftCount -gt 0) {
-    Write-Host "ℹ️  $driftCount component(s) differ from source (use -Force to overwrite)." -ForegroundColor Yellow
-}
 exit 0

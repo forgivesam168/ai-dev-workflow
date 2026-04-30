@@ -244,7 +244,52 @@ gh copilot memory clear
 
 ---
 
-## 10) Copilot CLI 互動模式
+## 10) Repo Memory — 跨 Session 記憶功能
+
+### 什麼是 Repo Memory
+
+**Repo Memory** 是本工作流程範本提供的**專案層記憶機制**，讓 AI 在每次 session 開始前自動讀取專案背景與當前工作狀態，無需每次重新解釋技術棧或進度。
+
+與 Copilot 內建 Memory（個人帳號層、28 天過期）不同，Repo Memory 是**版本控制的、團隊共享的**。
+
+### 啟用方式
+
+```powershell
+# 新專案初始化時啟用
+pwsh -File .\Init-Project.ps1 -EnableMemory
+
+# 現有專案（只建立記憶骨架，不重新部署元件）
+pwsh -File .\tools\install-apply.ps1 -EnableMemory
+```
+
+### 建立的目錄結構
+
+```
+.ai-workflow-memory/
+├── PROJECT_CONTEXT.md    # 技術棧、架構決策摘要（納入版控，全團隊共享）
+├── CURRENT_STATE.md      # 當前工作狀態，每 session 結束後更新（納入版控）
+└── session-journal/      # 逐 session 流水帳記錄（預設 gitignore）
+```
+
+### Repo Memory vs Copilot Memory
+
+| 面向 | Repo Memory | Copilot Memory |
+|------|-------------|----------------|
+| 來源 | 人工維護（AI 協助更新）| AI 自動學習 |
+| 確定性 | 高（每次 session 載入）| 非確定性 |
+| 生命週期 | 永久（版本控制）| 28 天 |
+| 範圍 | 專案層（團隊共享）| 個人帳號層 |
+
+### 運作原理
+
+1. `copilot-instructions.md` 指示 AI：若 `.ai-workflow-memory/` 存在，在開始任何分析/規劃/實作前，**優先讀取** `PROJECT_CONTEXT.md` 和 `CURRENT_STATE.md`。
+2. AI 在 session 結束時更新 `CURRENT_STATE.md`，記錄當前階段與下一步。
+
+> 詳細設計說明請見 `docs/repo-memory-design.md`。
+
+---
+
+## 11) Copilot CLI 互動模式
 
 ### Plan Mode（計畫模式）
 
@@ -286,7 +331,7 @@ gh copilot chat --autopilot
 
 ---
 
-## 11) MCP 配置說明
+## 12) MCP 配置說明
 
 ### GitHub MCP Server（內建）
 

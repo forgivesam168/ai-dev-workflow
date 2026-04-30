@@ -9,6 +9,7 @@ This repository provides a reusable, finance-grade AI development workflow for G
 - Prompt library (10 commands) for repeatable workflows
 - Skills library (31 specialized capabilities)
 - Initialization script for quick rollout
+- **Repo Memory** for persistent project context across sessions (opt-in)
 
 ## Getting Started
 
@@ -24,6 +25,9 @@ Optional parameters:
 ```powershell
 pwsh -File .\Init-Project.ps1 -Include copilot,agents,instructions,prompts,skills,project-files
 pwsh -File .\Init-Project.ps1 -Exclude skills
+
+# Enable Repo Memory for persistent context across sessions
+pwsh -File .\Init-Project.ps1 -EnableMemory
 ```
 
 ## Structure
@@ -96,6 +100,31 @@ Between stages, agents automatically validate output quality before handing off 
 - Keep instructions in Traditional Chinese for explanations as defined in the constitution.
 - Update the skill set per your tech stack and product needs.
 - Run `pwsh -File .\tools\sync-dotgithub.ps1` after editing instructions.
+
+## Repo Memory (Opt-In)
+
+Repo Memory lets the AI retain project context across sessions — no re-explaining your tech stack or current stage every time.
+
+**Enable it:**
+```powershell
+# During init (new project)
+pwsh -File .\Init-Project.ps1 -EnableMemory
+
+# Or on existing projects
+pwsh -File .\tools\install-apply.ps1 -EnableMemory
+```
+
+**What gets created:**
+```
+.ai-workflow-memory/
+├── PROJECT_CONTEXT.md   # Tech stack, key architectural decisions
+├── CURRENT_STATE.md     # Active work status, updated each session
+└── session-journal/     # Append-only per-session logs (gitignored by default)
+```
+
+**How it works:** The AI reads `PROJECT_CONTEXT.md` and `CURRENT_STATE.md` before starting any analysis or implementation. At session end, it updates `CURRENT_STATE.md` with stage and next steps.
+
+> See `docs/repo-memory-design.md` for full design specification.
 
 See `WORKFLOW.md` for detailed workflow documentation.
 
