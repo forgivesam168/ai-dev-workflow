@@ -4,7 +4,8 @@ description: 'Start a work item: triage risk, run structured brainstorming, and 
 
 # Brainstorm Command
 
-> **💡 Recommended Agent**: This command works best with `architect-agent` for system design decisions or `spec-agent` for requirements clarification. Use `/agent` in CLI or select from agent dropdown in VS Code.
+> **💡 Recommended Agent**: This command works best with `brainstorm-agent` for requirements discovery. Use `/agent` in CLI or select from agent dropdown in VS Code.
+> If the skill does not auto-load, run `/brainstorming` manually.
 
 Use `/brainstorm` at the start of any new work item to:
 1. Triage and classify risk (Low/Med/High)
@@ -28,8 +29,8 @@ Use `/brainstorm` at the start of any new work item to:
   - **Fast** (low-risk only): `/plan` → `/tdd` → `/review`
 
 ### Step 2: Structured Brainstorming
-1) **Clarifying Questions** (if needed)
-2) **Assumptions & Constraints**
+1) **Clarifying Questions** — ask at least 5 targeted questions in each new brainstorming round before options or recommendations, unless the user explicitly allows assumptions
+2) **Assumptions & Constraints** — separate confirmed facts from assumptions
 3) **Options (2–3)** with pros/cons and risk notes
 4) **Recommendation** (chosen approach)
 5) **Decision Log** (copy/paste-ready)
@@ -42,6 +43,7 @@ Create `changes/<YYYY-MM-DD>-<slug>/` with:
 - `03-spec.md` — draft specification + acceptance criteria
 
 ## Rules
+- In each new brainstorming round, ask at least 5 targeted questions before presenting options or recommendations, unless the user explicitly allows assumptions
 - Keep acceptance criteria explicit and testable
 - Do not include secrets or sensitive customer/transaction data
 - For brownfield: note affected modules and regression points

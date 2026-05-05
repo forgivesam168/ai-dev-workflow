@@ -6,7 +6,7 @@ description: 'Generate a comprehensive specification document (PRD/Spec) for a f
 
 > **💡 Recommended Agent**: This command works best with `spec-agent` (Specification Specialist). Use `/agent` in CLI or select from agent dropdown in VS Code.
 
-Use `/spec` after `/brainstorm` to transform clarified requirements into a formal specification document.
+Use `/spec` after `/brainstorm` to transform clarified requirements into a formal specification document. If brainstorm was skipped, assumption-driven, or incomplete, continue clarifying before drafting the spec.
 
 ## When to Use
 - After brainstorming session is complete
@@ -16,7 +16,7 @@ Use `/spec` after `/brainstorm` to transform clarified requirements into a forma
 ## Process
 
 ### Step 1: Clarifying Questions
-If not already covered in brainstorm, ask about:
+If not already covered in brainstorm, or if brainstorm proceeded on assumptions, ask the missing questions before drafting:
 - The specific problem being solved
 - Target users and their needs
 - Core functionality requirements

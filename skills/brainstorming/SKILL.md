@@ -28,8 +28,8 @@ Use this skill at the **start of any request/change** when:
   - **Fast** (low-risk only): plan → tdd → review
 
 ### Phase 1 — Clarify
-- Ask 3–8 targeted questions (scope, constraints, stakeholders, non-goals)
-- List assumptions if the user cannot answer immediately
+- In each new brainstorming round, ask at least 5 targeted questions before options/recommendation unless the user explicitly says assumptions are acceptable
+- If the user cannot answer immediately, list assumptions separately and label what remains unknown
 
 ### Phase 2 — Explore Options
 - Produce 2–3 options
@@ -50,6 +50,8 @@ Use this skill at the **start of any request/change** when:
 ## Must-Ask Questions
 
 Apply to **every project** regardless of domain:
+
+In a normal kickoff, cover at least five of these categories before recommending a path or solution. If the user explicitly allows assumptions, say that you are switching to assumption-driven brainstorming.
 
 | Category | Question | Purpose |
 |----------|----------|---------|
@@ -88,7 +90,7 @@ Trigger these based on the user's answers:
 
 - Risk Classification (Low/Med/High)
 - Workflow Path Recommendation (Standard/Fast)
-- Questions (if needed)
+- Questions Asked (at least 5 unless the user explicitly allowed assumptions)
 - Assumptions & Constraints
 - Options (2–3)
 - Recommendation
@@ -106,6 +108,7 @@ Use this structure in `01-brainstorm.md`:
 **Risk Level**: Low / Med / High
 **Workflow Path**: Fast / Standard
 **Chosen Approach**: [option name and one-line reason]
+**Discovery Questions Covered**: [at least five categories, or note that the user explicitly allowed assumptions]
 **Open Questions**: [anything still unresolved]
 **Assumptions**: [what we're assuming to be true]
 **Non-goals**: [explicitly out of scope]

@@ -24,16 +24,17 @@ Use this skill when:
 
 **Required**: `01-brainstorm.md` should exist with:
 - Clear problem statement
+- Discovery answers captured (at least 5 questions, or an explicit note that the user allowed assumptions)
 - Chosen solution approach
 - Key decisions documented
 
-**Optional**: Can generate spec without brainstorm, but will need to ask more clarifying questions
+**Optional**: Can generate spec without brainstorm, but must ask the missing clarifying questions first
 
 ## Step-by-Step Workflow
 
 ### Step 1: Clarifying Questions
 
-If not already covered in brainstorm, ask about:
+If not already covered in brainstorm, or if brainstorm relied on assumptions, ask the missing questions before writing the spec:
 
 **Problem & Users**:
 - What specific problem are we solving?

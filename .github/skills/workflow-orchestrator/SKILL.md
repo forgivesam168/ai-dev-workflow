@@ -68,7 +68,7 @@ Based on detected stage, provide:
 
 **Next Step**: Start brainstorming session
 
-**Recommended Agent**: `architect-agent` or `spec-agent`
+**Recommended Agent**: `brainstorm-agent`
 
 **Action Instructions**:
 
@@ -76,7 +76,8 @@ Based on detected stage, provide:
 ```
 Input: "我要開始一個新功能的 brainstorming"
 [System loads brainstorming skill]
-→ /agent → Select architect-agent or spec-agent
+→ /agent → Select brainstorm-agent
+→ Ask at least 5 discovery questions unless the user explicitly allows assumptions
 → Continue conversation to generate 01-brainstorm.md
 ```
 
@@ -84,10 +85,10 @@ Input: "我要開始一個新功能的 brainstorming"
 ```
 Input: /brainstorm
 Or: "brainstorm a new feature"
-→ Select @workspace #architect-agent
+→ Select @workspace #brainstorm-agent
 ```
 
-**Triggers brainstorming skill**: Risk classification, option exploration, decision log
+**Triggers brainstorming skill**: Risk classification, discovery questions, option exploration, decision log
 
 ---
 

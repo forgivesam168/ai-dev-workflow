@@ -72,7 +72,7 @@ If user confirms:
 ```
 1. Brainstorm (/brainstorm)
    ├─ Risk classification
-   ├─ Requirements clarification
+   ├─ Requirements clarification (ask at least 5 discovery questions unless the user allows assumptions)
    └─ Create change package skeleton
 
 2. Spec (/spec)
@@ -143,7 +143,7 @@ Agent:
 📍 Current Status: No active change packages found
 🆕 Starting new work
 
-Would you like to start with `/brainstorm`? (yes/no)
+Would you like to start with `/brainstorm`? It will begin with discovery questions unless you explicitly allow assumptions. (yes/no)
 Options:
 - "yes" → Run /brainstorm
 - "fast" → Skip to /create-plan (low-risk only)
