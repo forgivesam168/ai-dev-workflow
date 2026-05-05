@@ -83,7 +83,7 @@ copilot
 
 | 階段 | 自動載入 | 代表 Skills |
 |------|----------|------------|
-| Brainstorm | `brainstorming` | 結構化需求探索、風險分類、決策紀錄 |
+| Brainstorm | `brainstorming` | 結構化需求探索（預設先問至少五題）、風險分類、決策紀錄 |
 | Spec | `specification`, `prd` | PRD / 規格文件生成、驗收標準 |
 | Plan | `implementation-planning` | 任務拆解、測試策略、影響分析 |
 | Implement | `tdd-workflow` + 語言 patterns | Red-Green-Refactor + `coding-standards`, `backend-patterns`, `frontend-patterns`, `python-patterns` |
@@ -92,6 +92,25 @@ copilot
 
 > 💡 **Skill 沒自動載入？** 可在 CLI 中直接輸入 `/skill-name` 手動觸發，例如 `/brainstorming`、`/implementation-planning`。
 > 每個 Agent 的 Skill Integration 區塊也會提示對應的 skill 指令。
+> Brainstorm 預設會先問至少五題再收斂方案；只有在你明確表示可直接假設時，才會改走 assumption-driven 模式。
+
+### Guardrails（共享品質底盤）
+
+除了各階段的主技能，現在工作流還有一層 **shared guardrails**：
+
+- **不是新階段**
+- **不是新的主技能**
+- **不會改變你原本怎麼用 workflow**
+
+它的作用是橫向約束所有 agent：
+- 假設要顯性化，不可默默猜測
+- 解法保持簡潔，避免過度工程
+- diff 要精準，避免無關修改
+- 成功條件要可驗證
+
+大部分 guardrails 會透過 constitution 與 core agents **自動生效**。若你想手動要求 agent 重新套用這層品質底盤，可用：
+
+`/execution-guardrails`
 
 **品質閘門（agentic-eval）— 階段交接前的自動品質驗證：**
 
@@ -111,7 +130,7 @@ copilot
 > 輸入「請 architect-agent 審查這份 plan」或切換到 `/agent architect-agent`。
 
 **隨時可引用的輔助 Skills：**
-`excalidraw-diagram-generator` / `web-design-reviewer` / `webapp-testing` / `gh-cli` / `github-issues` / `refactor` / `chrome-devtools` / `microsoft-docs`
+`execution-guardrails` / `excalidraw-diagram-generator` / `web-design-reviewer` / `webapp-testing` / `gh-cli` / `github-issues` / `refactor` / `chrome-devtools` / `microsoft-docs`
 
 ### Instructions（規範）
 定義「遵守什麼標準」，例如：
@@ -129,6 +148,7 @@ copilot
 1. CLI 輸入: "我要開發一個新的交易功能"
    → 系統載入 brainstorming skill
    → 推薦切換到 brainstorm-agent
+   → 預設先問至少五題釐清需求
    → 風險判定為「High」→ 走標準路徑
 
 2. 產出 01-brainstorm.md 後，輸入: "產生 spec"

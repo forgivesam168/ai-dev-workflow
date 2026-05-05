@@ -214,7 +214,7 @@ git add .github/ .gitattributes
 git commit -m "chore: initialize AI development workflow
 
 - Add agents (architect, coder, code-reviewer, plan, spec)
-- Add 28 skills for specialized capabilities
+- Add 32 skills for specialized capabilities
 - Add instructions for coding standards
 - Add MCP configuration (context7, memory)
 - Add .gitattributes for line ending normalization"

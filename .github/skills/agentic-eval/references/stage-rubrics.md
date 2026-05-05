@@ -13,15 +13,16 @@ at each quality inflection point.
 
 | Dimension | Weight | PASS Criteria |
 |-----------|--------|---------------|
-| Risk Classification | 30% | Low/Med/High explicitly stated with rationale |
-| Requirements Coverage | 30% | Functional + non-functional requirements captured |
-| Option Diversity | 20% | ≥2 meaningfully different solution options documented |
-| Decision Log | 20% | At least one ADR entry with trade-off rationale |
+| Risk Classification | 25% | Low/Med/High explicitly stated with rationale |
+| Requirements Coverage | 25% | Functional + non-functional requirements captured |
+| Option Diversity | 15% | ≥2 meaningfully different solution options documented |
+| Assumption Management | 20% | Facts, assumptions, and unknowns are separated; no major hidden assumption drives the recommendation |
+| Decision Log | 15% | At least one ADR entry with trade-off rationale |
 
 **Adversarial prompt template (self-eval only):**
 > "Review the brainstorm output. Identify any requirements that seem implied but are NOT explicitly stated.
 > Flag any options that are essentially the same approach reworded. Confirm the risk classification
-> is defensible. Reply with PASS or FAIL per dimension with a one-sentence rationale."
+> is defensible. Call out any hidden assumption that materially changes the recommendation. Reply with PASS or FAIL per dimension with a one-sentence rationale."
 
 ---
 
@@ -34,9 +35,10 @@ at each quality inflection point.
 
 | Dimension | Weight | PASS Criteria |
 |-----------|--------|---------------|
-| AC Testability | 30% | Every AC has a concrete, verifiable success condition |
-| Scope Boundary | 25% | In-scope / out-of-scope explicitly listed |
-| Traceability | 25% | Each requirement has a unique ID (FR-XXX / NFR-XXX) |
+| AC Testability | 25% | Every AC has a concrete, verifiable success condition |
+| Scope Boundary | 20% | In-scope / out-of-scope explicitly listed |
+| Traceability | 20% | Each requirement has a unique ID (FR-XXX / NFR-XXX) |
+| Assumption Exposure | 15% | Assumptions, unresolved questions, and non-goals are explicitly separated from requirements |
 | Financial Precision | 20% | No float types mentioned for money fields; minor-unit or string specified |
 
 **FAIL → handoff blocked** if: AC Testability FAIL OR Traceability FAIL OR Financial Precision FAIL.
@@ -44,7 +46,8 @@ at each quality inflection point.
 **Adversarial prompt (plan-agent cross-eval):**
 > "Read only the AC list and constraints below. For each AC, answer: can I write a concrete
 > implementation plan step that satisfies this AC without ambiguity? Flag any AC that is
-> too vague to plan against. Reply with per-AC PASS/FAIL and a gap description for FAILs."
+> too vague to plan against. Identify any hidden assumption masquerading as a requirement.
+> Reply with per-AC PASS/FAIL and a gap description for FAILs."
 >
 > [Insert: AC list, constraint summary — NOT full spec document]
 
@@ -59,16 +62,18 @@ at each quality inflection point.
 
 | Dimension | Weight | PASS Criteria |
 |-----------|--------|---------------|
-| Spec AC Coverage | 35% | Every FR-ID in spec appears in at least one plan step |
+| Spec AC Coverage | 30% | Every FR-ID in spec appears in at least one plan step |
 | Step Verifiability | 25% | Every step has a stated verification method (test, assertion, or manual check) |
-| Dependency Order | 20% | No circular dependencies; dependencies are explicit |
-| Risk Identification | 20% | Each High-complexity step has a noted risk or mitigation |
+| Dependency Order | 15% | No circular dependencies; dependencies are explicit |
+| Assumption Management | 15% | Plan-specific assumptions are explicit and localized; no hidden assumption invalidates multiple phases |
+| Simplicity / Scope Discipline | 15% | Plan stays within current spec scope; no speculative architecture or future-proofing work is introduced without justification |
 
 **Adversarial prompt (architect Tier 2 eval):**
 > "You are an adversarial reviewer. Review this plan excerpt and AC list.
 > Identify: (1) Any spec requirement NOT covered by a plan step.
 > (2) Any plan step with no verifiable outcome. (3) Any implicit assumption that,
-> if wrong, would invalidate multiple steps. Respond PASS/FAIL per dimension.
+> if wrong, would invalidate multiple steps. (4) Any step that adds speculative scope or architecture
+> not demanded by the current spec. Respond PASS/FAIL per dimension.
 > Do NOT suggest rewrites — only identify gaps."
 >
 > [Insert: plan steps summary + AC list — max 800 words total]
@@ -82,10 +87,11 @@ at each quality inflection point.
 
 | Dimension | Weight | PASS Criteria |
 |-----------|--------|---------------|
-| Green Build | 30% | All tests pass; no skipped/pending tests |
-| Financial Precision | 25% | `grep -rn "float\|double" src/` returns no money-related hits |
-| Spec AC Coverage | 25% | Every FR-ID has a corresponding test (not just code path) |
-| Dead Code Absence | 10% | No unused imports/variables in the diff |
+| Green Build | 25% | All tests pass; no skipped/pending tests |
+| Financial Precision | 20% | `grep -rn "float\|double" src/` returns no money-related hits |
+| Spec AC Coverage | 20% | Every FR-ID has a corresponding test (not just code path) |
+| Diff Scope Hygiene | 15% | The diff contains no unrelated edits; any unused imports/variables were created by this change and are cleaned up |
+| Simplicity / Overengineering Risk | 10% | The implementation uses the smallest viable design; no speculative abstraction appears without current need |
 | Environment Compatibility | 10% | No Linux-only commands; no hardcoded paths or credentials |
 
 > 🔴 **Financial Precision FAIL → STOP and fix before any other action.**
@@ -93,7 +99,8 @@ at each quality inflection point.
 
 **Self-eval prompt template:**
 > "Review the following diff and test output. Score each dimension PASS or FAIL with evidence.
-> Evidence must be a specific line number or grep result — not a general statement."
+> Evidence must be a specific line number, diff hunk, or grep result — not a general statement.
+> Explicitly flag any unrelated edit or speculative abstraction."
 >
 > [Insert: git diff + pytest/test output tail — NOT full file content]
 
@@ -106,15 +113,17 @@ at each quality inflection point.
 
 | Dimension | Weight | PASS Criteria |
 |-----------|--------|---------------|
-| Severity Coverage | 35% | At least one finding per severity level if applicable (🔴/🟡/🟢) |
-| Financial Rule Enforcement | 30% | Float/money issues explicitly called out or confirmed absent |
-| Spec Alignment | 20% | Review references spec AC IDs where relevant |
+| Severity Coverage | 30% | At least one finding per severity level if applicable (🔴/🟡/🟢) |
+| Financial Rule Enforcement | 25% | Float/money issues explicitly called out or confirmed absent |
+| Spec Alignment | 15% | Review references spec AC IDs where relevant |
+| Scope Discipline | 15% | Review calls out hidden assumptions, unrelated edits, or overengineering when present |
 | Actionability | 15% | Every issue has a suggested fix, not just a description |
 
 **Adversarial meta-prompt (architect Tier 1):**
 > "Review this code-reviewer report. Identify: (1) Any severity category with zero findings
 > when the diff suggests otherwise. (2) Any money-related code change NOT addressed by
-> financial precision checks. (3) Any finding without a concrete actionable suggestion.
+> financial precision checks. (3) Any hidden-assumption / overengineering / unrelated-edit issue
+> in the diff that the review ignored. (4) Any finding without a concrete actionable suggestion.
 > Reply PASS/FAIL per dimension. If all PASS, output 'REVIEW ACCEPTED'."
 >
 > [Insert: review report summary + diff stat — NOT full code files]

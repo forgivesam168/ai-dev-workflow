@@ -7,7 +7,7 @@ This repository provides a reusable AI development workflow for GitHub Copilot C
 - Team constitution and instruction mapping for consistent AI behavior
 - Agent personas: Architect, Plan, Coder, Reviewer, Spec
 - Prompt library (10 commands) for repeatable workflows
-- Skills library (28 specialized capabilities)
+- Skills library (32 specialized capabilities)
 - Bootstrap installer for deploying to any project
 - **Repo Memory** for persistent project context across sessions (opt-in)
 
@@ -38,7 +38,7 @@ See [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) for all parameters and advanced o
 - `agents/` - Persona definitions (6 agents)
 - `instructions/` - Language and domain rules
 - `prompts/` - Slash commands (10 prompts)
-- `skills/` - Skills library (28 skills)
+- `skills/` - Skills library (32 skills)
 - `bootstrap.ps1` - Deployment & update installer
 - `tools/` - Sync scripts
 
@@ -54,7 +54,7 @@ See [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) for all parameters and advanced o
 | Stage | VS Code | Description |
 |-------|---------|-------------|
 | 0 | `/workflow` | **Orchestrator**: Detect current stage, guide next step |
-| 1 | `/brainstorm` | Triage risk, clarify requirements, create change package |
+| 1 | `/brainstorm` | Triage risk, ask at least five discovery questions, create change package |
 | 2 | `/spec` | Generate specification document |
 | 3 | `/create-plan` | Create executable implementation plan |
 | 4 | `/tdd` | Implement with Red-Green-Refactor |
@@ -65,6 +65,7 @@ See [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) for all parameters and advanced o
 > In CLI, use natural language instead — e.g., "review my code", "create an implementation plan".
 > Note: CLI has its own built-in `/plan` (Plan Mode) and `/review` (code review agent), which are
 > different from these workflow prompts.
+> Brainstorm starts with discovery questions by default; if the skill does not auto-load, run `/brainstorming` manually.
 
 ### Workflow Orchestrator
 
@@ -95,6 +96,17 @@ Between stages, agents automatically validate output quality before handing off 
 > ⚠️ **The only hard-stop rule**: float/double used for money — coder-agent refuses to proceed to Review. Fix the precision issue first.
 >
 > 💡 **Architect arbitration** is the only gate that requires user action. After plan completes on Med/High risk work, switch to architect-agent and say: "请对这份 plan 做架构仲裁" or "arbitrate this plan".
+
+### Shared Guardrails (Always-On + Manual Fallback)
+
+The workflow keeps the existing **Agent → Primary Skill** pairing intact. `execution-guardrails` is a shared quality layer that reinforces:
+
+- assumptions must be explicit
+- solutions should stay as simple as the current request allows
+- diffs should remain surgical
+- success criteria should be verifiable
+
+Most of this behavior is now always-on through the constitution and core agents. When you want an explicit reset, use `/execution-guardrails` as a manual fallback.
 
 ## Notes
 

@@ -31,7 +31,7 @@
 
 | 階段 | 指令 | 說明 |
 |------|------|------|
-| 1 | `/brainstorm` | 風險分類、需求釐清、建立 change package |
+| 1 | `/brainstorm` | 風險分類、先問至少五題釐清需求、建立 change package |
 | 2 | `/spec` | 產出規格文件 |
 | 3 | `/create-plan` | 產出可執行計畫（含測試策略、影響分析） |
 | 4 | `/tdd` | TDD 實作（Red-Green-Refactor） |
@@ -53,6 +53,13 @@
 | 4. Implement | `tdd-workflow` + 語言 patterns | `coder-agent` | `開始 TDD 實作` | 測試 + 程式碼 |
 | 5. Review | `code-security-review`, `security-review` | `code-reviewer` | `review 我的 code` | Review report |
 | 6. Archive | `work-archiving`, `git-commit` | Default | `archive 這個 change` | `99-archive.md` |
+
+**共享 Guardrails（always-on + manual fallback）**：
+
+- 維持既有 **Agent → Primary Skill** 主結構，不新增 workflow stage
+- 把常見 LLM 失誤前置約束：假設要顯性化、簡潔優先、精準修改、成功標準可驗證
+- 平常由 constitution + core agents **隱性生效**
+- 若要顯式重載這層品質底盤，可手動引用：`/execution-guardrails`
 
 **品質閘門（agentic-eval）— 階段交接點自動驗證：**
 
@@ -79,6 +86,7 @@
 | 前端 patterns | `frontend-patterns` | `React 最佳實踐` |
 | 後端 patterns | `backend-patterns` | `API 設計原則` |
 | Python patterns | `python-patterns` | `Python 最佳實踐` |
+| 共享品質約束 | `execution-guardrails` | `/execution-guardrails` |
 | 重構 | `refactor` | `幫我重構這段 code` |
 | 前端功能測試 | `webapp-testing`, `scoutqa-test` | `測試這個網頁` |
 | 瀏覽器除錯 | `chrome-devtools` | `幫我 debug 瀏覽器問題` |

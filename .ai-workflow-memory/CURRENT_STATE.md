@@ -1,15 +1,15 @@
 # Current State
 
-## Status as of 2026-04-21
+## Status as of 2026-05-05
 
-- **Active change**: changes/2026-04-21-workflow-template-optimization/
-- **Stage**: Plan → Implementation（Scope A 完成，Scope B spec 完成）
-- **Last action**: 完成 Scope A（catalog alignment + audit script）及 Scope B 設計文件（docs/install-surface-design.md）
-- **Next step**: Scope C — Phase 3（skills/explore/SKILL.md + skills/gate-check/SKILL.md + subagent status protocol）
+- **Active work**: Shared guardrails integration for workflow quality stabilization
+- **Stage**: Implementation complete for core integration（constitution + agents + guardrail skill + rubric + docs + sync）
+- **Last action**: 新增 `execution-guardrails` skill，將 shared guardrails 置入 constitution / core agents，擴充 `agentic-eval` rubrics，並同步 `.github/**`
+- **Next step**: 觀察 adopters 實際使用回饋，再決定是否獨立推出 Lite / Guardrail-only install mode
 - **Blockers**: 無
-- **Scope 進度**:
-  - Scope A（Catalog/Contract Alignment）✅ 完成
-  - Scope B（Install Surface Design）✅ 完成（設計稿，實作另立 change package）
-  - Scope C（Workflow Enhancements）⏳ 待執行
-  - Scope D（Repo Memory Skeleton）📄 設計稿已完成（docs/repo-memory-design.md）
-  - Scope E（Debug Skill）⏳ 待執行
+- **Latest progress**:
+  - Shared guardrails architecture documented in `AGENTS.md`
+  - New skill added: `skills/execution-guardrails/`
+  - Guardrail-aware scoring added to `skills/agentic-eval/references/stage-rubrics.md`
+  - User docs updated: `README.md`, `README.zh-TW.md`, `QUICKSTART.md`, `WORKFLOW.md`
+  - Sync + catalog audit ✅ clean（9 agents / 10 prompts / 32 skills）

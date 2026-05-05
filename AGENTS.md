@@ -6,7 +6,7 @@ It contains:
 - Agent personas (`agents/*.agent.md`) — 9 agents
 - Instruction files (`instructions/*.instructions.md`)
 - Prompt library (`prompts/*.prompt.md`) — 10 prompts
-- Skills library (`skills/**/SKILL.md`) — 31 skills
+- Skills library (`skills/**/SKILL.md`) — 32 skills
 - Bootstrap installer (`bootstrap.ps1`) to deploy these assets into any project.
 
 ## Pointer-Style Guidance Architecture
@@ -50,6 +50,22 @@ Each agent includes a `## Skill Integration` section that uses a three-layer bin
 
 > **Note**: Skill auto-load is probabilistic (model-driven). If the paired skill doesn't load automatically, use the `/skill-name` command shown in the agent's Skill Integration section.
 
+### Shared Guardrails Layer
+
+Not every skill in this repo is a stage-level **primary skill**. `execution-guardrails` is a **cross-cutting quality layer** that complements the existing Agent → Primary Skill pairing rather than replacing it.
+
+Use this layering model:
+
+1. **Agent** — who does the work
+2. **Primary Skill** — the main methodology for that stage
+3. **Guardrails** — shared execution constraints (assumptions explicit, simplicity first, surgical changes, verifiable success criteria)
+4. **Quality Gate** — `agentic-eval` / `gate-check` before handoff
+
+Operational rule:
+- **Always-on essence** lives in `copilot-instructions.md` + core agent body text
+- **Manual fallback** lives in `/execution-guardrails`
+- **Quality scoring** lives in `agentic-eval` rubrics
+
 ### agentic-eval 品質閘門（次要整合層）
 
 在各 agent 完成**主要 skill** 之後，`agentic-eval` skill 作為次要整合層介入，在階段交接點提供品質驗證，確保產出物符合下游 agent 的期望品質。
@@ -82,7 +98,7 @@ Each agent includes a `## Skill Integration` section that uses a three-layer bin
 | `/readme` | Tool | Create README |
 | `/learn` | Tool | Learn and improve AI behavior |
 
-## Skills (31)
+## Skills (32)
 
 Skills provide methodology and toolkits that are automatically loaded into the current agent's context.
 
@@ -91,7 +107,7 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 | Skill | Description | Triggers On | Recommended Agent |
 |-------|-------------|-------------|-------------------|
 | workflow-orchestrator | Flow coordinator: detects current stage and recommends next steps | workflow, what's next | — |
-| brainstorming | Structured requirements exploration and risk classification | brainstorm, explore options | architect / spec |
+| brainstorming | Structured requirements exploration and risk classification | brainstorm, explore options | brainstorm-agent |
 | specification | Generate PRD/Spec documents | spec, PRD, requirements | spec-agent |
 | implementation-planning | Break down implementation plan with TDD integration (includes plan-from-spec) | plan, task breakdown, spec to plan | plan-agent |
 | tdd-workflow | TDD methodology (Red-Green-Refactor) | TDD, test-driven | coder-agent |
@@ -107,6 +123,12 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 | git-commit | Conventional Commits message generation with intelligent staging | commit |
 | prd | Generate Product Requirements Documents | PRD, product requirements |
 | make-skill-template | Scaffold new Agent Skills for GitHub Copilot | create a skill, scaffold skill |
+
+### Cross-Cutting Quality Skills (1)
+
+| Skill | Description | Triggers On |
+|-------|-------------|-------------|
+| execution-guardrails | Shared quality guardrails that reduce hidden assumptions, overengineering, unrelated edits, and weak success criteria; use as manual fallback with `/execution-guardrails` | hidden assumptions, overengineering, unrelated edits, success criteria |
 
 ### Development Pattern Skills (5)
 
@@ -128,7 +150,7 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 | gh-cli | GitHub CLI comprehensive reference | gh CLI, GitHub operations |
 | github-issues | Create, update, and manage GitHub issues via MCP | create issue, file bug |
 
-### Testing & QA Skills (3)
+### Testing & QA Skills (4)
 
 | Skill | Description | Triggers On |
 |-------|-------------|-------------|

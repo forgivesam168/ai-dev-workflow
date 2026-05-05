@@ -51,6 +51,7 @@ Generate → Evaluate → Critique → Refine → Output
 
 This skill integrates at specific **quality inflection points** where context isolation provides value.
 Evaluation strictness is **risk-adaptive** — tied to the brainstorm-agent's Low/Med/High classification.
+It complements the repo's shared `execution-guardrails` layer: guardrails shape behavior **before and during** work, while `agentic-eval` scores whether an artifact is safe to hand off.
 
 | Stage Transition | Trigger Agent | Tier | Risk Level |
 |-----------------|---------------|------|------------|
@@ -59,6 +60,10 @@ Evaluation strictness is **risk-adaptive** — tied to the brainstorm-agent's Lo
 | After Plan complete | architect-agent (external) | 2 | Med / High |
 | Before code-reviewer | coder-agent (self) | 1 | All |
 | Review completeness check | architect-agent (meta-review) | 1 | High only |
+
+**Guardrail-aware scoring**:
+- Use rubric dimensions such as **Assumption Management**, **Simplicity / Overengineering Risk**, **Diff Scope Hygiene**, and **Verification Strength** where they materially affect handoff quality.
+- Prefer stage-specific wording rather than a generic global checklist; the same guardrail should look different in brainstorm, plan, code, and review.
 
 **Context isolation rules (apply everywhere):**
 - Pass summaries and key excerpts — NEVER full document blobs

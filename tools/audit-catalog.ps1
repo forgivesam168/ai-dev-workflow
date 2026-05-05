@@ -22,10 +22,11 @@ $ErrorActionPreference = 'Stop'
 # Update these constants in the same commit that adds/removes files.
 # Phase 3 update: 28 → 30  (explore + gate-check added)
 # Phase 5 update: 30 → 31  (debug added)
+# Phase 7 update: 31 → 32  (execution-guardrails added)
 # Phase 6 update:  6 →  9  (pm + frontend-designer + dba added)
 $ExpectedAgentCount  = 9
 $ExpectedPromptCount = 10
-$ExpectedSkillCount  = 31   # <-- update here when adding new skills
+$ExpectedSkillCount  = 32   # <-- update here when adding new skills
 
 # ─── Required change-package files (canonical source: changes.instructions.md)
 $RequiredChangeFiles = @(

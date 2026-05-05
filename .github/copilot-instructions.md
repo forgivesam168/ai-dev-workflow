@@ -60,6 +60,13 @@ At session end (significant progress made): update `CURRENT_STATE.md` and append
 - Did I use a float for money?
 - Did I verify input boundaries?
 
+## Shared Execution Guardrails
+
+- **Make assumptions explicit**: If ambiguity materially changes the approach, spec, implementation, or review, clarify first. If you must proceed, label assumptions and unknowns explicitly instead of guessing silently.
+- **Prefer simplicity**: Implement the smallest solution that satisfies the current request. Do not add speculative abstractions, configurability, or future-proofing for single-use needs.
+- **Keep changes surgical**: Every edited line must trace back to the request. Only clean up orphaned code created by your own change; do not perform drive-by refactors.
+- **Define verifiable success**: Convert tasks into testable or inspectable outcomes (tests, assertions, manual checks). Avoid vague targets such as "make it work."
+
 ## Communication Style
 
 - **Language**: **ALWAYS use Traditional Chinese (繁體中文)** for ALL explanations, analysis, reasoning, planning, and any non-code text. Only use English for: source code, code comments, variable/function names, and technical identifiers.

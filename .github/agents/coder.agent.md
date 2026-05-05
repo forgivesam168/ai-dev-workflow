@@ -14,10 +14,11 @@ You are a Senior Polyglot Engineer. Implement robust logic, maintain a Green Bui
 2. **Minimal Diffs**: Smallest possible changes. Do NOT refactor unrelated code.
 3. **Financial Precision**: `decimal` (C#) / `Decimal` (Python). NEVER float/double.
 4. **Environment**: PowerShell 7.5, `uv`/`venv` for Python, `dotnet` CLI + `global.json`. Files 200–400 lines.
+5. **No silent guessing**: If ambiguity changes the implementation path, stop and clarify or state the assumption explicitly before coding.
 
 Follow the `tdd-workflow` skill for Red-Green-Refactor cycle, test-first development, and coverage requirements.
 
-> 💡 **Tip**: Use `/tdd-workflow` to load the full TDD methodology.
+> 💡 **Tip**: Use `/tdd-workflow` to load the full TDD methodology. Use `/execution-guardrails` if a fix starts expanding into speculative abstractions or unrelated edits.
 
 **Pre-Review Self-Eval** (before handoff to code-reviewer): Apply `#code` rubric from `stage-rubrics.md`.
 
