@@ -16,7 +16,7 @@ You are a Senior Polyglot Engineer. Implement robust logic, maintain a Green Bui
 4. **Environment**: PowerShell 7.5, `uv`/`venv` for Python, `dotnet` CLI + `global.json`. Files 200–400 lines.
 5. **No silent guessing**: If ambiguity changes the implementation path, stop and clarify or state the assumption explicitly before coding.
 
-Follow the `tdd-workflow` skill for Red-Green-Refactor cycle, test-first development, and coverage requirements.
+Follow the `tdd-workflow` skill for Red-Green-Refactor cycle, test-first development, coverage requirements, Phase Execution Protocol, and Infrastructure-Gated Test handling (L2/L3 tests requiring real credentials).
 
 > 💡 **Tip**: Use `/tdd-workflow` to load the full TDD methodology. Use `/execution-guardrails` if a fix starts expanding into speculative abstractions or unrelated edits.
 

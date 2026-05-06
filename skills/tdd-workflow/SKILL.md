@@ -31,6 +31,34 @@ Use this skill when:
 - Test framework configured
 - Code coverage tools enabled
 
+## Phase Execution Protocol
+
+> **Engineering contract**: execute exactly the Phase assigned — no more, no less. Like a professional engineer following a work order.
+
+### Before Starting a Phase
+1. Read `04-plan.md` fully: understand Phase scope, task list, dependency order, and Exit Criteria
+2. Read `03-spec.md`: align on Acceptance Criteria for tasks in this Phase
+3. Confirm which Phase to execute (as instructed by user)
+4. Follow the documented dependency order — do **NOT** reorder or skip tasks
+
+### During Execution
+1. Execute tasks in the order documented in `04-plan.md`
+2. Strict scope: implement ONLY what belongs to the current Phase
+3. One task at a time: complete RED→GREEN→REFACTOR before moving to the next task
+4. Scope discipline: if you spot work that belongs to a future Phase, note it in your report — do not implement it
+
+### Phase Completion Gate
+Before stopping, verify ALL of the following:
+- [ ] All Phase tasks completed
+- [ ] All L1 tests GREEN (zero failures, zero unintentional skips)
+- [ ] L2/L3 tests: GREEN or explicitly flagged `PENDING_REAL_CREDS`
+- [ ] Coverage ≥80%
+- [ ] Drift check: no code from next Phase scope introduced
+- [ ] Phase Exit Criteria in plan: ALL satisfied
+- [ ] Build passes clean
+
+> After gate passes: run agentic-eval self-review → report progress → **stop**. Do NOT auto-advance to the next Phase.
+
 ## Environment Standards
 
 The coder-agent delegates environment configuration here. Always apply these before starting TDD:
@@ -55,25 +83,60 @@ ALWAYS write tests first, then implement code to make tests pass.
 - Error scenarios tested
 - Boundary conditions verified
 
-### 3. Test Types
+### 3. Test Tier Classification
 
-#### Unit Tests
-- Individual functions and utilities
-- Component logic
-- Pure functions
-- Helpers and utilities
+Tests are categorized into three tiers based on infrastructure requirements. The tier determines whether human confirmation is required before Phase completion.
 
-#### Integration Tests
-- API endpoints
-- Database operations
-- Service interactions
-- External API calls
+| Tier | Type | Execution Context | Phase Completion Gate |
+|------|------|------------------|-----------------------|
+| **L1** | Unit Tests (fully mocked) | Runs anywhere — local, CI/CD, no credentials needed | **Must ALL be GREEN** — hard stop if any fail |
+| **L2** | Integration Tests (real infrastructure) | Requires: DB connection strings, API keys, real service endpoints | GREEN if credentials available; flag `PENDING_REAL_CREDS` if not |
+| **L3** | E2E / Full Stack Tests | Requires full deployment environment | **Human must confirm** environment ready and tests pass |
 
-#### E2E Tests (Playwright)
-- Critical user flows
-- Complete workflows
-- Browser automation
-- UI interactions
+#### L1 — Unit Tests
+- All external dependencies mocked (in-memory DB, WireMock, service stubs)
+- No network calls, no file system access in production paths
+- Deterministic — same result every run
+- ✅ Must ALL pass before Phase completion
+
+#### L2 — Infrastructure Integration Tests
+- Connects to real database, external API, message queue, SMTP server, etc.
+- Requires environment variables or config not available in CI by default
+- **False Green Risk**: L1 mocks pass but real connection fails — this tier catches that gap
+- Code Agent responsibilities:
+  - Mark these tests clearly (see marking conventions below)
+  - Skip them if credentials are unavailable; flag as `PENDING_REAL_CREDS`
+  - Report exactly which credentials are needed and where to set them
+  - Phase status remains `DONE_WITH_CONCERNS` until human confirms L2 tests pass
+
+#### L3 — E2E / Full Environment Tests
+- Full system running (web server, database, external services all live)
+- Cannot be automated-verified without human involvement
+- Phase is **NOT considered DONE** until human confirms: tests passed in real environment
+
+#### Test Marking Conventions
+
+Choose the approach that fits your language and framework — either or both are acceptable:
+
+**Option A — Attribute/Marker** (recommended for .NET, Python)
+```csharp
+[Test, Category("Integration")]  // C#
+public void TestDatabaseConnection() { }
+```
+```python
+@pytest.mark.integration         # Python
+def test_database_connection(): ...
+```
+
+**Option B — File naming convention**
+```
+UserServiceTests.cs                // L1
+UserServiceIntegrationTests.cs     // L2 — requires real DB
+user.unit.test.ts                  // L1
+user.integration.test.ts           // L2 — requires real API
+```
+
+> What matters: L2/L3 tests must be **identifiable** so they can be selectively skipped when credentials are unavailable, and clearly communicated to the human.
 
 ## TDD Workflow Steps
 
@@ -317,6 +380,43 @@ jest.mock('@/lib/openai', () => ({
 }))
 ```
 
+## Infrastructure-Gated Test Protocol
+
+When L2/L3 tests cannot be run due to missing credentials, follow this protocol — do NOT let them silently fail or silently pass with mocks.
+
+### Step 1: Identify and Skip Explicitly
+Mark tests with the chosen convention (attribute or file naming). Skip them explicitly — never let infrastructure tests run against mocks and report false greens.
+
+### Step 2: Report to Human
+
+Include this block in your Progress Report:
+
+```
+⚠️ Infrastructure-Gated Tests (PENDING_REAL_CREDS)
+
+The following tests require real credentials and are currently skipped:
+
+| Test | Required Credential | Where to Set |
+|------|--------------------|-----------  |
+| TestDatabaseConnection | `DB_CONNECTION_STRING` | `.env` or `appsettings.Development.json` |
+| TestSendEmailIntegration | `SMTP_PASSWORD` | `.env` or user secrets |
+| TestExternalApiCall | `EXTERNAL_API_KEY` | `.env` |
+
+Action Required: Fill in the above credentials and run:
+  # .NET
+  dotnet test --filter "Category=Integration"
+  # Python
+  pytest -m "integration"
+  # Node
+  npm test -- --testPathPattern="integration"
+
+Confirm all pass before this Phase is considered DONE.
+```
+
+### Step 3: Set Correct Phase Status
+- L1 all GREEN + L2 `PENDING_REAL_CREDS`: → **`DONE_WITH_CONCERNS`**
+- Elevate to `DONE` only after human confirms L2/L3 tests pass in real environment
+
 ## Test Coverage Verification
 
 ### Run Coverage Report
@@ -450,7 +550,76 @@ Run this **before handing off to `code-reviewer`**. All 🔴 items must PASS.
 
 **If any 🔴 check fails**: stop, fix, re-run. Do NOT send to code-reviewer with a red build.
 
-**After all PASS**: Report status as `DONE` or `DONE_WITH_CONCERNS` per Subagent Status Protocol.
+**After all PASS**: Run agentic-eval self-review, then report using the Progress Report Format below.
+
+**agentic-eval Self-Review** (run `/agentic-eval` with `#code` rubric from `stage-rubrics.md`):
+- 🔴 Financial Precision FAIL → **mandatory stop** — fix before any other action
+- 🔴 Security FAIL → fix before proceeding
+- 🟡 Other dimension FAILs: iterate up to 2 times; if unresolved → `DONE_WITH_CONCERNS`
+
+After agentic-eval: update documents and memory (see Document & Memory Update Protocol below), then **stop and wait for human approval** before next Phase.
+
+---
+
+## Progress Report Format
+
+Use this standard format when completing or blocking on a Phase:
+
+```markdown
+## Phase {N} — {Phase Name}: Completion Report
+
+### ✅ Completed Tasks
+- {Task ID}: {what was implemented}
+- {Task ID}: {what was implemented}
+
+### ⚠️ Blockers / Concerns
+- {Description and impact — omit section if none}
+
+### 🧪 Infrastructure-Gated Tests (if any)
+- {Test name}: requires `{CREDENTIAL_NAME}` — PENDING_REAL_CREDS
+
+### 📊 Quality Status
+| Check | Result |
+|-------|--------|
+| Build | PASS / FAIL |
+| L1 Tests | {n} passing, {n} failing |
+| L2 Tests | PASS / PENDING_REAL_CREDS |
+| Coverage | {n}% |
+| Exit Criteria | MET / NOT MET |
+| agentic-eval | PASS / PASS_WITH_CONCERNS / FAIL |
+
+### 🏷️ Status
+`DONE` | `DONE_WITH_CONCERNS` | `NEEDS_CONTEXT` | `BLOCKED`
+
+### 🔜 Suggested Next Step
+→ Phase {N+1}: {Phase Name} — pending human approval
+```
+
+---
+
+## Document & Memory Update Protocol
+
+After Phase completion, update these artifacts before stopping:
+
+### 04-plan.md
+- Mark completed tasks with ✅
+- If implementation deviated from plan, add a note under the task: `📝 Implementation note: {reason for deviation}`
+- Update Phase-level status (e.g., `Phase 0: ✅ Completed`)
+
+### Memory Update (if `.ai-workflow-memory/` exists)
+Update `CURRENT_STATE.md` with:
+
+```markdown
+## Current Development State
+- **Active Phase**: Phase {N} — {completed / in_progress}
+- **Next Phase**: Phase {N+1} — {name}
+- **Pending Actions**: {e.g., "User needs to fill L2 credentials and confirm"}
+- **Last Session**: {brief summary of what was implemented}
+- **Coverage**: {n}%
+- **Branch**: {branch name}
+```
+
+> This enables cross-session continuity: when returning to this project (or switching back from another project), reading `CURRENT_STATE.md` immediately restores context without re-reading all history.
 
 ---
 
