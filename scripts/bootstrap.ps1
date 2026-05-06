@@ -339,7 +339,7 @@ function Get-RemoteTemplate {
         Push-Location $tempPath
         try {
             git sparse-checkout init --cone 2>&1 | Out-Null
-            git sparse-checkout set .github .gitattributes .editorconfig 2>&1 | Out-Null
+            git sparse-checkout set .github docs .gitattributes .editorconfig 2>&1 | Out-Null
             git checkout 2>&1 | Out-Null
             
             if ($LASTEXITCODE -ne 0) {
@@ -917,6 +917,44 @@ $journalIgnoreEntry
 }
 
 # ============================================================================
+# AGENTS.md 骨架初始化
+# ============================================================================
+
+function Initialize-AgentsGuide {
+    <#
+    .SYNOPSIS
+    建立 AGENTS.md 骨架（skip if exists — 保護既有客製化）
+    
+    .PARAMETER TargetPath
+    目標專案目錄
+    
+    .PARAMETER SourceRoot
+    模板來源根目錄（本地或遠端暫存）
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$TargetPath,
+        [Parameter(Mandatory=$true)]
+        [string]$SourceRoot
+    )
+    
+    $agentsFile   = Join-Path $TargetPath 'AGENTS.md'
+    if (Test-Path $agentsFile) {
+        Write-Host "  ⏭  AGENTS.md 已存在，跳過（保護既有客製化）" -ForegroundColor DarkGray
+        return
+    }
+    
+    $templateFile = Join-Path $SourceRoot 'docs' 'AGENTS.template.md'
+    if (-not (Test-Path $templateFile)) {
+        Write-Host "  ⚠️  AGENTS.md 模板不存在，跳過" -ForegroundColor Yellow
+        return
+    }
+    
+    Copy-Item -Path $templateFile -Destination $agentsFile -ErrorAction Stop
+    Write-Host "✅ AGENTS.md 骨架已建立（請填入專案資訊）" -ForegroundColor Green
+}
+
+# ============================================================================
 # 主程式進入點
 # ============================================================================
 
@@ -1208,6 +1246,14 @@ function Main {
             Write-Host ""
         }
     }
+    
+    # AGENTS.md 骨架（always — skip if exists to protect project customizations）
+    try {
+        Initialize-AgentsGuide -TargetPath $targetProjectPath -SourceRoot $script:RepoRoot
+    } catch {
+        Write-Host "⚠️  AGENTS.md 骨架建立失敗: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+    Write-Host ""
     
     Write-Host "✅ Bootstrap completed!" -ForegroundColor Green
     Write-Host ""

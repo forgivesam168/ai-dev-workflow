@@ -195,6 +195,19 @@ if (-not $Force -and $driftCount -gt 0) {
     Write-Host "ℹ️  $driftCount component(s) differ from source (use -Force to overwrite)." -ForegroundColor Yellow
 }
 } # end if (-not $MemoryOnly)
+
+# ─── AGENTS.md skeleton (always — skip if exists, never overwritten, project-customizable) ──
+$agentsMdSrc = Join-Path $RepoRoot 'docs' 'AGENTS.template.md'
+$agentsMdDst = Join-Path $DeployRoot 'AGENTS.md'
+if (Test-Path $agentsMdSrc) {
+    if (-not (Test-Path $agentsMdDst)) {
+        Copy-Item -Force $agentsMdSrc $agentsMdDst
+        Write-Host "  ✅ APPLY AGENTS.md (skeleton — fill in project info)" -ForegroundColor Green
+    } else {
+        Write-Host "  ⏭  SKIP  AGENTS.md (exists — project-customizable, never overwritten)" -ForegroundColor DarkGray
+    }
+}
+
 if ($EnableMemory) {
     $memDir     = Join-Path $DeployRoot '.ai-workflow-memory'
     $journalDir = Join-Path $memDir 'session-journal'
