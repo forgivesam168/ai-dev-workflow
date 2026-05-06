@@ -101,10 +101,28 @@ Applies when agentic-eval is used as a **stage gate** — i.e., at any of:
 
 **Ceiling**: **max 2 iterations**. After 2 iterations at a stage gate without all dimensions resolving to PASS:
 1. Terminate the loop immediately
-2. Surface all unresolved FAIL dimensions to the human
+2. Surface all unresolved FAIL dimensions to the human using this structured format
 3. Do NOT initiate a third iteration autonomously
 
-**Rationale**: Stage gates must not become infinite loops. 2 iterations provide one self-correction opportunity. If unresolved after 2, human judgment is required.
+**Structured escalation message (required format):**
+```
+## ⛔ Stage Gate Blocked — Human Decision Required
+Unresolved dimensions after 2 iterations:
+- [DIMENSION]: [one-sentence FAIL reason] → [specific line/excerpt as evidence]
+
+Root cause type (pick one per dimension):
+  UPSTREAM_GAP   — problem is in the input artifact (spec/brainstorm), not this artifact
+  CONTENT_GAP    — this artifact is missing required content
+  AMBIGUITY      — rubric cannot resolve without more context from user
+
+Recommended actions:
+  A. Fix upstream artifact (UPSTREAM_GAP) → re-run this agent after fix
+  B. Add missing content to this artifact (CONTENT_GAP) → targeted edit
+  C. Override this FAIL with explicit user approval and stated rationale (last resort)
+  D. Stop this work package — revisit requirements
+```
+
+**Rationale**: Stage gates must not become infinite loops. 2 iterations provide one self-correction opportunity. If unresolved after 2, human judgment is required — but the human needs structured information to decide, not a raw list of failures.
 
 ### General-Purpose Refinement Loops (max 3–5 iterations)
 
@@ -130,9 +148,12 @@ Define a rubric, score the output, refine on FAIL dimensions. Max 3–5 iteratio
 
 **Steps:**
 1. Define criteria and score threshold (e.g., 0.8 / 5-point scale)
-2. Score output against each dimension using structured JSON
-3. If any dimension FAIL → refine with targeted feedback
-4. Stop when all PASS or max iterations reached
+2. **Adopt adversarial persona before scoring** (required for stage gates):  
+   *"You are a skeptical external auditor. Your job is to find problems, not confirm quality. For every dimension you score PASS, state the strongest counter-argument you can. If no counter-argument exists, write 'no counter-argument found'."*  
+   This combats Anchoring and RLHF sycophancy bias — LLMs systematically self-score high (7–8/10). The persona switch must precede scoring.
+3. Score output against each dimension using structured JSON
+4. If any dimension FAIL → refine with targeted feedback; evidence must cite a specific line, hunk, or excerpt — not a general statement
+5. Stop when all PASS or max iterations reached
 
 See [Python implementation patterns](./references/python-patterns.md) for code examples.
 
@@ -151,8 +172,11 @@ Delegate evaluation to a separate subagent using a **different model perspective
    - **VS Code**: use `agent` tool (`runSubagent`); explicitly request a different model in the prompt:
      `"Use [GPT-4o / Claude Haiku] to critique this..."` — model diversity is the key mechanism
 4. Parse critique → identify weak points
-5. Refine output targeting identified weaknesses
-6. Repeat up to 3 iterations
+5. **Goodhart's Law mitigation**: Supplement rubric scoring with at least one user-intent question:  
+   > "Ignore the rubric. In one paragraph: what problem does this artifact appear to be solving? Does this match what the user originally requested?"  
+   This surfaces drift that structured rubric dimensions cannot catch (model optimizes rubric format at generation time).
+6. Refine output targeting identified weaknesses
+7. Repeat up to 3 iterations
 
 > ⚠️ **rubber-duck availability (CLI only)**: Requires `RUBBER_DUCK_AGENT` experimental flag.
 > Enable via `/experimental on` or `enabledFeatureFlags.RUBBER_DUCK_AGENT: true` in `~/.copilot/config.json`.
@@ -163,6 +187,8 @@ Delegate evaluation to a separate subagent using a **different model perspective
 - For code: pass file path + diff excerpt, not full file content
 - For reports: pass the relevant paragraph + evaluation rubric
 - For designs/plans: pass key decisions + constraints, not full spec
+
+> ⚠️ **Critic reliability**: A Tier 2 critic is also an LLM and can hallucinate. Treat critic *positive validations* ("X is correct", "function Y exists") as **non-authoritative**. Only critic-identified *gaps and failures* require action. Correctness is confirmed by running code, querying APIs, or consulting authoritative sources — not by asking a critic.
 
 See [Evaluation Workflow](./references/cli-evaluation-workflow.md) for step-by-step guide (CLI + VS Code).
 

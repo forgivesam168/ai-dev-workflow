@@ -34,6 +34,19 @@ Use this skill when:
 4. **Verifiable success criteria**  
    Convert work into checks: tests, assertions, or explicit manual verification. Avoid vague definitions of done.
 
+## Anti-Hallucination Checks
+
+Activate these additional checks before finalizing any artifact that downstream agents or humans will treat as authoritative (spec, plan, test-plan, impact analysis):
+
+5. **Negative Space Check**  
+   List all content in this output that the user may NOT have explicitly requested. Label each item `[USER_REQUESTED]`, `[INFERRED]`, or `[ADDED_BY_AI]`. Any `[ADDED_BY_AI]` item without justification is a Source Fabrication risk — surface it before proceeding.
+
+6. **Reference Grounding**  
+   For every external function, API endpoint, library, standard, or service cited: state your confidence it exists (HIGH / MEDIUM / LOW / UNVERIFIED). Surface all `[UNVERIFIED]` references to the user before treating them as actionable.
+
+7. **Confidence Flagging**  
+   Mark any statement you are less than 80% confident about with `[UNCERTAIN]`. Do not omit this step because the artifact looks internally coherent — coherence does not equal factual accuracy.
+
 ## How to Apply by Stage
 
 - **Brainstorm**: separate confirmed requirements from assumptions; avoid prematurely collapsing options into one interpretation.
@@ -84,6 +97,9 @@ When using this skill directly, structure the response as:
 2. **Simplicity Risks**
 3. **Scope / Diff Hygiene Risks**
 4. **Verification Gaps**
-5. **Recommended correction**
+5. **Source Fabrication Risks** *(negative space items tagged `[ADDED_BY_AI]`)*
+6. **Unverified References** *(library functions, APIs, services tagged `[UNVERIFIED]`)*
+7. **Uncertain Statements** *(items tagged `[UNCERTAIN]`)*
+8. **Recommended correction**
 
 Keep corrections targeted. Do not rewrite the entire artifact unless the user asks.

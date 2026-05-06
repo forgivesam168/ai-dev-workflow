@@ -35,21 +35,27 @@ at each quality inflection point.
 
 | Dimension | Weight | PASS Criteria |
 |-----------|--------|---------------|
-| AC Testability | 25% | Every AC has a concrete, verifiable success condition |
-| Scope Boundary | 20% | In-scope / out-of-scope explicitly listed |
-| Traceability | 20% | Each requirement has a unique ID (FR-XXX / NFR-XXX) |
+| AC Testability | 20% | Every AC has a concrete, verifiable success condition |
+| Scope Boundary | 15% | In-scope / out-of-scope explicitly listed |
+| Traceability | 15% | Each requirement has a unique ID (FR-XXX / NFR-XXX) |
 | Assumption Exposure | 15% | Assumptions, unresolved questions, and non-goals are explicitly separated from requirements |
-| Financial Precision | 20% | No float types mentioned for money fields; minor-unit or string specified |
+| Requirement Provenance | 15% | Every FR-XXX references its originating source: a user statement, brainstorm ADR, or explicit user approval. Requirements with no traceable source are flagged as Source Fabrication risk |
+| Financial Precision | 20% | No float types mentioned for money fields; minor-unit or string specified *(skip if domain is non-financial per PROJECT_CONTEXT.md or 00-intake.md)* |
 
-**FAIL → handoff blocked** if: AC Testability FAIL OR Traceability FAIL OR Financial Precision FAIL.
+**FAIL → handoff blocked** if: AC Testability FAIL OR Traceability FAIL OR Requirement Provenance FAIL OR Financial Precision FAIL *(financial domain only)*.
 
 **Adversarial prompt (plan-agent cross-eval):**
 > "Read only the AC list and constraints below. For each AC, answer: can I write a concrete
 > implementation plan step that satisfies this AC without ambiguity? Flag any AC that is
 > too vague to plan against. Identify any hidden assumption masquerading as a requirement.
+> Flag any requirement that appears to have no traceable source in user input or brainstorm output.
 > Reply with per-AC PASS/FAIL and a gap description for FAILs."
 >
-> [Insert: AC list, constraint summary — NOT full spec document]
+> [Insert: AC list, constraint summary, confirmed requirements summary ≤200 words — NOT full spec document]
+
+**User-intent validation (Goodhart's Law mitigation — use alongside rubric):**
+> "Ignore the rubric for a moment. In one paragraph, describe what problem this spec appears to be solving.
+> Then answer: does this match what the user originally requested? List any content that seems to go beyond or diverge from the original request."
 
 ---
 
@@ -63,9 +69,9 @@ at each quality inflection point.
 | Dimension | Weight | PASS Criteria |
 |-----------|--------|---------------|
 | Spec AC Coverage | 30% | Every FR-ID in spec appears in at least one plan step |
-| Step Verifiability | 25% | Every step has a stated verification method (test, assertion, or manual check) |
+| Step Verifiability | 25% | Every step has a stated verification method. Steps referencing a specific library function, API endpoint, or external service mark it `[VERIFIED]` (existence confirmed) or `[UNVERIFIED]` (unconfirmed). `[UNVERIFIED]` items are captured in a `## Unverified References` section |
 | Dependency Order | 15% | No circular dependencies; dependencies are explicit |
-| Assumption Management | 15% | Plan-specific assumptions are explicit and localized; no hidden assumption invalidates multiple phases |
+| Assumption Management | 15% | Plan-specific assumptions are explicit and localized. All state prerequisites plan steps depend on (e.g., "Phase 0 schema is ready") are marked `[VERIFIED: <evidence>]` or `[ASSUMED: <unverified>]`. No hidden state dependency invalidates multiple steps |
 | Simplicity / Scope Discipline | 15% | Plan stays within current spec scope; no speculative architecture or future-proofing work is introduced without justification |
 
 **Adversarial prompt (architect Tier 2 eval):**
@@ -73,8 +79,9 @@ at each quality inflection point.
 > Identify: (1) Any spec requirement NOT covered by a plan step.
 > (2) Any plan step with no verifiable outcome. (3) Any implicit assumption that,
 > if wrong, would invalidate multiple steps. (4) Any step that adds speculative scope or architecture
-> not demanded by the current spec. Respond PASS/FAIL per dimension.
-> Do NOT suggest rewrites — only identify gaps."
+> not demanded by the current spec. (5) List all specific library functions, API endpoints, or service
+> integrations referenced in plan steps; state your confidence each exists: HIGH / MEDIUM / UNVERIFIED.
+> Respond PASS/FAIL per dimension. Do NOT suggest rewrites — only identify gaps."
 >
 > [Insert: plan steps summary + AC list — max 800 words total]
 
@@ -88,13 +95,13 @@ at each quality inflection point.
 | Dimension | Weight | PASS Criteria |
 |-----------|--------|---------------|
 | Green Build | 25% | All tests pass; no skipped/pending tests |
-| Financial Precision | 20% | `grep -rn "float\|double" src/` returns no money-related hits |
+| Financial Precision | 20% | `grep -rn "float\|double" src/` returns no money-related hits *(skip if domain is non-financial per PROJECT_CONTEXT.md or 00-intake.md)* |
 | Spec AC Coverage | 20% | Every FR-ID has a corresponding test (not just code path) |
 | Diff Scope Hygiene | 15% | The diff contains no unrelated edits; any unused imports/variables were created by this change and are cleaned up |
 | Simplicity / Overengineering Risk | 10% | The implementation uses the smallest viable design; no speculative abstraction appears without current need |
 | Environment Compatibility | 10% | No Linux-only commands; no hardcoded paths or credentials |
 
-> 🔴 **Financial Precision FAIL → STOP and fix before any other action.**
+> 🔴 **Financial Precision FAIL (financial domain only) → STOP and fix before any other action.**
 > All other FAILs: fix targeting the failed dimension only, then re-score.
 
 **Self-eval prompt template:**
@@ -136,6 +143,9 @@ at each quality inflection point.
 |------------------------|--------------------|
 | AC list + constraint summary (≤800 words) | Full spec document |
 | git diff + test output tail | Full source file content |
-| Plan step list + risk flags | Brainstorm conversation history |
+| Plan step list + risk flags | Full brainstorm conversation history |
 | Review findings summary | Full file tree or directory listing |
 | Specific rubric dimensions to evaluate | Unrelated context from other stages |
+| Confirmed requirements summary ≤200 words *(exception for Requirement Provenance checking)* | |
+
+**Exception for Requirement Provenance (BLK-1):** A confirmed requirements summary (≤200 words), generated by brainstorm-agent at session end and stored in `01-brainstorm.md`, MAY be passed to spec-agent and its cross-evaluator to verify that spec requirements trace back to actual user input. This is the ONLY brainstorm artifact that may be passed to a downstream critic.

@@ -25,11 +25,20 @@ When producing specification documents, follow the `specification` skill methodo
 
 > 💡 **Tip**: Use `/specification` to ensure the full specification methodology is loaded. Use `/execution-guardrails` when you need an explicit reminder to surface assumptions and strengthen verifiable success criteria.
 
+### Pre-Spec Gate
+
+Before generating 03-spec.md, verify input quality — this is the highest-leverage intervention point:
+
+1. If `01-brainstorm.md` exists: check whether the brainstorm `agentic-eval` self-check completed. If `Option Diversity` or `Requirements Coverage` FAIL → surface the gap to the user and ask for explicit approval to proceed.
+2. If no brainstorm output exists (fast-path): ask the user to confirm the core requirement in one sentence before starting.
+3. Generate a **confirmed requirements summary** (≤200 words) capturing only what the user has explicitly stated. Store in the brainstorm or intake section of `01-brainstorm.md`. This summary is the provenance anchor for the `Requirement Provenance` rubric dimension.
+
 ### Output Quality Self-Check
 
 Before finalizing 03-spec.md, run Tier 1 self-evaluation using `agentic-eval`. Apply the **#spec rubric** in [`stage-rubrics.md`](../skills/agentic-eval/references/stage-rubrics.md).
 
 > ⛔ Assumptions Review: all `[ASSUMED]` items must be resolved or user-approved before handoff.
 > ⛔ Open Questions: section must be empty or user-approved to proceed.
-> ⛔ AC Testability, Traceability, or Financial Precision FAIL → **block handoff**. Fix first.
+> ⛔ AC Testability, Traceability, Requirement Provenance FAIL → **block handoff**. Fix first.
+> ⛔ Financial Precision FAIL (financial domain only) → **block handoff**. Fix first.
 > All other FAILs: append a `## Spec Gaps` section at end of 03-spec.md, then proceed.
