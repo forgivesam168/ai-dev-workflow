@@ -120,12 +120,18 @@ Create `changes/<YYYY-MM-DD>-<slug>/04-plan.md`:
 ### Approach
 {High-level approach: e.g., "Bottom-up: DB → Logic → API → UI"}
 
+### First TDD Slice
+> 🎯 **Start here**: Task {Phase.Task} — {one-line description}
+> Minimum testable increment. Code Agent begins implementation from this task.
+
 ### Phases
 {Number of phases: e.g., "5 phases, estimated 16-20 hours total"}
 
 ---
 
 ## Phase 1: {Phase Name}
+**Status**: ⏳ Pending | 🔄 In Progress | ✅ Done | 🚫 Blocked
+**Depends on**: None | Phase {N}
 
 ### Objective
 {What this phase accomplishes}
@@ -133,6 +139,10 @@ Create `changes/<YYYY-MM-DD>-<slug>/04-plan.md`:
 ### Tasks
 
 #### Task 1.1: {Task Name}
+**Status**: ⏳ Pending | 🔄 In Progress | ✅ Done | 🚫 Blocked
+**Depends on**: None | Task {X.Y}
+**Test Tier**: L1 (fully mocked) | 🔌 L2 (requires `{CREDENTIAL_NAME}`) | 🔌 L3 (full environment)
+
 **Test Strategy** (RED):
 - Write test: `{test file path}`
 - Test case: {What the test validates}
@@ -234,20 +244,21 @@ Create `changes/<YYYY-MM-DD>-<slug>/04-plan.md`:
 
 ## Testing Strategy
 
-### Unit Tests
+### L1 — Unit Tests (fully mocked)
 - All business logic functions
 - Target: 80%+ coverage
-- Tools: Jest/Vitest
+- No real infrastructure required — runs anywhere, CI/CD included
 
-### Integration Tests
-- API endpoints
-- Database operations
-- External service mocks
+### L2 — Integration Tests (real infrastructure)
+- Tasks annotated 🔌 L2 in the task list above
+- Requires real credentials (DB connection strings, API keys, etc.)
+- Flag as `PENDING_REAL_CREDS` when credentials unavailable; see tdd-workflow Infrastructure-Gated Test Protocol
 
-### E2E Tests
+### L3 — E2E Tests (full environment)
 - Critical user flows only
+- Run on staging environment
+- Human must confirm environment ready before Phase is considered DONE
 - Tools: Playwright
-- Run on: Staging environment
 
 ### Performance Tests (if needed)
 - Load: {X requests/second}
@@ -283,6 +294,23 @@ Create `changes/<YYYY-MM-DD>-<slug>/04-plan.md`:
 → Start Phase 1 with TDD: "開始 TDD 實作"
 → Or use workflow orchestrator: "what's next?"
 ```
+
+---
+
+## Plan Handoff Gate
+
+Run `/agentic-eval` before approving for TDD implementation stage:
+
+| Check | Threshold |
+|-------|-----------|
+| Spec Coverage | Every AC in `03-spec.md` has ≥1 Task — **HARD STOP** if any AC unaddressed |
+| Task Executability | Each task has `Depends on`, `Test Tier`, Test Strategy, AC — flag if missing |
+| First TDD Slice | Explicitly marked in Implementation Strategy — **HARD STOP** if missing |
+| Infrastructure Gaps | All 🔌 L2/L3 tasks flagged with required credential names |
+| Risk Coverage | All High-risk items from brainstorm have mitigation in Risks table |
+
+**Gate PASS → Human approves → Code Agent starts TDD**
+**Gate FAIL → Fix the failing dimension and re-run**
 
 ---
 

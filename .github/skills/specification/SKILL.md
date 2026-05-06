@@ -85,6 +85,13 @@ Explicitly excluded from this implementation:
 - {Non-goal 1: e.g., "Real-time streaming (future enhancement)"}
 - {Non-goal 2: e.g., "Support for legacy file formats"}
 
+## Assumptions
+Items assumed without explicit user confirmation — **must be reviewed before plan stage**:
+- `[ASSUMED]` {e.g., "Timestamps stored in UTC"}
+- `[ASSUMED]` {e.g., "UUID used as primary key"}
+
+> If this section is non-empty, the human must confirm or correct each item before handoff to plan-agent.
+
 ## User Stories
 
 ### Story 1: {Actor} wants to {Action}
@@ -132,6 +139,13 @@ Explicitly excluded from this implementation:
 - **Latency**: {Expected response times}
 - **Throughput**: {Requests per second}
 - **Scalability**: {How this scales with load}
+
+### Observability
+- **Logging**: {Key events to log, level, format — e.g., "Log all state changes at INFO with correlation ID"}
+- **Metrics**: {Key metrics to track — e.g., "Request count, p99 latency, error rate"}
+- **Alerts**: {Alert conditions — e.g., "Alert if error rate > 1% for 5 minutes"}
+- **Health Check**: {What indicates healthy state — e.g., "GET /health returns 200 when DB and cache reachable"}
+- **Tracing**: {Correlation ID / distributed tracing requirements}
 
 ### API/Schema Contracts
 - **Endpoints**: {List of API endpoints or contract references}
@@ -206,22 +220,24 @@ Items requiring further clarification before implementation:
 
 ---
 
-### Step 3: Validation
+### Step 3: Validation & Handoff Gate
 
-Ensure the spec meets quality criteria:
+Ensure the spec meets quality criteria before handing off to plan-agent.
 
 **Completeness Checklist**:
 - [ ] All user stories have acceptance criteria
 - [ ] Edge cases and error scenarios are covered
 - [ ] Security requirements are explicit
 - [ ] Performance requirements are defined
+- [ ] Observability requirements documented (logging, metrics, alerts, health check)
 - [ ] API/schema contracts are documented (if applicable)
 - [ ] Financial requirements specify precision (if applicable)
 - [ ] Success metrics are measurable
+- [ ] Assumptions section filled (all `[ASSUMED]` items listed)
 
 **Testability Check**:
 - Can a junior developer implement this without asking clarifying questions?
-- Are acceptance criteria explicit and testable?
+- Is every AC phrased as a verifiable outcome (not vague intent)?
 - Are error conditions and edge cases documented?
 
 **Financial Systems Check** (if applicable):
@@ -230,6 +246,31 @@ Ensure the spec meets quality criteria:
 - ✅ Idempotency requirements documented
 - ✅ Audit trail requirements defined
 - ✅ Timezone handling specified
+
+**Assumptions Review** ⛔ BLOCKING:
+- Walk through each `[ASSUMED]` item with the user
+  - User confirms → remove the `[ASSUMED]` tag
+  - User corrects → update the spec
+  - User approves proceeding despite unknowns → move item to Open Questions
+- All `[ASSUMED]` items must be resolved before handoff
+
+**Open Questions Gate** ⛔ BLOCKING:
+- If Open Questions remain unresolved: **STOP** — ask the user to resolve or explicitly approve proceeding with known gaps
+- Do NOT hand off to plan-agent while Open Questions are present without explicit user approval
+
+**agentic-eval Self-Review**:
+Run `/agentic-eval` with the `#spec` rubric before handoff:
+
+| Check | Threshold |
+|-------|-----------|
+| AC Testability | Every AC expressible as a failing test — **HARD STOP** if any fails |
+| Completeness | All FR have ≥1 AC; edge cases + error conditions covered |
+| Traceability | Spec goals trace back to brainstorm problem statement |
+| Observability | Logging, metrics, alerts, health check documented |
+| Domain Safety | Financial precision / GDPR / regulatory checks passed (if applicable) |
+
+**Gate PASS → Hand off to plan-agent**
+**Gate FAIL → Fix the failing dimension and re-run**
 
 ## Output Template
 
