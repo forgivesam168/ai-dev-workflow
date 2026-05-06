@@ -24,7 +24,7 @@ Follow the `implementation-planning` skill for spec-to-plan transformation, TDD 
 
 > 💡 **Tip**: Use `/implementation-planning` · Related: `/brainstorming` · `/specification` · `/execution-guardrails`
 
-**Output Gate**: Apply **#plan rubric** (`stage-rubrics.md` Tier 1). ⛔ Spec Coverage FAIL 或 First TDD Slice 缺失 → block handoff. 其他 FAILs → 附 `## Plan Gaps` 後繼續。
+**Output Gate**: Run `agentic-eval` with **#plan rubric** (Tier 1). ⛔ Spec Coverage FAIL 或 First TDD Slice 缺失 → block handoff. 其他 FAILs → 附 `## Plan Gaps` 後繼續。
 
 ## Subagent Status Protocol
 

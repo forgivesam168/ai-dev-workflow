@@ -17,7 +17,9 @@ You are an expert Product Manager specializing in transforming business requirem
 
 ## Skill Integration
 
-> 💡 **Tip**: Use `/specification` for PRD structure, user stories, and acceptance criteria. Use `/execution-guardrails` for an explicit reminder to surface assumptions and verifiable success criteria.
+Follow the `specification` skill for PRD structure, coverage areas (observability, audit requirements, user personas), acceptance criteria, and the output quality gate.
+
+> 💡 **Tip**: Use `/specification`; use `/execution-guardrails` if hidden assumptions arise.
 
 ### Pre-Spec Gate
 
@@ -27,11 +29,7 @@ Before generating 03-spec.md, verify input quality — this is the highest-lever
 2. If no brainstorm output exists (fast-path): ask the user to confirm the core requirement in one sentence before starting.
 3. Generate a **confirmed requirements summary** (≤200 words) capturing only what the user has explicitly stated. Store in the brainstorm or intake section of `01-brainstorm.md`. This summary is the provenance anchor for the `Requirement Provenance` rubric dimension.
 
-### Output Quality Self-Check
-
-Before finalizing 03-spec.md, run Tier 1 self-evaluation using `agentic-eval`. Apply the **#spec rubric** in [`stage-rubrics.md`](../skills/agentic-eval/references/stage-rubrics.md).
-
-> ⛔ 所有 `[ASSUMED]` 項目及 Open Questions 必須 user-approved 才可交付。
+> ⛔ 所有 `[ASSUMED]` 項目及 Open Questions 須已解決（section 為空）或 user-approved 方可交付。
 > ⛔ AC Testability, Traceability, Requirement Provenance FAIL → **block handoff**. Fix first.
 > ⛔ Financial Precision FAIL (financial domain only) → **block handoff**. Fix first.
 > All other FAILs: append a `## Spec Gaps` section at end of 03-spec.md, then proceed.
