@@ -31,5 +31,5 @@ Before finalizing 03-spec.md, run Tier 1 self-evaluation using `agentic-eval`. A
 
 > ⛔ Assumptions Review: all `[ASSUMED]` items must be resolved or user-approved before handoff.
 > ⛔ Open Questions: section must be empty or user-approved to proceed.
-> ⚠️ AC Testability, Traceability, or Financial Precision FAIL → **block handoff**. Fix first.
+> ⛔ AC Testability, Traceability, or Financial Precision FAIL → **block handoff**. Fix first.
 > All other FAILs: append a `## Spec Gaps` section at end of 03-spec.md, then proceed.

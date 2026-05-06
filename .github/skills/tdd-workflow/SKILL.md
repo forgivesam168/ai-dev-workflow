@@ -25,11 +25,13 @@ Use this skill when:
 
 **Required**:
 - Implementation plan (`04-plan.md`) with tasks and test strategies
+  - Verify `**Plan Status**: ✅ Approved` before starting. If `⏳ Awaiting Approval`, stop and ask the user to review and approve the plan first.
 
 **Recommended**:
 - Development environment setup
 - Test framework configured
 - Code coverage tools enabled
+- `05-test-plan.md` (when present, read for overall testing strategy before starting Phase 1)
 
 ## Phase Execution Protocol
 
@@ -51,7 +53,8 @@ Use this skill when:
 Before stopping, verify ALL of the following:
 - [ ] All Phase tasks completed
 - [ ] All L1 tests GREEN (zero failures, zero unintentional skips)
-- [ ] L2/L3 tests: GREEN or explicitly flagged `PENDING_REAL_CREDS`
+- [ ] L2 tests: GREEN or explicitly flagged `PENDING_REAL_CREDS` (credentials needed, environment is fine)
+- [ ] L3 tests: GREEN only after human confirms staging environment is ready — cannot be `PENDING_REAL_CREDS`
 - [ ] Coverage ≥80%
 - [ ] Drift check: no code from next Phase scope introduced
 - [ ] Phase Exit Criteria in plan: ALL satisfied

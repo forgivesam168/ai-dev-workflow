@@ -258,8 +258,8 @@ Ensure the spec meets quality criteria before handing off to plan-agent.
 - If Open Questions remain unresolved: **STOP** — ask the user to resolve or explicitly approve proceeding with known gaps
 - Do NOT hand off to plan-agent while Open Questions are present without explicit user approval
 
-**agentic-eval Self-Review**:
-Run `/agentic-eval` with the `#spec` rubric before handoff:
+**agentic-eval Self-Review** (authoritative final gate):
+Run `/agentic-eval` with the `#spec` rubric before handoff. This is the **authoritative gate** — rubric results take precedence when any conflict exists with the checklists above.
 
 | Check | Threshold |
 |-------|-----------|

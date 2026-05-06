@@ -32,5 +32,5 @@ Follow the `tdd-workflow` skill for Red-Green-Refactor cycle, test-first develop
 |--------|---------|---------|
 | `DONE` | All tests pass; deliverable committed | Green build confirmed |
 | `DONE_WITH_CONCERNS` | Tests pass; concern noted | Coverage below 80% |
-| `NEEDS_CONTEXT` | Blocked; awaiting clarifying info | AC-3 ambiguous; need clarification |
-| `BLOCKED` | Build fails after 2 attempts; escalating | Escalating to human |
+| `NEEDS_CONTEXT` | Blocked; awaiting clarifying info | Surface specific AC/task question to user directly |
+| `BLOCKED` | Build fails after 2 attempts; escalating | User should update `04-plan.md` and re-invoke coder-agent |

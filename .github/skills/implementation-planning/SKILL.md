@@ -49,7 +49,7 @@ Before Step 1, test each acceptance criterion (AC) in the spec:
 > *"Can I write a concrete, testable implementation step for this AC?"*
 
 - If **YES** → proceed
-- If **NO** → mark that AC as a gap, surface it to the user, and request clarification before continuing
+- If **NO** → 1 spec gap: record in `## Spec Gaps` section and continue. 2 gaps: surface all gaps to user and wait for clarification or explicit "proceed". ≥3 unresolved gaps: stop (`BLOCKED`).
 
 This prevents ambiguous ACs from producing unverifiable plan tasks.
 
