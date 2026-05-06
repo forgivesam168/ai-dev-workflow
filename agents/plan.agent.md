@@ -24,12 +24,7 @@ Follow the `implementation-planning` skill for spec-to-plan transformation, TDD 
 
 > 💡 **Tip**: Use `/implementation-planning` · Related: `/brainstorming` · `/specification` · `/execution-guardrails`
 
-### Output Quality Self-Check
-
-Before finalizing `04-plan.md`, run Tier 1 self-evaluation using `agentic-eval`. Apply the **#plan rubric** in [`stage-rubrics.md`](../skills/agentic-eval/references/stage-rubrics.md).
-
-> ⛔ Spec Coverage FAIL or First TDD Slice missing → **block handoff**. Fix first.
-> All other FAILs: append a `## Plan Gaps` section at end of 04-plan.md, then proceed.
+**Output Gate**: Apply **#plan rubric** (`stage-rubrics.md` Tier 1). ⛔ Spec Coverage FAIL 或 First TDD Slice 缺失 → block handoff. 其他 FAILs → 附 `## Plan Gaps` 後繼續。
 
 ## Subagent Status Protocol
 

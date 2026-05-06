@@ -23,8 +23,7 @@ Follow the `tdd-workflow` skill for Red-Green-Refactor cycle, test-first develop
 **Pre-Review Self-Eval** (before handoff to code-reviewer): Apply `#code` rubric from `stage-rubrics.md`.
 
 > 🔴 Financial Precision FAIL → **STOP immediately**. Fix float/double before any other action.
-> Other FAILs: fix the specific dimension only, re-score. Max 2 iterations; unresolved → escalate to human.
-> Do NOT invoke Tier 2 — code-reviewer is the independent gate.
+> Other FAILs: fix specific dimension, re-score; max 2 iterations then escalate. Do NOT invoke Tier 2 — code-reviewer gates independently.
 
 ## Subagent Status Protocol
 
