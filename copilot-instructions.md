@@ -20,7 +20,8 @@ If `.ai-workflow-memory/` exists in the repo root, **read these files before sta
 
 At session end (significant progress made): update `CURRENT_STATE.md` and append `.ai-workflow-memory/session-journal/YYYY-MM-DD-<slug>.md`.
 
-> Enable: `pwsh -File .\tools\install-apply.ps1 -EnableMemory`
+> Enable: `pwsh -File .\bootstrap.ps1 -EnableMemory`
+> (Template repo maintainers: use `pwsh -File .\tools\install-apply.ps1 -EnableMemory`)
 
 ## Instruction Layers
 
