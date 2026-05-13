@@ -12,6 +12,14 @@ Improve code structure and readability without changing external behavior. Refac
 
 ## When to Use
 
+Choose the mode that matches your goal:
+
+| Mode | Trigger | Changes |
+|------|---------|---------|
+| **Structural Refactor** | Functions too large, god objects, design smells | Function extraction, class decomposition, design patterns |
+| **Simplification Mode** | Names unclear, logic hard to follow, no structural change needed | Rename, inline, clarify — no structural reshaping |
+| **Performance Mode** | Measured bottleneck exists, profiler data available | Targeted optimization with before/after benchmark |
+
 Use this skill when:
 
 - Code is hard to understand or maintain
@@ -643,6 +651,76 @@ Use this skill when:
 | Introduce Null Object                         | Eliminate null checks                 |
 | Replace Type Code with Class/Enum             | Strong typing                         |
 | Replace Inheritance with Delegation           | Composition over inheritance          |
+
+## Simplification Mode（輕量模式）
+
+Use when code is hard to read but **structure is sound** — improve naming, reduce cognitive load, and inline redundancy. Do NOT reshape structure or add new logic.
+
+**Difference from Structural Refactor**:
+
+| Structural Refactor | Simplification Mode |
+|---------------------|---------------------|
+| Extract functions, decompose classes | Rename variables, inline trivial helpers |
+| Change call hierarchies | Improve comments, remove noise |
+| Apply design patterns | Reorder code within a function |
+
+### Chesterton's Fence Principle
+
+> Before removing any code, you MUST understand why it exists. If you don't know why it's there, don't remove it.
+
+Steps to apply:
+1. Read the code — understand the original intent
+2. Check git history (`git log -p`) for context
+3. Search for callers or side effects that might not be obvious
+4. Only then decide: simplify, document, or leave it
+
+### Rule of 500
+
+If a single function exceeds **500 lines**: do NOT attempt crude deletion. Use automated refactoring tools (IDE rename/extract, `rope` for Python, Roslyn for C#) to split safely.
+
+### Prerequisite: Tests First
+
+If **no tests exist** for the target code:
+1. Add minimal coverage first (`happy path` + `error path`)
+2. Confirm tests pass (Green)
+3. Then simplify
+
+### Verification
+
+- [ ] All existing tests pass (`dotnet test` / `pytest` / `npm test`, exit code 0)
+- [ ] Build succeeds with no new warnings
+- [ ] No feature logic or structural changes mixed into this commit
+- [ ] `git diff HEAD --stat` confirms only renaming / inline / clarity changes
+
+---
+
+## Performance Mode（效能優化模式）
+
+**Hard prerequisite — Measure First**: Do NOT touch performance-related code without measurement data.
+
+> "Premature optimization is the root of all evil." — Knuth
+
+Before any performance change you MUST have:
+1. **Profiler output** (e.g., `cProfile`, dotTrace, Chrome Performance, `pytest-benchmark`)
+2. **Baseline benchmark** with reproducible numbers
+3. A **specific bottleneck** identified — not a guess
+
+### Anti-Patterns（禁止行為）
+
+| Anti-Pattern | Why It's Wrong |
+|-------------|----------------|
+| Optimizing without baseline | Cannot confirm improvement; risk regression |
+| Optimizing "just in case" | Increases complexity with no proven benefit |
+| Micro-optimizing non-bottleneck paths | Wastes effort; doesn't move the needle |
+
+### Verification
+
+- [ ] Before-and-after benchmark numbers documented (e.g., "P99 latency: 420ms → 180ms")
+- [ ] All existing tests pass
+- [ ] No behavior change introduced (pure performance path)
+- [ ] If optimization required structural change → separate structural refactor commit first
+
+---
 
 ## Common Rationalizations
 
