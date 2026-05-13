@@ -390,3 +390,26 @@ Document what events to log:
 ---
 
 💡 **Tip**: A good spec is complete when you can hand it to a developer and they don't need to ask clarifying questions.
+
+## Common Rationalizations
+
+在撰寫規格文件過程中，AI 可能以下列藉口略過關鍵步驟：
+
+| 常見藉口 | 反制說明 |
+|---------|---------|
+| "Assumptions 都在腦子裡，不需要寫下來" | ⛔ 每個 Assumption 必須以 `[ASSUMED]` 明確標記——隱性假設是規格缺陷的首要來源，交付前逐項確認不可省略 |
+| "我已經知道所有術語的定義，不需要詞彙鎖定" | 詞彙不一致是 AI 幻覺的主要誘因——所有領域術語必須在 Step 2 前明確列出，並與現有程式碼/文件對齊 |
+| "我從作者視角已充分考慮各面向，不需要多角度審查" | Specialist Lens Review 不可跳過——必須依序切換 Security / Performance / QA / UX 四個視角，不得以一次整體掃描替代 |
+| "AC 已經很清楚，不需要特別標示可觀察結果" | 無法描述「如何在測試中驗證」的 AC 不算完成——Observable Outcome 是 AC 可測性的最低標準 |
+
+## Verification
+
+在輸出 `03-spec.md` 前，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
+
+- [ ] `Test-Path changes/<slug>/03-spec.md` 回傳 True（規格文件已實際建立於 Change Package 目錄）
+- [ ] 所有 `[ASSUMED]` 條目已與使用者逐項確認（或移至 Open Questions 並獲明確授權）
+- [ ] 每個 User Story 的所有 AC 均可表達為一個失敗測試（AC Testability 通過）
+- [ ] Specialist Lens Review 已完成：Security / Performance / QA / UX 各視角各產出 ≥1 個確認或新增 AC
+- [ ] Technical Considerations 含 Security、Performance、Observability 三節（不得為空）
+- [ ] Open Questions 欄位已填寫或明確標記「無未解問題」
+- [ ] 規格文件可讓初級開發者無需追加提問即可開始實作計畫
