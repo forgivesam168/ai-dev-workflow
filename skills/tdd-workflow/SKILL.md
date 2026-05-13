@@ -48,6 +48,7 @@ Use this skill when:
 2. Strict scope: implement ONLY what belongs to the current Phase
 3. One task at a time: complete RED→GREEN→REFACTOR before moving to the next task
 4. Scope discipline: if you spot work that belongs to a future Phase, note it in your report — do not implement it
+5. **Vertical slice per cycle**: each Red-Green-Refactor loop = one vertical slice — do NOT batch multiple tests then implement all at once
 
 ### Phase Completion Gate
 Before stopping, verify ALL of the following:
@@ -627,6 +628,53 @@ Update `CURRENT_STATE.md` with:
 ---
 
 **Remember**: Tests are not optional. They are the safety net that enables confident refactoring, rapid development, and production reliability.
+
+---
+
+## Three-Strike Rule（三次停止法則）
+
+When the **same error or test failure repeats across 3 consecutive fix attempts**, apply the Three-Strike Rule immediately:
+
+1. **Stop** — do NOT attempt a 4th fix autonomously
+2. **Report** a structured hypothesis list to the user:
+
+```
+## ⛔ Three-Strike Stop
+Error: [exact error message / test failure]
+Fix attempts: 3
+
+Root-cause hypotheses (at least 3):
+1. [Hypothesis A — e.g., "Wrong mock setup — stub returns incorrect type"]
+2. [Hypothesis B — e.g., "Async race condition — test doesn't await properly"]
+3. [Hypothesis C — e.g., "Dependency version mismatch — breaking API change"]
+
+Awaiting your confirmation before proceeding.
+```
+
+3. **Wait** — do NOT continue until the user confirms which hypothesis to investigate
+
+**Why**: Repeated fixes without root-cause analysis waste cycles and often worsen the problem. Three attempts is sufficient to confirm the agent has hit a knowledge or context boundary — human judgment is needed.
+
+---
+
+## Feedback Loop Prerequisite（反饋循環前置條件）
+
+**Before writing any test or implementation code**, verify that a fast feedback loop exists:
+
+| Environment | Minimum Requirement |
+|-------------|---------------------|
+| .NET | `dotnet test` or `dotnet watch test` (output visible) |
+| Python | `pytest` with instant output, or `pytest-watch` |
+| TypeScript / Node | `jest --watch` or `vitest --watch` |
+| PowerShell | `Invoke-Pester` with output visible in terminal |
+
+**If no fast feedback loop exists**:
+1. Establish it first: configure test runner, create minimal test scaffold, verify one test runs and output is visible
+2. If establishing it is blocked (missing environment, locked credentials) → **pause and explain to the user why TDD cannot proceed**
+
+**Why**: TDD without observable test execution degrades to code-then-test (waterfall). The Red-Green-Refactor cycle only functions when Red and Green states are observable in under 30 seconds.
+
+---
 
 ## Common Rationalizations
 
