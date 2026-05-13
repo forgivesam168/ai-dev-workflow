@@ -297,6 +297,57 @@ Create `changes/<YYYY-MM-DD>-<slug>/04-plan.md`:
 
 ---
 
+## Vertical Slice Strategy
+
+A **vertical slice** is the smallest testable increment that traverses all application layers — from the entry point (API / UI / CLI) to the data layer — and delivers a **fully verifiable feature unit**.
+
+| Dimension | Vertical Slice ✅ | Horizontal Slice ❌ |
+|-----------|-----------------|---------------------|
+| Definition | One feature path end-to-end | All tests in Task 1, all impl in Task 2 |
+| Commit size | ≤ 1 focused commit | Multiple commits before anything verifiable |
+| Validation point | Each task produces a runnable, testable increment | Only verifiable after all tasks complete |
+
+### Slice Size Standard
+
+- Each task = **one vertical slice** = at most 1 focused commit
+- Split a task when it touches ≥ 3 independent feature paths
+- **Pure backend / DB migration**: UI layer is optional, but the task must still cover a **complete, independently verifiable functional unit**
+  (e.g., "migration runs + data is correct + query returns expected rows")
+
+### Plan-Agent Enforcement Rule
+
+Before accepting any Task, apply this check:
+
+> *"Does this Task contain BOTH a test strategy AND an implementation step for the same feature path?"*
+
+- **YES** → vertical slice confirmed; proceed
+- **NO** → flag as Spec Gap; do NOT accept a Task that contains only tests or only implementation
+
+---
+
+## Anti-Pattern: Horizontal Slicing
+
+```
+❌ HORIZONTAL SLICING (Forbidden):
+  Task 1: Write all unit tests for the feature
+  Task 2: Implement all production code
+  Task 3: Refactor everything
+
+✅ VERTICAL SLICING (Required):
+  Task 1: User can create a basic transaction (RED → GREEN → REFACTOR)
+  Task 2: Transaction validates amount precision (RED → GREEN → REFACTOR)
+  Task 3: Transaction idempotency key enforced (RED → GREEN → REFACTOR)
+```
+
+**Why horizontal slicing is harmful**:
+1. Tests written without implementation drift from actual behavior
+2. No verifiable increment until all tasks complete — entire phase becomes a single blast radius
+3. Violates Red-Green-Refactor: there is no RED phase without a specific implementation target
+
+**plan-agent enforcement rule**: Any Task whose Test Strategy contains **only tests** or whose Implementation contains **only code with no corresponding test strategy** must be flagged as a Spec Gap and rewritten as a vertical slice before the plan is approved.
+
+---
+
 ## Plan Handoff Gate
 
 Run `/agentic-eval` before approving for TDD implementation stage:
@@ -418,3 +469,26 @@ Refactor:
 ---
 
 💡 **Tip**: A good plan is detailed enough to start implementation without confusion, but flexible enough to adapt when reality diverges from expectations.
+
+## Common Rationalizations
+
+在建立實作計畫過程中，AI 可能以下列藉口略過關鍵步驟：
+
+| 常見藉口 | 反制說明 |
+|---------|---------|
+| "水平切片是合理起點：先把所有測試建好，再來實作" | ⛔ 水平切片是反模式——任何只含測試或只含實作的 Task 均為 Spec Gap，必須重新拆分為垂直切片（每個 Task 從接口到資料層完整可驗證） |
+| "計畫越詳細越好，我把所有 Task 都先列出來" | 過度規劃會凍結設計決策——計畫精細度應到「可開始實作」為止，過多預期細節反而阻礙 TDD 的探索性 |
+| "依賴關係很明顯，不需要明確標記" | 隱性依賴是計畫失敗的主因——每個 Task 的依賴必須明確列出，Phase 順序必須可機械驗證 |
+| "Spec 還不完整，我先計畫，邊實作邊補" | Spec Gap 未解決前計畫等於在沙上建房——必須先標記 BLOCKED 並回到 spec-agent 釐清，不得帶著已知 Gap 進入實作 |
+
+## Verification
+
+在輸出 `04-plan.md` 前，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
+
+- [ ] `Test-Path changes/<slug>/04-plan.md` 回傳 True（計畫文件已實際建立於 Change Package 目錄）
+- [ ] 所有 Task 均為垂直切片（無只含測試或只含實作的 Task）
+- [ ] 所有 Task 依賴關係均明確標記（Depends on: 欄位填寫）
+- [ ] First TDD Slice 已確認（最小可測增量，可立即開始 RED 驗證）
+- [ ] Spec Coverage Matrix 已完成（所有 FR 和 Story 有對應 Task）
+- [ ] 無 BLOCKED 狀態 Task（或 BLOCKED 原因已明確說明並回報使用者）
+- [ ] Phase Exit Criteria 均為可機械驗證的陳述式（非意圖性描述）

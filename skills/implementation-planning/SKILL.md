@@ -297,6 +297,57 @@ Create `changes/<YYYY-MM-DD>-<slug>/04-plan.md`:
 
 ---
 
+## Vertical Slice Strategy
+
+A **vertical slice** is the smallest testable increment that traverses all application layers — from the entry point (API / UI / CLI) to the data layer — and delivers a **fully verifiable feature unit**.
+
+| Dimension | Vertical Slice ✅ | Horizontal Slice ❌ |
+|-----------|-----------------|---------------------|
+| Definition | One feature path end-to-end | All tests in Task 1, all impl in Task 2 |
+| Commit size | ≤ 1 focused commit | Multiple commits before anything verifiable |
+| Validation point | Each task produces a runnable, testable increment | Only verifiable after all tasks complete |
+
+### Slice Size Standard
+
+- Each task = **one vertical slice** = at most 1 focused commit
+- Split a task when it touches ≥ 3 independent feature paths
+- **Pure backend / DB migration**: UI layer is optional, but the task must still cover a **complete, independently verifiable functional unit**
+  (e.g., "migration runs + data is correct + query returns expected rows")
+
+### Plan-Agent Enforcement Rule
+
+Before accepting any Task, apply this check:
+
+> *"Does this Task contain BOTH a test strategy AND an implementation step for the same feature path?"*
+
+- **YES** → vertical slice confirmed; proceed
+- **NO** → flag as Spec Gap; do NOT accept a Task that contains only tests or only implementation
+
+---
+
+## Anti-Pattern: Horizontal Slicing
+
+```
+❌ HORIZONTAL SLICING (Forbidden):
+  Task 1: Write all unit tests for the feature
+  Task 2: Implement all production code
+  Task 3: Refactor everything
+
+✅ VERTICAL SLICING (Required):
+  Task 1: User can create a basic transaction (RED → GREEN → REFACTOR)
+  Task 2: Transaction validates amount precision (RED → GREEN → REFACTOR)
+  Task 3: Transaction idempotency key enforced (RED → GREEN → REFACTOR)
+```
+
+**Why horizontal slicing is harmful**:
+1. Tests written without implementation drift from actual behavior
+2. No verifiable increment until all tasks complete — entire phase becomes a single blast radius
+3. Violates Red-Green-Refactor: there is no RED phase without a specific implementation target
+
+**plan-agent enforcement rule**: Any Task whose Test Strategy contains **only tests** or whose Implementation contains **only code with no corresponding test strategy** must be flagged as a Spec Gap and rewritten as a vertical slice before the plan is approved.
+
+---
+
 ## Plan Handoff Gate
 
 Run `/agentic-eval` before approving for TDD implementation stage:
