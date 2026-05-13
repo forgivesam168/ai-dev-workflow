@@ -5,10 +5,10 @@
 你會得到：
 
 - `copilot-instructions.md`：團隊憲法與行為準則（繁中說明 + 英文程式碼範例）
-- `agents/`：各角色（Brainstorm、Architect、Spec、Planner、Coder、Reviewer）定義
+- `agents/`：9 個專業 Agent 角色（Brainstorm、Architect、Spec、Plan、Coder、Code Reviewer、PM、Frontend Designer、DBA）定義
 - `instructions/`：語言與領域規則（例如 Python / C# / SQL / API）
 - `prompts/`：標準化 prompt 與工作流程範例
-- `skills/`：可插拔技能（測試、視覺檢查、markdown 轉換等）
+- `skills/`：35 個可插拔技能（TDD、規格、計畫、測試、視覺、CI/CD、DB 等）
 - `bootstrap.ps1`：將範本部署到任何專案的安裝器（支援首次部署與版本更新）
 
 快速上手
@@ -46,12 +46,46 @@ Remove-Item bootstrap.ps1
 - 本範本以「通用性」與「保守配置」為原則；新增或移除 skills 應由各團隊依技術棧裁剪。
 - 使用說明與註解建議採繁體中文撰寫以符合團隊內部溝通習慣，程式碼與範例仍以英文為主。
 
+---
+
+## 🤖 九大 Agent 角色與主要技能
+
+每個 Agent 有明確職責邊界、主要技能配對與交接協議。
+
+| Agent | 角色定位 | 主要技能 | 觸發關鍵字 |
+|-------|---------|---------|-----------|
+| **brainstorm-agent** | 需求探索與風險分類 | `brainstorming` | brainstorm, 釐清需求, 我有個想法, 探索方案 |
+| **architect-agent** | 跨階段架構品質仲裁 | `brainstorming`（ADR）+ `agentic-eval` | design, architect, ADR, 系統設計, 架構決策 |
+| **spec-agent** | 規格撰寫專家 | `specification` | write spec, create PRD, 規格文件, 需求文件 |
+| **plan-agent** | 實作計畫制定 | `implementation-planning` | create plan, task breakdown, 規劃實作, spec to plan |
+| **coder-agent** | TDD 實作專家 | `tdd-workflow` | TDD, implement, 開始 TDD, test-driven |
+| **code-reviewer** | 程式碼品質與安全審查 | `code-security-review` | review, audit, 審核程式碼, code review |
+| **pm-agent** | 跨 Session 工作流程守護 | `workflow-orchestrator` + `prd` | project status, what's next, 我們在哪, 工作流程 |
+| **frontend-designer-agent** | UI/UX 設計與 Component Spec | `frontend-patterns` + `excalidraw-diagram-generator` | design UI, wireframe, component spec, 前端設計 |
+| **dba-agent** | 資料庫 Schema 設計與審查 | `sql.instructions.md` | design schema, ERD, migration, 資料庫設計 |
+
+### 各 Agent 一句話說明
+
+- **PM**：*「我們在哪？」*——掃描 `changes/` 判斷階段、建議下一步，是唯一可主動建議切換 Agent 的角色
+- **Brainstorm**：*「我們要做什麼？」*——寫任何程式碼前先釐清需求、分類風險
+- **Architect**：*「設計方向對嗎？」*——跨階段仲裁，任何階段均可 Consult
+- **Spec**：*「確切要做什麼？」*——需求轉為可測試的驗收標準（`03-spec.md`）
+- **Plan**：*「怎麼一步一步做？」*——產出含 TDD 策略的可執行計畫（`04-plan.md`）
+- **Coder**：*「寫程式碼。」*——Red-Green-Refactor；Financial Precision 是強制停止條件
+- **DBA** *(顧問)*：*「Schema 設計正確嗎？」*——最佳介入時機是 Spec/Plan 階段而非 coding 階段
+- **Frontend Designer** *(顧問)*：*「UI/UX 設計正確嗎？」*——最佳介入時機是 Spec/Plan 階段
+- **Code Reviewer**：*「程式碼可以出貨嗎？」*——多視角稽核；通過後交給 work-archiving
+
+---
+
 ## 🧠 Repo Memory（選擇性啟用）
 
 為 AI 跨 session 保留專案記憶，初始化時加上 `-EnableMemory`：
 
 ```powershell
-pwsh -File .\scripts\bootstrap.ps1 -EnableMemory
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -EnableMemory
+Remove-Item bootstrap.ps1
 ```
 
 這會在目標專案建立 `.ai-workflow-memory/` 骨架：
@@ -60,6 +94,55 @@ pwsh -File .\scripts\bootstrap.ps1 -EnableMemory
 - `session-journal/`：單次 session 紀錄（加入 .gitignore）
 
 AI 在每次 session 開始會自動讀取這兩份文件，無需重複解釋技術棧或工作進度。
+
+## 🧰 35 技能分類總覽
+
+技能（Skill）提供方法論與工具箱，依關鍵字自動載入至當前 Agent 的執行環境中。
+
+### 核心工作流技能（10 個）
+
+| 技能 | 說明 | 觸發關鍵字 | 推薦 Agent |
+|------|------|-----------|-----------|
+| `workflow-orchestrator` | 流程協調：偵測當前階段、建議下一步 | workflow, what's next | pm-agent |
+| `brainstorming` | 結構化需求探索與風險分類（五題最低、Pre-Mortem） | brainstorm, explore options | brainstorm-agent |
+| `specification` | 規格/PRD 產出（AC 可測性、詞彙鎖定、Specialist Lens 審查） | spec, PRD, requirements | spec-agent |
+| `implementation-planning` | TDD 整合計畫制定（Vertical Slice 強制、plan-from-spec） | plan, task breakdown, spec to plan | plan-agent |
+| `tdd-workflow` | TDD 方法論（Red-Green-Refactor、Three-Strike Rule、Subagent Status Protocol） | TDD, test-driven | coder-agent |
+| `code-security-review` | 程式碼品質與安全稽核（財務精度、TDD 合規、4 Specialist Lens） | review, audit | code-reviewer |
+| `work-archiving` | 變更包封存（ADR section、三條件 guard）| archive, finalize | — |
+| `explore` | 唯讀程式庫探索（承諾修改前先觀察） | explore, investigate, scan risks | — |
+| `shipping-and-launch` | 生產部署與上線管理（Staged Rollout、Rollback Plan、Go/No-Go checklist） | deploy, launch, rollout, go-live | — |
+| `ci-cd-and-automation` | CI/CD 管線設計（Shift Left、4 Stage Pipeline、Anti-Pattern Guard） | CI/CD, pipeline, quality gate | — |
+
+### 品質與脈絡技能（2 個）
+
+| 技能 | 說明 | 觸發關鍵字 |
+|------|------|-----------|
+| `execution-guardrails` | 共享品質底盤：假設顯性化、簡潔優先、精準修改、可驗證完成條件 | /execution-guardrails |
+| `context-engineering` | **新** 5 層脈絡架構：詞彙衝突偵測、CONTEXT.md 管理、對抗 AI 幻覺 | context engineering, vocabulary conflict, CONTEXT.md |
+
+### 開發模式技能（5 個）
+
+| 技能 | 說明 | 觸發關鍵字 |
+|------|------|-----------|
+| `coding-standards` | TypeScript / JavaScript / React / Node.js 通用標準 | coding standards, best practices |
+| `backend-patterns` | 後端架構、API 設計、DB 優化 | backend, API design |
+| `frontend-patterns` | React / Next.js、狀態管理、UI 最佳實踐 | frontend, React patterns |
+| `python-patterns` | PEP 8、型別提示、pytest、TDD | Python, pytest |
+| `refactor` | 精準重構（Chesterton's Fence、Performance Mode 先量測）| refactor, code smells |
+
+### 測試與品質技能（4 個）
+
+| 技能 | 說明 | 觸發關鍵字 |
+|------|------|-----------|
+| `agentic-eval` | AI 輸出品質評估（自評 rubric、Tier 2 外部批評、Pre-Decision Mode） | evaluate agent, quality loop |
+| `debug` | **新** 系統化除錯（build/test 失敗、drift 錯誤；2 次失敗循環後升級人工） | debug, fix build, tests failing |
+| `webapp-testing` | Playwright 本地網頁測試 | test webapp, Playwright |
+| `scoutqa-test` | 探索性 QA（Smoke、無障礙、電商流程） | test website, accessibility |
+
+> 完整技能清單請見 `AGENTS.md` → Skills (35)
+
+---
 
 ## 📚 文件導覽與閱讀路徑
 

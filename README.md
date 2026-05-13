@@ -5,9 +5,9 @@ This repository provides a reusable AI development workflow for GitHub Copilot C
 ## What You Get
 
 - Team constitution and instruction mapping for consistent AI behavior
-- Agent personas: Architect, Plan, Coder, Reviewer, Spec
+- 9 agent personas: Brainstorm, Architect, Spec, Plan, Coder, Code Reviewer, PM, Frontend Designer, DBA
 - Prompt library (10 commands) for repeatable workflows
-- Skills library (32 specialized capabilities)
+- Skills library (35 specialized capabilities)
 - Bootstrap installer for deploying to any project
 - **Repo Memory** for persistent project context across sessions (opt-in)
 
@@ -35,12 +35,40 @@ See [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) for all parameters and advanced o
 ## Structure
 
 - `copilot-instructions.md` - Team constitution
-- `agents/` - Persona definitions (6 agents)
+- `agents/` - Persona definitions (9 agents)
 - `instructions/` - Language and domain rules
 - `prompts/` - Slash commands (10 prompts)
-- `skills/` - Skills library (32 skills)
+- `skills/` - Skills library (35 skills)
 - `bootstrap.ps1` - Deployment & update installer
 - `tools/` - Sync scripts
+
+## Agents
+
+Nine specialized agents cover the full development lifecycle. Each agent has a defined role, primary skill, and handoff protocol.
+
+| Agent | Role | Primary Skill(s) | Trigger Keywords |
+|-------|------|-----------------|-----------------|
+| **brainstorm-agent** | Requirements Explorer & Risk Classifier | `brainstorming` | brainstorm, 釐清需求, 我有個想法, explore options |
+| **architect-agent** | Cross-Stage System Architect & Quality Arbitrator | `brainstorming` (ADR) + `agentic-eval` | design, architect, ADR, system design, architectural trade-offs |
+| **spec-agent** | Specification Specialist | `specification` | write spec, create PRD, requirements, 規格文件 |
+| **plan-agent** | Strategic Implementation Planner | `implementation-planning` | create plan, task breakdown, 規劃實作, spec to plan |
+| **coder-agent** | TDD & Build-Aware Implementation | `tdd-workflow` | TDD, implement, 開始 TDD, test-driven |
+| **code-reviewer** | Code Quality & Security Auditor | `code-security-review` | review, audit, 審核程式碼, code review |
+| **pm-agent** | Cross-Session Workflow Guardian | `workflow-orchestrator` + `prd` | project status, what's next, 我們在哪, workflow status |
+| **frontend-designer-agent** | UI/UX Designer & Component Spec | `frontend-patterns` + `excalidraw-diagram-generator` | design UI, wireframe, component spec, 前端設計 |
+| **dba-agent** | Database Architect & Migration Safety | `sql.instructions.md` | design schema, ERD, migration, 資料庫設計 |
+
+### Agent Roles at a Glance
+
+- **PM**: *"Where are we?"* — Scans `changes/` to detect stage and recommend next step
+- **Brainstorm**: *"What are we building?"* — Clarifies requirements before code is written
+- **Architect**: *"Is the design sound?"* — Cross-stage quality arbitration; available at any stage
+- **Spec**: *"What exactly must be done?"* — Turns requirements into testable acceptance criteria
+- **Plan**: *"How do we do it step-by-step?"* — Produces `04-plan.md` with TDD-integrated tasks
+- **Coder**: *"Write the code."* — Red-Green-Refactor; Financial Precision is a hard stop
+- **DBA** *(Consult)*: *"Is the schema right?"* — Engages at Spec/Plan stage, not coding stage
+- **Frontend Designer** *(Consult)*: *"Is the UI/UX right?"* — Engages at Spec/Plan stage
+- **Code Reviewer**: *"Is the code shippable?"* — Multi-lens audit; routes to work-archiving on pass
 
 ## 6-Stage Workflow
 
@@ -115,6 +143,23 @@ Most of this behavior is now always-on through the constitution and core agents.
 - Run `pwsh -File .\tools\sync-dotgithub.ps1` after editing instructions.
 
 See `WORKFLOW.md` for detailed workflow documentation.
+
+## Skills (35) — What's New
+
+Skills are the methodology layer loaded automatically by agents. Recent additions expand the toolkit significantly:
+
+| Category | Skills | Highlights |
+|----------|--------|-----------|
+| **Core Workflow** (10) | `workflow-orchestrator`, `brainstorming`, `specification`, `implementation-planning`, `tdd-workflow`, `code-security-review`, `work-archiving`, `explore`, **`shipping-and-launch`** ✨, **`ci-cd-and-automation`** ✨ | New: production deployment + CI/CD pipeline design |
+| **Quality & Context** (2) | `execution-guardrails`, **`context-engineering`** ✨ | New: 5-layer context architecture, vocabulary conflict detection, anti-hallucination |
+| **Development Patterns** (5) | `coding-standards`, `backend-patterns`, `frontend-patterns`, `python-patterns`, `refactor` | `refactor` upgraded: Chesterton's Fence + Measure-First modes |
+| **Testing & QA** (4) | `agentic-eval`, **`debug`** ✨, `webapp-testing`, `scoutqa-test` | New: systematic debug skill with 2-cycle escalation ceiling |
+| **Tool Skills** (3) | `git-commit`, `prd`, `make-skill-template` | — |
+| **Security** (1) | `security-review` | CSO dual-mode: Quick Gate + Deep Scan (OWASP Top 10) |
+| **Microsoft & GitHub** (5) | `microsoft-docs`, `microsoft-code-reference`, `copilot-sdk`, `gh-cli`, `github-issues` | — |
+| **Content & Viz** (4) | `excalidraw-diagram-generator`, `markdown-to-html`, `web-design-reviewer`, `chrome-devtools` | — |
+
+✨ = newly added in this release. Full descriptions in `AGENTS.md` → Skills (35).
 
 ## Repo Memory (Opt-In)
 
