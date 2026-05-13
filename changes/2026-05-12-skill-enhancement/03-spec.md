@@ -649,7 +649,7 @@ description: 'Use this skill when... Do not trigger when...'
 | `tools` | 選填 | YAML 陣列 | 限制 Agent 可用工具，planning agent 不得含 `edit` |
 | `agents` | 選填 | YAML 陣列（`*` = 全部，`[]` = 禁止子 Agent） | 控制可調用的 sub-agent 範圍 |
 | `model` | 選填 | 單一模型名稱或優先序陣列 | 陣列格式：依序嘗試，前者不可用才用下一個 |
-| `handoffs` | **建議加入** | YAML 陣列（見下方範例） | 正式化跨 Agent 工作流程轉移點 |
+| `handoffs` | **建議加入** | YAML 陣列（見下方範例） | 正式化跨 Agent 工作流程轉移點；**僅 VS Code Extension 支援**，Copilot CLI 會顯示 `unknown field ignored: handoffs` 警告（屬預期行為，不影響 Agent 載入）|
 | `user-invocable` | 選填 | `false` = 只能作為 sub-agent | 不出現在使用者 dropdown |
 
 > ⚠️ **Agent 官方無行數限制**。本 repo 的 ≤25 non-empty lines 是**設計目標**，非官方規範。  
