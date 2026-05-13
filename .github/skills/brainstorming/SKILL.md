@@ -21,6 +21,18 @@ Use this skill at the **start of any request/change** when:
 
 ## Workflow
 
+### Pre-Phase — Domain Research（條件觸發）
+
+**觸發條件**（滿足任一即觸發）：
+- 使用者未指定技術棧
+- 無現有 codebase（greenfield 專案）
+- 想法屬於領域/概念層級（如「我想做 AI 客服平台」「我想做財務分析工具」）
+
+派遣 `research` subagent，指令範本：
+> *"Search GitHub for [domain] popular libraries, architectures, and community trends (2024–2025). Report top 3 approaches with complexity, maturity, and trade-offs, with citations."*
+
+將研究結果整理為**解法地圖**（2-3 條路線 + 社群成熟度），作為 Phase 1 提問與 Phase 2 選項比較的依據。
+
 ### Phase 0 — Intake & Risk Classification
 - Clarify goals/non-goals and acceptance criteria
 - Classify risk: **Low** / **Med** / **High**
