@@ -476,6 +476,22 @@ pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1 -Update
 
 ---
 
+## 🔄 Migration Notes
+
+### `gate-check` skill removed from deployed projects (v1.x+)
+
+If you bootstrapped an earlier version of this template, your project's `.github/skills/` folder may contain a `gate-check` directory. This skill is a **template maintainer tool** and is no longer deployed to adopter projects.
+
+**Safe to delete:**
+```powershell
+# Remove gate-check from your project if it was installed by an older bootstrap
+Remove-Item -Recurse -Force .\.github\skills\gate-check
+```
+
+Running the updater (`bootstrap.ps1 -Update`) will not remove it automatically (the updater never deletes existing files). Manual cleanup is safe — your workflow is unaffected.
+
+---
+
 ## 🆘 Troubleshooting
 
 ### Issue: "Scripts are disabled on this system" (PowerShell)

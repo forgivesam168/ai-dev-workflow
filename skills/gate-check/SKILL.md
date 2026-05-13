@@ -1,15 +1,26 @@
 ---
 name: gate-check
 description: >
-  Deterministic pre-review gate that runs automated checks before handing off to agentic-eval or code-reviewer.
-  Use before any stage transition (code→review, plan→code, spec→plan) to catch hard failures early.
-  Triggers on: "gate check", "run gate", "pre-review check", "verify before review", "check build",
+  For ai-dev-workflow template maintainers only. Do not trigger during normal development workflow.
+  Deterministic pre-review gate that verifies source vs .github/** sync parity and catalog counts
+  before committing changes to the template repo itself.
+  Triggers on: "gate check", "run gate", "pre-review check", "verify before review",
   "check sync drift", "check catalog parity". Reports GATE PASSED / GATE PASSED WITH NOTES / GATE FAILED.
 ---
 
 # Gate-Check Skill
 
 Deterministic automated quality gate. Runs before `agentic-eval` and `code-reviewer`. Hard failures stop the pipeline.
+
+## ⚠️ Scope
+
+**This skill is for ai-dev-workflow template maintainers only.**
+
+It verifies sync parity between the `skills/`, `agents/`, `instructions/`, `prompts/` source folders
+and the generated `.github/**` copies — checks that are only meaningful inside the template repository itself.
+
+If you are using this template in your own project (via `bootstrap.ps1` or `install-apply.ps1`),
+`gate-check` is **not deployed** to your project. You do not need it and should not trigger it.
 
 ## Verdict Semantics
 

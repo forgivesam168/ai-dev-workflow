@@ -102,7 +102,7 @@ Operational rule:
 
 Skills provide methodology and toolkits that are automatically loaded into the current agent's context.
 
-### Core Workflow Skills (9)
+### Core Workflow Skills (8)
 
 | Skill | Description | Triggers On | Recommended Agent |
 |-------|-------------|-------------|-------------------|
@@ -114,7 +114,6 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 | code-security-review | Code quality and security audit for financial systems | review, audit | code-reviewer-agent |
 | work-archiving | Finalize and archive completed work | archive, finalize | — |
 | explore | Read-only codebase investigation before committing to a change package | explore, investigate, scan risks | — |
-| gate-check | Deterministic pre-review gate: sync drift + catalog parity + build/lint/test | gate check, pre-review check | coder-agent |
 
 ### Tool Skills (3)
 
@@ -189,6 +188,16 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 **VS Code**:
 - Input keywords (auto-loads skill)
 - Or use corresponding slash command (shortcut)
+
+---
+
+### Template Maintenance Tools (1)
+
+> ⚠️ **Not deployed to adopter projects.** The following skills are for maintainers of this template repository only. They verify sync parity between source folders and `.github/**` — checks that are meaningless outside the template repo itself.
+
+| Skill | Description | Triggers On |
+|-------|-------------|-------------|
+| gate-check | Deterministic pre-review gate: source vs `.github/**` sync drift + catalog parity + build/lint/test | gate check, check sync drift, check catalog parity |
 
 ---
 

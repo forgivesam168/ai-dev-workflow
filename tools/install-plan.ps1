@@ -78,6 +78,7 @@ Get-ChildItem (Join-Path $RepoRoot 'prompts')      -Filter '*.prompt.md'       -
     ForEach-Object { Add-Component "prompts/$($_.Name)"      "prompts/$($_.Name)"      ".github/prompts/$($_.Name)"      'file' }
 
 Get-ChildItem (Join-Path $RepoRoot 'skills')       -Directory                  -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -notin @('gate-check') } |
     ForEach-Object { Add-Component "skills/$($_.Name)/" "skills/$($_.Name)" ".github/skills/$($_.Name)" 'dir' }
 
 # ─── Output ────────────────────────────────────────────────────────────────

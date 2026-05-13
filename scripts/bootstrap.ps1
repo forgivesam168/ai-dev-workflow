@@ -444,7 +444,8 @@ function Sync-WorkflowFiles {
     $excludePatterns = @(
         "workflows",        # 保留現有 CI/CD
         "CODEOWNERS",       # 保留現有 code owners
-        "dependabot.yml"    # 保留現有 dependabot 設定
+        "dependabot.yml",   # 保留現有 dependabot 設定
+        "gate-check"        # Template Maintainer Only — 不部署到採用者專案
     )
     
     # 確保源目錄存在
