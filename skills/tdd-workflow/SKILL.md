@@ -601,6 +601,19 @@ Use this standard format when completing or blocking on a Phase:
 
 ---
 
+## Subagent Status Protocol
+
+Use these status codes in every Phase completion report:
+
+| Status | Meaning | Example |
+|--------|---------|---------|
+| `DONE` | All tests pass; deliverable committed | Green build confirmed |
+| `DONE_WITH_CONCERNS` | Tests pass; concern noted | Coverage below 80% |
+| `NEEDS_CONTEXT` | Blocked; awaiting clarifying info | Surface specific AC/task question to user directly |
+| `BLOCKED` | Build fails after 2 attempts; escalating | User should update `04-plan.md` and re-invoke coder-agent |
+
+---
+
 ## Document & Memory Update Protocol
 
 After Phase completion, update these artifacts before stopping:
