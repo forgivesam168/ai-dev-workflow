@@ -2,6 +2,10 @@ param(
   [string]$RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path
 )
 
+# Skills that exist in source but must NOT be deployed to .github/skills/
+# (template-repo-only skills; meaningless outside the template repo itself)
+$excludeSkills = @('gate-check')
+
 function Copy-Folder($src, $dst) {
   if (Test-Path $dst) { Remove-Item -Recurse -Force $dst }
   Copy-Item -Recurse -Force $src $dst
@@ -35,6 +39,17 @@ try {
       if (!(Test-Path $dstDir)) { New-Item -ItemType Directory -Force -Path $dstDir | Out-Null }
       Copy-Folder $srcPath $dstPath
       Write-Host "✅ Synced dir:  $($m.Src) -> $($m.Dst)" -ForegroundColor Green
+
+      # Remove excluded skills from .github/skills/ after sync
+      if ($m.Src -eq "skills") {
+        foreach ($excluded in $excludeSkills) {
+          $excludedDst = Join-Path $dstPath $excluded
+          if (Test-Path $excludedDst) {
+            Remove-Item -Recurse -Force $excludedDst
+            Write-Host "🚫 Excluded from deploy: $excluded" -ForegroundColor Yellow
+          }
+        }
+      }
     }
   }
 }
@@ -44,11 +59,12 @@ finally {
 
 Write-Host "Done. (.github/** updated)" -ForegroundColor Cyan
 
-# Skills count verification
+# Skills count verification (source total minus excluded = deployed)
 $sourceCount = (Get-ChildItem (Join-Path $RepoRoot "skills") -Recurse -Filter "SKILL.md").Count
 $mirrorCount = (Get-ChildItem (Join-Path $RepoRoot ".github/skills") -Recurse -Filter "SKILL.md").Count
-if ($sourceCount -eq $mirrorCount) {
-    Write-Host "✅ Skills in sync: $sourceCount skills" -ForegroundColor Green
+$expectedMirror = $sourceCount - $excludeSkills.Count
+if ($mirrorCount -eq $expectedMirror) {
+    Write-Host "✅ Skills in sync: $mirrorCount deployed ($($excludeSkills.Count) excluded: $($excludeSkills -join ', '))" -ForegroundColor Green
 } else {
-    Write-Warning "⚠️ Skills count mismatch: source=$sourceCount, mirror=$mirrorCount"
+    Write-Warning "⚠️ Skills count mismatch: source=$sourceCount, deployed=$mirrorCount, expected=$expectedMirror"
 }

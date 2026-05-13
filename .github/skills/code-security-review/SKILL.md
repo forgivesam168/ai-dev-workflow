@@ -509,3 +509,26 @@ Input: "what's next?"
 ---
 
 💡 **Tip**: A good review finds issues before they reach production. Be thorough but pragmatic—perfection is the enemy of shipping.
+
+## Common Rationalizations
+
+在程式碼審查過程中，AI 可能以下列藉口略過關鍵步驟：
+
+| 常見藉口 | 反制說明 |
+|---------|---------|
+| "我已從作者角度完整審查" | ⛔ 不能只從程式碼作者視角審查——必須依序切換至少 3 個 Specialist Lens（Security、Performance、Future Maintainer）再完成審查 |
+| "測試覆蓋率 80%，這個模組邏輯簡單不需要 100%" | Financial / Auth / Security 核心路徑要求 100% 覆蓋——沒有例外，「簡單」不是降低標準的理由 |
+| "這只是小改動，不需要完整安全稽核" | 改動大小與安全風險無關——任何接觸認證、授權、金融精度的程式碼均需完整安全步驟 |
+| "PR 已通過所有自動測試，審查可以快速完成" | 自動測試無法捕捉所有安全弱點——必須手動執行 Specialist Lens Review，不得以 CI green 替代人工審查 |
+
+## Verification
+
+在產出 `05-review.md` 前，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
+
+- [ ] 已依序切換 Security、Performance、Future Maintainer 三個 Specialist Lens，各視角均有記錄輸出
+- [ ] 所有 🔴 Critical 問題已列出且有具體修復方案（不得只說「有問題」）
+- [ ] Financial Precision 檢查完成：所有金錢欄位確認無 float/double（`rg "float\|double" <changed-files>` 無命中）
+- [ ] 測試覆蓋率已量測，核心路徑 100%、整體 ≥80%（或明確說明例外理由）
+- [ ] Security Checklist 所有項目已逐條確認（無靜默略過）
+- [ ] `05-review.md` 已建立，Approval Status 已填寫（🔴 / 🟡 / 🟢 其中之一）
+- [ ] 若 Approval Status 為 🔴，已明確列出 Must Fix 項目清單
