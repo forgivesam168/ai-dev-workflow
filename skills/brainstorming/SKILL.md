@@ -17,6 +17,8 @@ Use this skill at the **start of any request/change** when:
 - There are multiple plausible implementation approaches
 - You need a rationale trail (auditability)
 
+> 💡 **方向完全不明確？** 先用 `/research` 探索技術地圖，再回來 brainstorm。
+
 ## Workflow
 
 ### Phase 0 — Intake & Risk Classification
