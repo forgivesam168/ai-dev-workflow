@@ -643,3 +643,26 @@ Use this skill when:
 | Introduce Null Object                         | Eliminate null checks                 |
 | Replace Type Code with Class/Enum             | Strong typing                         |
 | Replace Inheritance with Delegation           | Composition over inheritance          |
+
+## Common Rationalizations
+
+在執行重構過程中，AI 可能以下列藉口跨越重構範疇：
+
+| 常見藉口 | 反制說明 |
+|---------|---------|
+| "順手加個 feature 不會怎樣" | ⛔ 重構 = 純行為保留的結構改善——任何新功能或行為變更必須在獨立的 commit 中完成；「順手」是最常見的 scope creep 起點 |
+| "這段程式碼看起來沒用，直接刪掉比較乾淨" | Chesterton's Fence 原則——移除任何程式碼前必須先理解「為何有這段」；未理解其存在原因之前，不得刪除 |
+| "這個迴圈明顯可以優化，我直接改就好" | 無量測基線的效能優化是猜測而非工程——必須先有 profiler 或 benchmark 數據，才能動效能相關的程式碼 |
+| "沒有測試，所以我知道不會有回歸" | 無測試 = 無安全網——若無測試存在，重構前必須先加對應覆蓋；不得以「程式碼很簡單」替代測試保護 |
+
+## Verification
+
+在完成重構並準備 commit 前，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
+
+- [ ] `git diff HEAD --stat` 確認無預期外的行為變更檔案被修改
+- [ ] 所有既有測試通過（無回歸）：`dotnet test` / `npm test` / `pytest` 退出碼為 0
+- [ ] Build 成功且無新增 warning
+- [ ] 無混入 feature 或結構變更（重構 commit 只含純行為保留的改動）
+- [ ] 若涉及效能優化，量測數據已確認改善（量化）
+- [ ] 若涉及程式碼刪除，已確認理解被刪除程式碼的原始目的（Chesterton's Fence）
+- [ ] 若原本無測試，已在重構前加入對應覆蓋

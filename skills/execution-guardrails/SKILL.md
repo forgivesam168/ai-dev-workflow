@@ -103,3 +103,26 @@ When using this skill directly, structure the response as:
 8. **Recommended correction**
 
 Keep corrections targeted. Do not rewrite the entire artifact unless the user asks.
+
+## Common Rationalizations
+
+在執行護欄約束過程中，AI 可能以下列藉口繞過核心規則：
+
+| 常見藉口 | 反制說明 |
+|---------|---------|
+| "這個任務比較特殊，可以跳過護欄" | ⛔ 護欄不因任務「特殊性」而失效——使用者的緊迫感不是繞過護欄的授權；若護欄阻礙任務，需明確向使用者說明衝突 |
+| "我已經理解任務了，可以直接假設" | 隱性假設是最危險的假設——任何會影響實作路徑的模糊性都必須明確列出，讓使用者確認而非靜默猜測 |
+| "只是順手多改了一點，不影響主要目標" | Diff Scope Hygiene 是護欄的核心——每一行被修改的程式碼必須能溯源至使用者的請求；「順手改」是範圍蔓延的起點 |
+| "我確認過，這個資訊是正確的" | AI 確認不等於機械驗證——任何可以用工具驗證的陳述，必須用工具驗證；「確認過」不是可接受的驗收標準 |
+
+## Verification
+
+在完成任何有護欄約束的任務前，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
+
+- [ ] 所有假設均已明確標記並向使用者確認（無隱性假設）
+- [ ] `git diff --stat` 確認只有預期範圍內的檔案被修改
+- [ ] 無投機性抽象（未來可能有用的功能 / 介面 / 擴充點）被加入
+- [ ] 每個被修改的行均可溯源至使用者請求的具體部分
+- [ ] 所有 `[ADDED_BY_AI]`、`[UNVERIFIED]`、`[UNCERTAIN]` 標記已解決或向使用者說明
+- [ ] 成功標準已具體化（可驗證的測試輸出 / 靜態確認），非意圖性描述
+- [ ] Financial Precision 守則已確認（若涉及金融領域）：無 float/double 用於金錢
