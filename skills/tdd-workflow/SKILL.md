@@ -627,3 +627,26 @@ Update `CURRENT_STATE.md` with:
 ---
 
 **Remember**: Tests are not optional. They are the safety net that enables confident refactoring, rapid development, and production reliability.
+
+## Common Rationalizations
+
+在執行 TDD 過程中，AI 可能以下列藉口略過關鍵步驟：
+
+| 常見藉口 | 反制說明 |
+|---------|---------|
+| "先把所有測試寫完再統一實作，效率更高" | ⛔ 批次測試再批次實作是水平切片反模式——每個 Red-Green 循環必須是一個垂直切片；批次會隱藏實作期間發現的設計問題 |
+| "RED 確認很麻煩，我直接跳到 GREEN" | 未確認 RED 就實作 = 不知道測試是否真的在驗證你寫的邏輯——合法 RED 是 TDD 的第一道品質閘門 |
+| "這個測試 fail 3 次了，再試一次就好" | 三次修復停止法則——同一錯誤連續 3 次失敗必須停止，報告根本原因假設清單，不得擅自繼續第 4 次嘗試 |
+| "測試環境還沒建好，先寫邏輯之後再補測試" | 無快速反饋循環不得開始實作——必須先建立可觀察的測試執行環境，否則 TDD 無法保證正確性 |
+
+## Verification
+
+在每個 Red-Green-Refactor 循環完成後，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
+
+- [ ] `dotnet test` / `npm test` / `pytest` 全部通過（依專案技術棧選擇，退出碼為 0）
+- [ ] RED 步驟已確認：所有新增測試在實作前均為 FAIL 狀態
+- [ ] 本次 Task 僅修改了一個垂直切片（`git diff --stat` 確認無意外跨模組異動）
+- [ ] Refactor 後所有測試仍然通過（無行為變更）
+- [ ] 若有 DONE_WITH_CONCERNS，已記錄並通知使用者
+- [ ] Financial Precision 確認：無 float/double 用於金錢欄位（`rg "float|double" <changed-files>` 無命中）
+- [ ] 覆蓋率 ≥80%，核心路徑（金融計算/認證/授權）覆蓋率 100%
