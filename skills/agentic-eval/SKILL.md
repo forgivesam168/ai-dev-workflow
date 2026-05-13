@@ -1,15 +1,15 @@
 ---
 name: agentic-eval
 description: >
-  Patterns and techniques for evaluating and improving AI agent outputs through
-  iterative critique and refinement. Use this skill when:
-  implementing self-critique loops, evaluator-optimizer pipelines,
-  rubric-based scoring, LLM-as-judge evaluation, adversarial evaluation,
-  judge-and-refine cycles, structured output quality improvement,
-  cross-agent evaluation, plan quality review, spec validation before planning,
-  document consistency checking, stage transition quality gate,
-  architect review of plan or spec, verifying a downstream agent can consume
-  an upstream artifact, or inter-stage artifact consistency checks.
+  Adversarial evaluation patterns for any output or decision where you want
+  a devil's advocate challenge before committing. Use when:
+  you want to challenge a decision, get an adversarial second opinion,
+  implement self-critique loops, apply rubric-based scoring,
+  run evaluator-optimizer pipelines, judge-and-refine cycles,
+  verify a downstream agent can consume an upstream artifact,
+  or check inter-stage artifact consistency.
+  Triggers on "devil's advocate", "challenge this decision", "挑戰這個決策",
+  "扮演反對者", "adversarial review", "self-critique", "質疑這個方案".
   Do NOT use for standard code review (use code-security-review skill),
   general refactoring (use refactor skill), or security audits.
 allowed-tools: agent sql
@@ -31,12 +31,30 @@ Generate → Evaluate → Critique → Refine → Output
     └──────────────────────────────┘
 ```
 
+## Rubber Duck Spirit
+
+用相反論點挑戰自己的輸出，直到找不到反駁為止。
+
+> *"If you can't find a counter-argument, the output is ready. If you can, fix the weakness first."*
+
+核心行為模式：
+1. 生成輸出後，立即問：「什麼論點可以反駁這個決定？」
+2. 若找到反論 → 修正輸出，再問一次
+3. 若找不到有力反論 → 輸出已足夠穩健，繼續前進
+4. 不因「感覺對了」或「已經改很多次」就停止挑戰
+
+agentic-eval 是將此精神**結構化**的工具集。任何決策、任何輸出均可使用，無須等特定階段。
+
+---
+
 ## When to Use
 
+- You want a **devil's advocate challenge** on any output or decision
 - Output is **high-stakes or externally visible** (code shipped to prod, published reports)
 - An **objective rubric or measurable criteria** can be defined upfront
 - **Revision cost is acceptable** — iteration takes time
 - A **second perspective** is needed beyond linting or syntax checks
+- You want to verify that a downstream agent can consume an upstream artifact
 
 ## When NOT to Use
 
@@ -49,17 +67,19 @@ Generate → Evaluate → Critique → Refine → Output
 
 ## Integration with 6-Stage AI Development Workflow
 
-This skill integrates at specific **quality inflection points** where context isolation provides value.
+This skill can be used at any stage where adversarial challenge adds value.
 Evaluation strictness is **risk-adaptive** — tied to the brainstorm-agent's Low/Med/High classification.
-It complements the repo's shared `execution-guardrails` layer: guardrails shape behavior **before and during** work, while `agentic-eval` scores whether an artifact is safe to hand off.
+It complements the repo's shared `execution-guardrails` layer: guardrails shape behavior **before and during** work, while `agentic-eval` provides on-demand adversarial challenge.
 
-| Stage Transition | Trigger Agent | Tier | Risk Level |
-|-----------------|---------------|------|------------|
-| Before Spec → handoff | spec-agent (self) | 1 | All |
-| Spec → Plan | plan-agent (cross-eval) | 1 | Med / High |
-| After Plan complete | architect-agent (external) | 2 | Med / High |
-| Before code-reviewer | coder-agent (self) | 1 | All |
-| Review completeness check | architect-agent (meta-review) | 1 | High only |
+The table below shows **common usage patterns** (advisory, not mandatory):
+
+| Stage Transition | Common Use | Tier | Risk Level |
+|-----------------|------------|------|------------|
+| Before Spec → handoff | spec-agent self-challenge | 1 | All |
+| Spec → Plan | plan-agent cross-validation | 1 | Med / High |
+| After Plan complete | architect-agent external critique | 2 (Optional) | Med / High |
+| Before code-reviewer | coder-agent self-eval | 1 | All |
+| Review completeness check | architect-agent meta-review | 1 (Optional) | High only |
 
 **Guardrail-aware scoring**:
 - Use rubric dimensions such as **Assumption Management**, **Simplicity / Overengineering Risk**, **Diff Scope Hygiene**, and **Verification Strength** where they materially affect handoff quality.
@@ -159,7 +179,7 @@ See [Python implementation patterns](./references/python-patterns.md) for code e
 
 ---
 
-## Tier 2: External Critic via Subagent (Requires `agent` tool)
+## Tier 2: External Critic via Subagent (Optional — Requires `agent` tool)
 
 Delegate evaluation to a separate subagent using a **different model perspective** for adversarial critique.
 
@@ -194,7 +214,7 @@ See [Evaluation Workflow](./references/cli-evaluation-workflow.md) for step-by-s
 
 ---
 
-## Tier 3: Tracked Evaluation (Requires `task` + `sql` tools)
+## Tier 3: Tracked Evaluation (Optional — Requires `task` + `sql` tools)
 
 Persist iteration scores to the **per-session database** for convergence analysis and audit trail.
 Use only when tracking history across 3+ iterations is meaningful.
