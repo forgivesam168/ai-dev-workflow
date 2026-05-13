@@ -48,5 +48,15 @@ Follow the `tdd-workflow` skill for Red-Green-Refactor cycle, test-first develop
 ## Handoff
 
 - **Entry Signals**: plan 完成後、"implement"、"code"、"開始 TDD"、"TDD 實作"、"write tests first"
-- **Completion Conditions**: 所有 L1 測試通過（Green Build）+ Financial Precision 確認（無 float/double 用於金錢）+ Pre-Review Self-Eval PASS
-- **Next Step**: code-reviewer
+- **Completion Conditions** (every Phase, in order):
+  1. ✅ 所有 L1 測試通過（Green Build）
+  2. ✅ Financial Precision 確認（無 float/double 用於金錢）
+  3. ✅ Pre-Review Self-Eval PASS（`#code` rubric from `stage-rubrics.md`）
+  4. ✅ **更新 `04-plan.md`**：已完成 task 標記 ✅，Phase 狀態更新，偏差加 `📝 Implementation note`
+  5. ✅ **更新 Memory**（若 `.ai-workflow-memory/` 存在）：更新 `CURRENT_STATE.md`，寫入當前 Phase、下一步、覆蓋率、分支資訊
+  6. ✅ 輸出 Progress Report（使用 tdd-workflow skill 的標準格式）
+  7. ✅ **Stop** — 等待人工確認後才進行下一 Phase
+
+> ⚠️ 步驟 4–6 是**必要步驟**，不得因 tdd-workflow skill 未載入而跳過。詳細格式見 `skills/tdd-workflow/SKILL.md` §Document & Memory Update Protocol。
+
+- **Next Step**: code-reviewer（所有 Phase 完成後）
