@@ -6,7 +6,7 @@ It contains:
 - Agent personas (`agents/*.agent.md`) — 9 agents
 - Instruction files (`instructions/*.instructions.md`)
 - Prompt library (`prompts/*.prompt.md`) — 10 prompts
-- Skills library (`skills/**/SKILL.md`) — 32 skills
+- Skills library (`skills/**/SKILL.md`) — 35 skills
 - Bootstrap installer (`bootstrap.ps1`) to deploy these assets into any project.
 
 ## Pointer-Style Guidance Architecture
@@ -98,22 +98,24 @@ Operational rule:
 | `/readme` | Tool | Create README |
 | `/learn` | Tool | Learn and improve AI behavior |
 
-## Skills (32)
+## Skills (35)
 
 Skills provide methodology and toolkits that are automatically loaded into the current agent's context.
 
-### Core Workflow Skills (8)
+### Core Workflow Skills (10)
 
 | Skill | Description | Triggers On | Recommended Agent |
 |-------|-------------|-------------|-------------------|
 | workflow-orchestrator | Flow coordinator: detects current stage and recommends next steps | workflow, what's next | — |
 | brainstorming | Structured requirements exploration and risk classification | brainstorm, explore options | brainstorm-agent |
-| specification | Generate PRD/Spec documents | spec, PRD, requirements | spec-agent |
-| implementation-planning | Break down implementation plan with TDD integration (includes plan-from-spec) | plan, task breakdown, spec to plan | plan-agent |
-| tdd-workflow | TDD methodology (Red-Green-Refactor) | TDD, test-driven | coder-agent |
+| specification | Generate PRD/Spec documents (with Vocabulary Lock, Specialist Lens Review, Observable Outcome AC format) | spec, PRD, requirements | spec-agent |
+| implementation-planning | Break down implementation plan with TDD integration; Vertical Slice enforcement; plan-from-spec | plan, task breakdown, spec to plan, vertical slice | plan-agent |
+| tdd-workflow | TDD methodology (Red-Green-Refactor); Three-Strike Rule; Feedback Loop Prerequisite | TDD, test-driven, three-strike | coder-agent |
 | code-security-review | Code quality and security audit for financial systems | review, audit | code-reviewer-agent |
-| work-archiving | Finalize and archive completed work | archive, finalize | — |
+| work-archiving | Finalize and archive completed work; ADR Section with three-condition guard | archive, finalize, ADR | — |
 | explore | Read-only codebase investigation before committing to a change package | explore, investigate, scan risks | — |
+| shipping-and-launch | External deployment and launch readiness: Rollback Plan, Staged Rollout, Go/No-Go checklist | deploy, launch, rollout, go live, rollback | — |
+| ci-cd-and-automation | CI/CD pipeline design and automation: Shift Left, 4-stage pipeline, Quality Gate rules, Anti-Pattern guard | CI/CD, pipeline, automation, quality gate | — |
 
 ### Tool Skills (3)
 
@@ -123,11 +125,12 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 | prd | Generate Product Requirements Documents | PRD, product requirements |
 | make-skill-template | Scaffold new Agent Skills for GitHub Copilot | create a skill, scaffold skill |
 
-### Cross-Cutting Quality Skills (1)
+### Cross-Cutting Quality Skills (2)
 
 | Skill | Description | Triggers On |
 |-------|-------------|-------------|
 | execution-guardrails | Shared quality guardrails that reduce hidden assumptions, overengineering, unrelated edits, and weak success criteria; use as manual fallback with `/execution-guardrails` | hidden assumptions, overengineering, unrelated edits, success criteria |
+| context-engineering | 5-layer context architecture (Project/Codebase/Task/Conversation/External Docs); vocabulary conflict detection; CONTEXT.md path rules; combats AI hallucination from context pollution | context engineering, CONTEXT.md, context pollution, vocabulary conflict |
 
 ### Development Pattern Skills (5)
 
@@ -137,7 +140,7 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 | backend-patterns | Backend architecture, API design, DB optimization (Node/Express/Next) | backend, API design |
 | frontend-patterns | React, Next.js, state management, performance, UI patterns | frontend, React patterns |
 | python-patterns | PEP 8, type hints, pytest, TDD for Python | Python, pytest |
-| refactor | Surgical code refactoring without behavior changes | refactor, code smells |
+| refactor | Surgical code refactoring without behavior changes; Simplification Mode (Chesterton's Fence); Performance Mode (Measure First) | refactor, code smells, simplification, performance optimization |
 
 ### Microsoft & GitHub Skills (5)
 
@@ -155,14 +158,14 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 |-------|-------------|-------------|
 | webapp-testing | Test local web apps using Playwright | test webapp, Playwright |
 | scoutqa-test | Exploratory QA testing (smoke, accessibility, e-commerce flows) | test website, accessibility |
-| agentic-eval | Evaluate and improve AI agent outputs (self-critique, rubrics) | evaluate agent, quality loop |
+| agentic-eval | Evaluate and improve AI agent outputs (self-critique, rubrics); Pre-Decision Mode (5-step: CLAIM→EXTRACT→DOUBT→RECONCILE→STOP) | evaluate agent, quality loop, pre-decision |
 | debug | Systematic debugging for build/test failures, unexpected behavior, drift errors; escalates after 2 failed cycles | debug, fix build, tests failing, investigate failure |
 
 ### Security & Review Skills (1)
 
 | Skill | Description | Triggers On |
 |-------|-------------|-------------|
-| security-review | Security checklist for auth, input handling, secrets, payments | security review, auth check |
+| security-review | Security checklist for auth, input handling, secrets, payments; CSO 雙模式 (Quick Gate 0-10 self-score + Deep Scan OWASP Top 10) | security review, auth check, CSO, OWASP |
 
 ### Content & Visualization Skills (4)
 
