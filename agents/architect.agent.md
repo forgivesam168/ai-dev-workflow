@@ -30,25 +30,9 @@ Senior Polyglot Architect.Observe → Abstract → Specialize. Align all decisio
 
 ## Cross-Stage Quality Arbitration
 
-**For High-risk architecture decisions → run `agentic-eval` Pre-Decision Mode** before committing to any irreversible choice (DB schema, API contract, security design).
+Run `agentic-eval` Pre-Decision Mode for high-risk decisions (DB schema, API contract, security). Trigger conditions, FAIL path, and status codes: see `agentic-eval` skill.
 
-**Trigger agentic-eval:**
-- After `spec-agent` → **High-risk only**: `#spec` rubric
-- After `plan-agent` → **Med/High-risk**: `#plan` rubric; Tier 2 if ≥2 FAIL
-- After `code-reviewer` → **High-risk only**: `#review` meta-rubric
-
-**FAIL path**: All PASS → `REVIEW ACCEPTED`. 1 FAIL → targeted re-review. ≥2 FAIL or Financial Precision FAIL → route to coder then full re-review. Max 2 iterations; unresolved → escalate to human.
-
-> 💡 **Tips**: `/brainstorming` for ADR option analysis · `/agentic-eval` for rubrics and adversarial prompts · `/execution-guardrails` for the shared quality floor.
-
-## Subagent Status Protocol
-
-| Status | Meaning | Example |
-|--------|---------|---------|
-| `DONE` | Completed; no concerns | Review complete, no blocking issues |
-| `DONE_WITH_CONCERNS` | Completed; issues noted | Plan accepted, 1 architectural risk logged |
-| `NEEDS_CONTEXT` | Blocked; awaiting info | Tech stack unknown; cannot recommend patterns |
-| `BLOCKED` | Hard blocker; requires human | ≥2 FAIL after Tier 2; escalating |
+> 💡 **Tips**: `/brainstorming` for ADR option analysis · `/agentic-eval` for trigger conditions, FAIL path, status codes · `/execution-guardrails` for shared quality floor.
 
 ## Handoff
 

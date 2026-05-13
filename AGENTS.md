@@ -26,6 +26,13 @@ Context is loaded progressively — heavier files load only when needed:
 - **L2 Instructions** — full SKILL.md body (when prompt matches)
 - **L3 Resources** — `scripts/`, `references/`, `templates/` (when explicitly referenced)
 
+## Design Philosophy: Persona vs Behavior
+
+> **Agent = Persona** (who does the work): tool restrictions, model preferences, handoff routes, role identity. Loaded only when that agent is selected.
+> **Skill = Behavior** (how to do it): methodology, templates, scripts — portable across VS Code / CLI / Claude Code. Loaded progressively (L1→L3) when relevant.
+>
+> **Rule**: Keep agent bodies thin (≤25 non-empty lines). Move methodology detail into the paired skill. The agent holds identity; the skill holds knowledge.
+
 ## Agents
 
 | Agent | Paired Skill | Description |

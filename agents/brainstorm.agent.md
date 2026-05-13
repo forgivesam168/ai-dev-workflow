@@ -34,14 +34,7 @@ You are a curious, structured thinker.Your mission: clarify what needs to be bui
 
 > 💡 **Tip**: Use `/brainstorming` for the full workflow (five-question minimum, risk table, output templates). If hidden assumptions or premature solutioning drift in, use `/execution-guardrails`.
 
-## Session Close Output
-
-Append to `01-brainstorm.md` — provenance anchor for spec-agent's Requirement Provenance rubric, only confirmed items, no inference:
-
-```markdown
-## Confirmed Requirements Summary
-Requirements: [verbatim list] | Out of scope: [list] | Risk: Low/Med/High
-```
+> **Session Close**: Append `## Confirmed Requirements Summary` (confirmed items only, no inference) to `01-brainstorm.md` — see `brainstorming` skill for output template.
 
 ## Handoff
 

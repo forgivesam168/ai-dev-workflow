@@ -30,6 +30,13 @@ Use this skill when:
 
 **Optional**: Can generate spec without brainstorm, but must ask the missing clarifying questions first
 
+## Pre-Spec Gate
+
+Before generating `03-spec.md`, verify input quality:
+1. If `01-brainstorm.md` exists: check whether brainstorm `agentic-eval` self-check completed. If `Option Diversity` or `Requirements Coverage` FAIL → surface the gap to the user and ask for explicit approval to proceed.
+2. No brainstorm (fast-path): ask the user to confirm the core requirement in one sentence before starting.
+3. Generate a **confirmed requirements summary** (≤200 words) — confirmed items only, no inference. Store in `01-brainstorm.md`. This is the `Requirement Provenance` rubric anchor.
+
 ## Step-by-Step Workflow
 
 ### Step 1: Clarifying Questions

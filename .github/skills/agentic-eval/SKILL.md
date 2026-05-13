@@ -121,6 +121,27 @@ The table below shows **common usage patterns** (advisory, not mandatory):
 | Before code-reviewer | coder-agent self-eval | 1 | All |
 | Review completeness check | architect-agent meta-review | 1 (Optional) | High only |
 
+### Architect-Agent Trigger Conditions
+
+When invoked by `architect-agent` for cross-stage quality arbitration:
+
+| Invocation Point | Rubric | Tier | Risk Threshold |
+|-----------------|--------|------|----------------|
+| After `spec-agent` | `#spec` | 1 | High risk only |
+| After `plan-agent` | `#plan` | 1; Tier 2 if ≥2 FAIL | Med / High |
+| After `code-reviewer` | `#review` meta-rubric | 1 | High risk only |
+
+**FAIL path**: All PASS → `REVIEW ACCEPTED`. 1 FAIL → targeted re-review. ≥2 FAIL or Financial Precision FAIL → route to coder then full re-review. Max 2 iterations; unresolved → escalate to human.
+
+### Subagent Status Protocol
+
+| Status | Meaning |
+|--------|---------|
+| `DONE` | Completed; no blocking concerns |
+| `DONE_WITH_CONCERNS` | Completed; 1+ concerns flagged in output |
+| `NEEDS_CONTEXT` | Blocked; awaiting input artifact |
+| `BLOCKED` | Hard blocker; requires human decision |
+
 **Guardrail-aware scoring**:
 - Use rubric dimensions such as **Assumption Management**, **Simplicity / Overengineering Risk**, **Diff Scope Hygiene**, and **Verification Strength** where they materially affect handoff quality.
 - Prefer stage-specific wording rather than a generic global checklist; the same guardrail should look different in brainstorm, plan, code, and review.
