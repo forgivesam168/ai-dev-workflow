@@ -57,6 +57,21 @@ If not already covered in brainstorm, or if brainstorm relied on assumptions, as
 - **Personal Data / GDPR**: Data retention policy? Access control tiers? Right to deletion?
 - **Regulatory / Compliance**: Approval workflow required? Non-repudiation? Audit log format?
 
+### Step 1.5: Vocabulary Lock（詞彙鎖定前置步驟）
+
+**Before writing any User Story**, lock domain terminology:
+
+1. List all domain terms in this spec (≥ 3 terms)
+2. For each term: confirm consistency with existing code / documentation
+3. New terms: tag as `[NEW TERM]` and add definition to the Assumptions section
+4. **Completion condition**: no unmarked `[NEW TERM]` exists before Step 2
+
+| Term | Definition | Source |
+|------|-----------|--------|
+| `[term]` | [definition] | existing code / doc / `[NEW TERM]` |
+
+> Do NOT proceed to Step 2 until all terms are confirmed or tagged.
+
 ### Step 2: Generate Structured Spec
 
 Create `changes/<YYYY-MM-DD>-<slug>/03-spec.md` with the following structure:
@@ -100,9 +115,9 @@ Items assumed without explicit user confirmation — **must be reviewed before p
 **So that** {benefit}
 
 **Acceptance Criteria**:
-- [ ] {Testable criterion 1}
-- [ ] {Testable criterion 2}
-- [ ] {Testable criterion 3}
+- [ ] {Testable criterion 1} — **Observable Outcome**: {what exact output/state/response confirms this passes}
+- [ ] {Testable criterion 2} — **Observable Outcome**: {…}
+- [ ] {Testable criterion 3} — **Observable Outcome**: {…}
 
 **Edge Cases**:
 - {Edge case 1 and how to handle it}
@@ -257,6 +272,19 @@ Ensure the spec meets quality criteria before handing off to plan-agent.
 **Open Questions Gate** ⛔ BLOCKING:
 - If Open Questions remain unresolved: **STOP** — ask the user to resolve or explicitly approve proceeding with known gaps
 - Do NOT hand off to plan-agent while Open Questions are present without explicit user approval
+
+### Specialist Lens Review
+
+Before running agentic-eval, switch through 4 specialist perspectives. Each **must** produce ≥ 1 confirmation or add a new AC:
+
+| Lens | Question | Output Format |
+|------|----------|---------------|
+| 🔒 Security | Is auth, input validation, and data protection specified? | `🔒 Security: [已覆蓋 / 新增 AC：...]` |
+| ⚡ Performance | Are latency, throughput, and scalability targets defined? | `⚡ Performance: [已覆蓋 / 新增 AC：...]` |
+| 🧪 QA | Can every AC be expressed as a failing test? Observable Outcome present? | `🧪 QA: [已覆蓋 / 新增 AC：...]` |
+| 🎨 UX | Are error messages, loading states, and accessibility addressed? | `🎨 UX: [已覆蓋 / 新增 AC：...]` |
+
+> Do NOT skip to agentic-eval until all 4 lenses are completed. See [specialist-lens-review.md](./references/specialist-lens-review.md) for full checklist.
 
 **agentic-eval Self-Review** (authoritative final gate):
 Run `/agentic-eval` with the `#spec` rubric before handoff. This is the **authoritative gate** — rubric results take precedence when any conflict exists with the checklists above.
