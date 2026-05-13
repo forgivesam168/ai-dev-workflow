@@ -122,3 +122,26 @@ Write results into:
 
 **Directory creation**: Always create the target directory with shell (`mkdir -p` / `New-Item -ItemType Directory -Force`) before writing files. The `edit` tool CANNOT create new files — use shell or `create` tool instead.
 If shell is unavailable, output file contents in response for manual creation.
+
+## Common Rationalizations
+
+在腦力激盪過程中，AI 可能以下列藉口跳過關鍵步驟。以下為常見合理化說詞與反制說明：
+
+| 常見藉口 | 反制說明 |
+|---------|---------|
+| "我只是先試試，不是真的要實作" | ⛔ 在設計批准前，任何實作程式碼均為違規——無論使用者要求多迫切 |
+| "需求很清楚了，不需要再問問題" | 腦力激盪的目的是發現「你不知道你不知道的」——即使需求看起來清楚，仍需走完 Must-Ask Questions |
+| "風險很低，可以跳過 brainstorm 直接 plan" | Fast Path 仍需 Risk Classification 和 Change Package Skeleton；跳過分類等於盲目行動 |
+| "使用者已經給了選項，我選一個就好" | 未產出 2–3 個選項比較 = 放棄最重要的決策品質保證；必須列出選項與折衷取捨，即使使用者傾向某選項 |
+
+## Verification
+
+在輸出 brainstorm 產出物前，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
+
+- [ ] `Test-Path changes/<slug>/01-brainstorm.md` 回傳 True（Change Package 目錄與 brainstorm 文件已實際建立）
+- [ ] Risk Classification 已完成，等級為 Low / Med / High 三者之一，且依 Risk Level 對齊 Workflow Path
+- [ ] 至少 5 個 Must-Ask 問題類別已覆蓋，或使用者已明確允許 assumption-driven 模式（不得靜默跳過）
+- [ ] 至少 2 個選項已比較（complexity / risks / rollback strategy），並有明確推薦理由
+- [ ] Decision Log 條目已寫入 `02-decision-log.md`
+- [ ] Open Questions 欄位已填寫（若有未解問題），不得略去
+- [ ] 所有 Assumptions 均已明確標記（不得以隱性假設替代明確說明）
