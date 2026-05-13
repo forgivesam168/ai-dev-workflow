@@ -19,7 +19,7 @@
 
 ### 背景
 
-ai-dev-workflow 是一個部署於 GitHub Copilot（VS Code Extension + Copilot CLI）的 AI 開發工作流程模板，設計目標是讓任何領域的開發者都能透過 SDD（Spec-Driven Development）+ TDD 完成高品質、可稽核的開發週期。目前系統包含 9 個 Agent、32 個 Skill、10 個 Prompt。
+ai-dev-workflow 是一個部署於 GitHub Copilot（VS Code Extension + Copilot CLI）的 AI 開發工作流程模板，設計目標是讓任何領域的開發者都能透過 SDD（Spec-Driven Development）+ TDD 完成高品質、可稽核的開發週期。目前系統包含 9 個 Agent、35 個 Skill、10 個 Prompt。
 
 ### 觸發本次強化的原因
 
