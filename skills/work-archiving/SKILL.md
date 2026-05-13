@@ -164,6 +164,38 @@ After archiving, the change package serves as:
 - If archiving includes security fixes, coordinate disclosure timing
 - Ensure compliance with data retention policies
 
+## ADR Section（架構決策記錄）
+
+Write an ADR (Architecture Decision Record) only when **all three conditions are true**. AI must verify each condition — do NOT skip.
+
+| # | Condition | Must Confirm |
+|---|-----------|-------------|
+| 1 | **Hard to reverse** — changing this decision later will be costly or disruptive | ☐ |
+| 2 | **Future confusion** — a future team member will likely ask "why was this done this way?" | ☐ |
+| 3 | **Real trade-off** — a genuine alternative was considered and there is a real cost to the chosen path | ☐ |
+
+**All three must be true.** If any condition is false → record the decision in the PR description or `99-archive.md` instead. Do NOT write a full ADR.
+
+### ADR Template（Minimal）
+
+```markdown
+## ADR: [Decision Title]
+
+**Date**: YYYY-MM-DD
+**Status**: Accepted
+
+**Context**: [What problem prompted this decision?]
+**Decision**: [What was decided?]
+**Alternatives Considered**: [What else was evaluated?]
+**Consequences**: [What are the trade-offs?]
+```
+
+### Anti-Pattern: ADR Inflation
+
+Writing ADRs for every decision creates noise and reduces the signal value of the ADR catalog. Routine implementation choices (library version bumps, naming decisions, config tweaks) do NOT qualify — use PR description.
+
+---
+
 ## Common Rationalizations
 
 在執行工作歸檔過程中，AI 可能以下列藉口略過關鍵步驟：

@@ -9,6 +9,15 @@ This skill ensures all code follows security best practices and identifies poten
 
 ## When to Activate
 
+Choose the mode before activating:
+
+| Mode | When | How |
+|------|------|-----|
+| **Quick Gate** | Every PR, every code review | Self-score 0–10; list concerns if < 8/10 |
+| **Deep Scan** | High-risk features, periodic review, payment/auth changes | Full OWASP Top 10 threat model |
+
+Default mode: **Quick Gate**. Escalate to Deep Scan when implementing payment features, auth changes, or handling sensitive data.
+
 - Implementing authentication or authorization
 - Handling user input or file uploads
 - Creating new API endpoints
@@ -485,6 +494,52 @@ Before ANY production deployment:
 - [ ] **CORS**: Properly configured
 - [ ] **File Uploads**: Validated (size, type)
 - [ ] **Wallet Signatures**: Verified (if blockchain)
+
+## CSO 雙模式（Confidence-Scored Oversight）
+
+### Quick Gate Mode（每次 PR 必執行）
+
+Before each PR merge or code review approval:
+
+1. Self-score security confidence: **0–10**
+2. Score **< 8/10** → **STOP**: list every specific concern — cannot proceed to merge
+3. Score **≥ 8/10** → proceed; document brief rationale for any score below 10
+
+**Output format**:
+```
+Quick Gate: [score]/10
+Concerns (required if < 8):
+- [specific vulnerability or risk area]
+- [specific vulnerability or risk area]
+```
+
+### Deep Scan Mode（週期性 / 高風險功能）
+
+Trigger Deep Scan when:
+- New payment or financial feature
+- Authentication / authorization changes
+- Sensitive data handling (PII, credentials)
+- Third-party integration with elevated permissions
+- Periodic security review (recommended: every major release)
+
+**OWASP Top 10 scan checklist**:
+
+| # | Category | Result |
+|---|----------|--------|
+| A01 | Broken Access Control | PASS / FAIL / N/A |
+| A02 | Cryptographic Failures | PASS / FAIL / N/A |
+| A03 | Injection | PASS / FAIL / N/A |
+| A04 | Insecure Design | PASS / FAIL / N/A |
+| A05 | Security Misconfiguration | PASS / FAIL / N/A |
+| A06 | Vulnerable and Outdated Components | PASS / FAIL / N/A |
+| A07 | Identification and Authentication Failures | PASS / FAIL / N/A |
+| A08 | Software and Data Integrity Failures | PASS / FAIL / N/A |
+| A09 | Security Logging and Monitoring Failures | PASS / FAIL / N/A |
+| A10 | Server-Side Request Forgery (SSRF) | PASS / FAIL / N/A |
+
+Any FAIL → provide remediation before approval.
+
+---
 
 ## Resources
 

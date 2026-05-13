@@ -163,3 +163,58 @@ After archiving, the change package serves as:
 - Redact customer/user information from examples
 - If archiving includes security fixes, coordinate disclosure timing
 - Ensure compliance with data retention policies
+
+## ADR Section（架構決策記錄）
+
+Write an ADR (Architecture Decision Record) only when **all three conditions are true**. AI must verify each condition — do NOT skip.
+
+| # | Condition | Must Confirm |
+|---|-----------|-------------|
+| 1 | **Hard to reverse** — changing this decision later will be costly or disruptive | ☐ |
+| 2 | **Future confusion** — a future team member will likely ask "why was this done this way?" | ☐ |
+| 3 | **Real trade-off** — a genuine alternative was considered and there is a real cost to the chosen path | ☐ |
+
+**All three must be true.** If any condition is false → record the decision in the PR description or `99-archive.md` instead. Do NOT write a full ADR.
+
+### ADR Template（Minimal）
+
+```markdown
+## ADR: [Decision Title]
+
+**Date**: YYYY-MM-DD
+**Status**: Accepted
+
+**Context**: [What problem prompted this decision?]
+**Decision**: [What was decided?]
+**Alternatives Considered**: [What else was evaluated?]
+**Consequences**: [What are the trade-offs?]
+```
+
+### Anti-Pattern: ADR Inflation
+
+Writing ADRs for every decision creates noise and reduces the signal value of the ADR catalog. Routine implementation choices (library version bumps, naming decisions, config tweaks) do NOT qualify — use PR description.
+
+---
+
+## Common Rationalizations
+
+在執行工作歸檔過程中，AI 可能以下列藉口略過關鍵步驟：
+
+| 常見藉口 | 反制說明 |
+|---------|---------|
+| "口頭記錄就夠了，不需要寫 ADR" | ⛔ 口頭記錄不可查——任何影響未來維護者的架構決策必須書面化；「能記住」不等於「能交接」 |
+| "這個功能已上線，不需要再歸檔了" | 歸檔是讓下一個工程師（或未來的你）能快速理解決策脈絡的保障——上線後歸檔才是最重要的時機 |
+| "CHANGELOG 太繁瑣，直接看 git log 就好" | git log 無法傳達「為什麼這樣做」——CHANGELOG 記錄業務語境，git log 記錄技術細節；兩者不可替代 |
+| "這個決定不重要，不需要寫 ADR" | ADR 只在三條件全為真時才寫：(1) 難以反轉 (2) 未來的人會感到困惑 (3) 真正的折衷取捨存在——若不滿足，記錄在 PR description 即可 |
+
+## Verification
+
+在完成歸檔工作前，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
+
+- [ ] `Test-Path changes/<slug>/06-archive.md` 回傳 True（或對應的 `99-archive.md` / `WORK_LOG.md` 已建立）
+- [ ] CHANGELOG.md 已更新，含本次變更的業務語境說明（非僅 commit hash）
+- [ ] 所有架構決策已確認三條件（難以反轉 / 未來困惑 / 折衷存在），三條件滿足才寫 ADR
+- [ ] 程式碼 review 已通過，無未解 Critical issue
+- [ ] 敏感資料（secrets、credentials、PII）未混入歸檔文件
+- [ ] change package 目錄下所有必要文件（01–05）均已存在
+- [ ] 若有 Open Questions 殘留，已在歸檔文件中明確標記狀態
