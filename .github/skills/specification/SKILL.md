@@ -415,6 +415,14 @@ Document what events to log:
 - [WORKFLOW.md](../../WORKFLOW.md) - Overall workflow
 - [API Design Instructions](../../instructions/api-design.instructions.md) - Financial API standards
 
+## References
+
+Read [references/ac-format-guide.md](./references/ac-format-guide.md) when writing or reviewing Acceptance Criteria, or when the user asks for Observable Outcome examples (API, performance, UI domains — 6 example pairs).
+
+Read [references/specialist-lens-review.md](./references/specialist-lens-review.md) when executing Specialist Lens Review in Step 3, or when the user asks for the full Security / Performance / QA / UX checklist and output template.
+
+Read [references/consult-review-protocol.md](./references/consult-review-protocol.md) when the spec involves schema design or frontend UI work and a dba-agent or frontend-designer-agent consult is warranted.
+
 ---
 
 💡 **Tip**: A good spec is complete when you can hand it to a developer and they don't need to ask clarifying questions.
