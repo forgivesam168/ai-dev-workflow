@@ -30,6 +30,8 @@ Senior Polyglot Architect.Observe → Abstract → Specialize. Align all decisio
 
 ## Cross-Stage Quality Arbitration
 
+**For High-risk architecture decisions → run `agentic-eval` Pre-Decision Mode** before committing to any irreversible choice (DB schema, API contract, security design).
+
 **Trigger agentic-eval:**
 - After `spec-agent` → **High-risk only**: `#spec` rubric
 - After `plan-agent` → **Med/High-risk**: `#plan` rubric; Tier 2 if ≥2 FAIL

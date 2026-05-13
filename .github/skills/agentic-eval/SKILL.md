@@ -47,12 +47,52 @@ agentic-eval 是將此精神**結構化**的工具集。任何決策、任何輸
 
 ---
 
+## Pre-Decision Mode（決策前懷疑模式）
+
+Use **before committing to a high-risk decision**: architecture choices, irreversible operations (DB schema, API contracts, security design), or any decision flagged as High Risk by brainstorm-agent.
+
+> **強制觸發條件**: High Risk 決策 / 架構選擇 / 不可逆操作 → **必須執行** Pre-Decision Mode，不得直接實作。
+
+### Five-Step Protocol
+
+| Step | Action |
+|------|--------|
+| **CLAIM** | State the decision in one sentence: *"I will [X] because [Y]"* |
+| **EXTRACT** | List all assumptions the decision depends on (≥ 3) |
+| **DOUBT** | Apply **Sequential Specialist Lens** — each perspective states ≥ 1 challenge or confirmation |
+| **RECONCILE** | Self-score 0–10; describe what "10" looks like; edit until target score reached |
+| **STOP** | Score ≥ 8 → proceed; Score < 8 after 1 re-score → escalate to user with DOUBT findings |
+
+### Sequential Specialist Lens（DOUBT 步驟）
+
+依序審查，每視角至少提出 **1 個質疑或確認**：
+
+1. **Security** — 這個決策是否開了攻擊面？認證 / 授權 / 注入風險？
+2. **Performance** — 是否引入 N+1 查詢、無界資料集、阻塞呼叫？
+3. **Architecture** — 是否違反分層邊界、DDD 聚合規則、循環依賴？
+4. **Maintainability** — 新成員 6 個月後能看懂嗎？測試可維護嗎？
+5. **Operability** — 錯誤訊息有意義嗎？日誌可觀察嗎？部署可回滾嗎？
+
+### RECONCILE 自評格式
+
+```
+Score: X/10
+What 10 looks like: [one sentence]
+Gap to close: [specific action needed]
+```
+
+---
+
 ## When to Use
 
-- You want a **devil's advocate challenge** on any output or decision
+**Pre-Decision（高風險決策前）**:
+- Architecture choices, DB schema changes, API contract design, security design
+- Any decision flagged as High Risk by brainstorm-agent
+- Irreversible operations where rollback is costly or impossible
+
+**Post-Output（輸出完成後）**:
 - Output is **high-stakes or externally visible** (code shipped to prod, published reports)
 - An **objective rubric or measurable criteria** can be defined upfront
-- **Revision cost is acceptable** — iteration takes time
 - A **second perspective** is needed beyond linting or syntax checks
 - You want to verify that a downstream agent can consume an upstream artifact
 
