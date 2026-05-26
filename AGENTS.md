@@ -217,6 +217,10 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 
 The `.github/**` copies are generated for tools that only read instruction files under `.github/`.
 
+### Deployed constitution vs maintainer constitution
+- **`copilot-instructions.md`** — Maintainer version. Contains SSOT sync rules and template-repo-specific instructions. Used by `sync-dotgithub.ps1` to update this repo's own `.github/copilot-instructions.md`.
+- **`docs/copilot-instructions.template.md`** — Adopter version. Strips the sync rules (irrelevant in adopter repos). This is what `install-apply.ps1` (and `bootstrap --update`) deploys to adopter projects' `.github/copilot-instructions.md`.
+
 ## When you change instructions
 After editing any file under `agents/`, `instructions/`, `prompts/`, `skills/`, or `copilot-instructions.md`,
 run the sync script to update `.github/**`:

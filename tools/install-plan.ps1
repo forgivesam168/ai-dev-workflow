@@ -66,7 +66,7 @@ function Add-Component([string]$name, [string]$relSrc, [string]$relDst, [string]
 }
 
 Add-Component 'copilot-instructions.md' `
-    'copilot-instructions.md' '.github/copilot-instructions.md' 'file'
+    'docs/copilot-instructions.template.md' '.github/copilot-instructions.md' 'file'
 
 Get-ChildItem (Join-Path $RepoRoot 'agents')       -Filter '*.agent.md'        -ErrorAction SilentlyContinue |
     ForEach-Object { Add-Component "agents/$($_.Name)"       "agents/$($_.Name)"       ".github/agents/$($_.Name)"       'file' }
