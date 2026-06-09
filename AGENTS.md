@@ -9,6 +9,75 @@ It contains:
 - Skills library (`skills/**/SKILL.md`) — 35 skills
 - Bootstrap installer (`bootstrap.ps1`) to deploy these assets into any project.
 
+## Cross-CLI Constitutional Baseline
+
+Not every CLI treats `copilot-instructions.md` as its always-on constitution. Treat this section as the **portable constitutional mirror** for Codex, Claude Code, Antigravity, and any other surface that reads `AGENTS.md` first.
+
+**Boundary rule:**
+- `copilot-instructions.md` keeps the maintainer-specific compact constitution and sync obligations.
+- `AGENTS.md` carries the portable constitutional baseline plus repo workflow rules.
+- `docs/AGENTS.template.md` must mirror this baseline and a thin operating model so adopter projects receive the same default behavior.
+
+### Cross-CLI Consistency Principle
+
+- Different CLI surfaces may expose different UX, but they should not materially diverge in constitutional behavior, persona intent, workflow entry points, or handoff quality thresholds.
+- The stable cross-CLI floor belongs in `AGENTS.md`.
+- Detailed persona bodies belong in `agents/`.
+- Detailed methodology, checklists, and quality rubrics belong in `skills/`.
+- If a surface cannot load repo-local agents, fall back to `AGENTS.md` + the relevant skill while preserving the same standards.
+
+**Tradeoff:** These rules bias toward caution over speed for non-trivial work. For trivial tasks, use judgment without dropping the safety floor.
+
+### 1. Think Before Coding
+
+- State assumptions explicitly. Separate facts, assumptions, and unknowns instead of guessing silently.
+- If multiple interpretations exist, surface them. Do not pick one without saying so.
+- If a simpler approach exists, say so. Push back on unnecessary complexity when warranted.
+- If ambiguity materially changes the implementation path, stop and clarify before proceeding.
+
+### 2. Simplicity First
+
+- Implement the smallest solution that satisfies the current requirement.
+- Do not add speculative abstractions, flexibility, configuration, or future-proofing.
+- Do not add features beyond what was asked.
+- Prefer the version a senior engineer would call obviously simpler.
+
+### 3. Surgical Changes
+
+- Every changed line must trace directly to the user's request or to dead code created by that change.
+- Do not perform drive-by refactors, formatting churn, or adjacent comment rewrites.
+- Match existing style and boundaries unless the request explicitly changes them.
+- Remove only the imports, variables, or functions that your own change makes unused. Mention pre-existing dead code instead of deleting it unasked.
+
+### 4. Goal-Driven Verification
+
+- Convert requests into verifiable outcomes: tests, assertions, reproducible checks, or explicit manual validation.
+- For bug fixes, prefer reproducing the issue first, then fixing it, then proving the fix.
+- For multi-step work, state a short plan where each step has a verification method.
+- Avoid weak completion language such as "make it work" without a measurable check.
+
+### 5. Context Loading Order
+
+- If `.ai-workflow-memory/PROJECT_CONTEXT.md` exists, load it before making technical decisions.
+- Else if `docs/CONTEXT.md` exists, load it before reasoning from session memory alone.
+- Detect vocabulary conflicts between conversation, spec/plan, and project glossary before implementation.
+- Do not let Layer 4 conversation context override Layer 1 project context silently.
+
+### 6. Safety Floor
+
+- Never commit secrets or credentials.
+- Validate external input and verify input boundaries on every change.
+- For money, never use `float` or `double`; use decimal types, integer minor units, or strings at API boundaries.
+- When transactions can be retried, require idempotency support such as `Idempotency-Key`.
+- Adapt the checklist to the project domain, but precision and security are never optional.
+
+### 7. Communication Contract
+
+- Use Traditional Chinese for explanations, analysis, reasoning, planning, and commit messages.
+- Use English for source code, code comments, and technical identifiers unless the file itself already uses another convention.
+- Be direct and explicit about uncertainty.
+- When enforcing a repo-specific rule, cite the governing file so downstream agents can trace the source.
+
 ## Pointer-Style Guidance Architecture
 
 Context is loaded progressively — heavier files load only when needed:
@@ -53,9 +122,16 @@ Each agent includes a `## Skill Integration` section that uses a three-layer bin
 
 1. **Keyword Magnetism** (YAML `description`): Agent descriptions include the same trigger keywords as their paired skill, increasing auto-load probability during L1 Discovery.
 2. **Explicit Directive** (body text): Agent body instructs the model to follow the paired skill's methodology when loaded.
-3. **User Fallback** (slash command tip): Each agent suggests `/skill-name` as a manual trigger if auto-load doesn't activate.
+3. **User Fallback** (tool-specific explicit trigger): Each agent suggests the paired skill's manual trigger when auto-load doesn't activate.
 
-> **Note**: Skill auto-load is probabilistic (model-driven). If the paired skill doesn't load automatically, use the `/skill-name` command shown in the agent's Skill Integration section.
+> **Note**: Skill auto-load is probabilistic (model-driven). If the paired skill doesn't load automatically, use the tool-native explicit invocation per CLI. Agent invocation also differs per CLI — **Codex CLI has no `/agent-name` slash command**; use natural language or description-based auto-delegation instead.
+>
+> | CLI | Invoke a Skill | Invoke a Custom Agent |
+> |-----|---------------|----------------------|
+> | **GitHub Copilot CLI** | `/skill-name` | `/agent` → select from list, or natural language |
+> | **Codex CLI** | `$skill-name` or `/skills` to browse | No slash command — ask naturally: "use the X agent"; Codex auto-delegates based on `description` |
+> | **Claude Code** | `/skill-name` | `/agents` UI, `claude --agent <name>`, or natural language |
+> | **Antigravity CLI** | Auto-activated based on description, or natural language | No dedicated agent mechanism; agent behavior is triggered via skills and natural language prompts |
 
 ### Shared Guardrails Layer
 
@@ -185,19 +261,34 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 
 ### Skills Usage
 
-**CLI**:
-```bash
-# View installed skills
-/skills list
-
-# Trigger by natural language (auto-loads)
-> I want to generate spec
-[System auto-loads specification skill]
+**GitHub Copilot CLI**:
+```
+/skill-name              # Direct invocation
+/skills list             # List all available skills
+> I want to generate spec   # Auto-loads matching skill
 ```
 
-**VS Code**:
-- Input keywords (auto-loads skill)
-- Or use corresponding slash command (shortcut)
+**Codex CLI**:
+```
+$skill-name              # Direct invocation (dollar prefix)
+/skills                  # Browse and activate skills
+> I want to generate spec   # Auto-loads matching skill
+```
+> ⚠️ Codex CLI uses `$skill-name` (dollar), not `/skill-name` (slash).
+
+**Claude Code**:
+```
+/skill-name              # Direct invocation
+/agents                  # Manage and select custom sub-agents
+claude --agent <name>    # Launch with specific agent from CLI
+> I want to generate spec   # Auto-loads matching skill
+```
+
+**Antigravity CLI**:
+```
+> I want to generate spec   # Auto-activates matching skill via description
+```
+Skills in `.agents/skills/` are discovered automatically; the model activates them based on description.
 
 ---
 
@@ -213,13 +304,24 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 
 ### Source-of-truth vs runtime locations
 - **Source-of-truth (editable):** top‑level folders: `agents/`, `instructions/`, `prompts/`, `skills/`, and `copilot-instructions.md`.
-- **Runtime locations (for GitHub Copilot / VS Code):** `.github/agents/`, `.github/instructions/`, `.github/prompts/`, `.github/skills/`, and `.github/copilot-instructions.md`.
+- **Portable runtime (multi-CLI):** shared `skills/`, shared `agents/`, `.agents/skills/`, `.claude/skills/`, `.agent/skills/` (legacy Antigravity compat), generated `.codex/agents/`, generated `.claude/agents/`, plus `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` (Antigravity CLI project context).
+- **Legacy runtime (GitHub Copilot / VS Code compatibility):** `.github/agents/`, `.github/instructions/`, `.github/prompts/`, `.github/skills/`, and `.github/copilot-instructions.md`.
 
-The `.github/**` copies are generated for tools that only read instruction files under `.github/`.
+The `.github/**` copies are generated for tools that only read instruction files under `.github/`. Bootstrap installs both layers.
+
+### Ownership classes in adopter repos
+- **Template-managed:** top-level `skills/`, top-level `agents/`, `.github/instructions/`, `.github/prompts/`, `.github/copilot-instructions.md`, `.gitattributes`, `.editorconfig`.
+- **Project-owned:** `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` (Antigravity CLI project context).
+- **Derived runtime:** `.github/skills/`, `.github/agents/`, `.agents/skills/`, `.claude/skills/`, `.agent/skills/`, `.codex/agents/`, `.claude/agents/`.
+
+Operational rule:
+- Edit shared workflow customizations in `skills/` or `agents/`.
+- Do not hand-edit derived runtime files; bootstrap regenerates them.
+- Commit `.ai-workflow-install.json` so `bootstrap --update` can tell whether a template-managed file is still safe to refresh or has already been forked by the project.
 
 ### Deployed constitution vs maintainer constitution
 - **`copilot-instructions.md`** — Maintainer version. Contains SSOT sync rules and template-repo-specific instructions. Used by `sync-dotgithub.ps1` to update this repo's own `.github/copilot-instructions.md`.
-- **`docs/copilot-instructions.template.md`** — Adopter version. Strips the sync rules (irrelevant in adopter repos). This is what `install-apply.ps1` (and `bootstrap --update`) deploys to adopter projects' `.github/copilot-instructions.md`.
+- **`docs/copilot-instructions.template.md`** — Adopter version. Strips the sync rules (irrelevant in adopter repos). This is what `bootstrap` deploys to adopter projects' `.github/copilot-instructions.md`.
 
 ## When you change instructions
 After editing any file under `agents/`, `instructions/`, `prompts/`, `skills/`, or `copilot-instructions.md`,
@@ -234,12 +336,12 @@ To deploy this template into another repo, run bootstrap from the target project
 
 ```powershell
 # Download and run (auto-fetches from GitHub)
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 Remove-Item bootstrap.ps1
 
 # To update an existing project
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Update
 Remove-Item bootstrap.ps1
 ```
