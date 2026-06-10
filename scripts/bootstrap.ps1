@@ -29,6 +29,32 @@ $script:RepoRoot = if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot ".
 }
 $script:IsRemoteMode = $false
 $script:TempClonePath = ""
+$script:PortableRuntimePaths = @(
+    '.github',
+    'skills',
+    'agents',
+    '.claude',
+    '.codex',
+    '.agent',
+    '.agents',
+    'AGENTS.md',
+    'CLAUDE.md',
+    'GEMINI.md',
+    '.ai-workflow-install.json'
+)
+$script:PortableBackupPaths = @($script:PortableRuntimePaths | Where-Object { $_ -ne '.github' })
+$script:PortableSkillLinks = @(
+    '.agents/skills',
+    '.claude/skills',
+    '.agent/skills'
+)
+$script:LegacyRuntimeExcludes = @(
+    'workflows',
+    'CODEOWNERS',
+    'dependabot.yml',
+    'skills',
+    'agents'
+)
 
 # -Quiet 模式：在 script scope 覆寫 Write-Host，抑制所有進度輸出。
 # Write-Error / Write-Warning 不受影響，錯誤訊息仍正常顯示。
@@ -335,11 +361,11 @@ function Get-RemoteTemplate {
             throw "Git clone failed: $cloneOutput"
         }
         
-        # Sparse checkout 只下載 .github/ 目錄和根目錄檔案
+        # Sparse checkout 下載相容層與 portable runtime 所需來源
         Push-Location $tempPath
         try {
             git sparse-checkout init --cone 2>&1 | Out-Null
-            git sparse-checkout set .github docs .gitattributes .editorconfig 2>&1 | Out-Null
+            git sparse-checkout set .github agents skills docs .gitattributes .editorconfig 2>&1 | Out-Null
             git checkout 2>&1 | Out-Null
             
             if ($LASTEXITCODE -ne 0) {
@@ -434,28 +460,20 @@ function Sync-WorkflowFiles {
         
         [Parameter(Mandatory=$true)]
         [string]$TargetPath,
+
+        [Parameter(Mandatory=$true)]
+        [hashtable]$ManifestEntries,
         
         [switch]$Force,
         
         [switch]$Backup
     )
-    
-    # 排除清單（不複製這些檔案）
-    $excludePatterns = @(
-        "workflows",        # 保留現有 CI/CD
-        "CODEOWNERS",       # 保留現有 code owners
-        "dependabot.yml",   # 保留現有 dependabot 設定
-        "gate-check"        # Template Maintainer Only — 不部署到採用者專案
-    )
-    
+
     # 確保源目錄存在
     if (-not (Test-Path $SourcePath)) {
         throw "Source path not found: $SourcePath"
     }
-    
-    # 解析完整路徑
-    $resolvedSourcePath = (Resolve-Path $SourcePath).Path
-    
+
     # 建立目標 .github 目錄
     $targetGithubPath = Join-Path $TargetPath ".github"
     
@@ -472,90 +490,36 @@ function Sync-WorkflowFiles {
     if (-not (Test-Path $targetGithubPath)) {
         New-Item -ItemType Directory -Path $targetGithubPath -Force | Out-Null
     }
-    
-    # 統計
-    $filesAdded = @()
-    $filesUpdated = @()
-    $filesSkipped = @()
-    $filesConflicted = @()
-    
-    # 取得所有檔案
-    $allFiles = Get-ChildItem -Path $resolvedSourcePath -Recurse -File
-    
-    foreach ($file in $allFiles) {
-        # 計算相對路徑
-        $relativePath = $file.FullName.Substring($resolvedSourcePath.Length).TrimStart('\')
-        
-        # 檢查是否在排除清單中
-        $shouldExclude = $false
-        foreach ($pattern in $excludePatterns) {
-            if ($relativePath -like "*$pattern*") {
-                $shouldExclude = $true
-                break
-            }
-        }
-        
-        if ($shouldExclude) {
-            $filesSkipped += $relativePath
-            continue
-        }
-        
-        # 目標檔案路徑
-        $targetFile = Join-Path $targetGithubPath $relativePath
-        $targetDir = Split-Path $targetFile -Parent
-        
-        # 確保目標目錄存在
-        if (-not (Test-Path $targetDir)) {
-            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
-        }
-        
-        # 檢查檔案是否已存在
-        if (Test-Path $targetFile) {
-            # 檢查檔案內容是否相同
-            if (Test-FilesIdentical -Path1 $file.FullName -Path2 $targetFile) {
-                $filesSkipped += $relativePath
-            } elseif ($Force) {
-                Copy-Item -Path $file.FullName -Destination $targetFile -Force
-                $filesUpdated += $relativePath
-            } else {
-                # 衝突：檔案存在且內容不同，但未強制覆蓋
-                $filesConflicted += $relativePath
-            }
-        } else {
-            Copy-Item -Path $file.FullName -Destination $targetFile
-            $filesAdded += $relativePath
-        }
-    }
-    
+
+    $result = Sync-DirectoryWithPolicy `
+        -SourcePath $SourcePath `
+        -TargetPath $TargetPath `
+        -BaseRelative '.github' `
+        -ManifestEntries $ManifestEntries `
+        -Ownership 'legacy-compat' `
+        -SourceLabelPrefix 'template:.github' `
+        -Force:$Force `
+        -ExcludePatterns $script:LegacyRuntimeExcludes
+
     # Copy root-level template files (e.g. .gitattributes, .editorconfig) into target project root
     $rootFiles = @('.gitattributes', '.editorconfig')
     foreach ($rf in $rootFiles) {
         $srcRootFile = Join-Path $script:RepoRoot $rf
-        $dstRootFile = Join-Path $TargetPath $rf
         if (Test-Path $srcRootFile) {
-            if (-not (Test-Path $dstRootFile)) {
-                Copy-Item -Path $srcRootFile -Destination $dstRootFile -Force
-                $filesAdded += $rf
-            } else {
-                # If exists, compare contents
-                if (Test-FilesIdentical -Path1 $srcRootFile -Path2 $dstRootFile) {
-                    # identical -> skip
-                } elseif ($Force) {
-                    Copy-Item -Path $srcRootFile -Destination $dstRootFile -Force
-                    $filesUpdated += $rf
-                } else {
-                    $filesConflicted += $rf
-                }
-            }
+            $bytes = [System.IO.File]::ReadAllBytes($srcRootFile)
+            Set-ManagedBytes `
+                -Path (Join-Path $TargetPath $rf) `
+                -RelativePath $rf `
+                -Bytes $bytes `
+                -Result $result `
+                -ManifestEntries $ManifestEntries `
+                -Ownership 'legacy-compat' `
+                -SourceLabel "template:$rf" `
+                -Force:$Force
         }
     }
 
-    return [PSCustomObject]@{
-        FilesAdded = $filesAdded
-        FilesUpdated = $filesUpdated
-        FilesSkipped = $filesSkipped
-        FilesConflicted = $filesConflicted
-    }
+    return $result
 }
 
 function Initialize-GitRepo {
@@ -748,6 +712,75 @@ function Backup-Directory {
     }
 }
 
+function Backup-ManagedPaths {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+        [string[]]$RelativePaths,
+        [string]$BackupPrefix = '.ai-workflow-portable'
+    )
+
+    $existingPaths = @()
+    foreach ($relativePath in $RelativePaths) {
+        $fullPath = Join-Path $TargetPath $relativePath
+        if (Test-Path $fullPath) {
+            $existingPaths += [PSCustomObject]@{
+                RelativePath = $relativePath
+                FullPath = $fullPath
+            }
+        }
+    }
+
+    if ($existingPaths.Count -eq 0) {
+        return [PSCustomObject]@{
+            Success = $true
+            BackupPath = $null
+            Message = 'No portable runtime paths to backup'
+        }
+    }
+
+    $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $backupRoot = Join-Path $TargetPath "$BackupPrefix.backup-$timestamp"
+
+    if (Test-Path $backupRoot) {
+        return [PSCustomObject]@{
+            Success = $false
+            BackupPath = $null
+            Message = "Backup already exists: $backupRoot"
+        }
+    }
+
+    try {
+        New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+
+        foreach ($item in $existingPaths) {
+            $destination = Join-Path $backupRoot $item.RelativePath
+            $destinationParent = Split-Path $destination -Parent
+            if ($destinationParent -and -not (Test-Path $destinationParent)) {
+                New-Item -ItemType Directory -Path $destinationParent -Force | Out-Null
+            }
+
+            if (Test-Path $item.FullPath -PathType Container) {
+                Copy-Item -LiteralPath $item.FullPath -Destination $destination -Recurse -Force
+            } else {
+                Copy-Item -LiteralPath $item.FullPath -Destination $destination -Force
+            }
+        }
+
+        return [PSCustomObject]@{
+            Success = $true
+            BackupPath = $backupRoot
+            Message = "Backup created: $backupRoot"
+        }
+    } catch {
+        return [PSCustomObject]@{
+            Success = $false
+            BackupPath = $null
+            Message = "Backup failed: $($_.Exception.Message)"
+        }
+    }
+}
+
 function Test-GitUncommittedChanges {
     <#
     .SYNOPSIS
@@ -822,6 +855,711 @@ function Write-EnvironmentCheck {
             Write-Host "   請安裝: $InstallUrl" -ForegroundColor Yellow
         }
     }
+}
+
+function New-SyncResult {
+    return [PSCustomObject]@{
+        FilesAdded = @()
+        FilesUpdated = @()
+        FilesSkipped = @()
+        FilesConflicted = @()
+    }
+}
+
+function Merge-SyncResults {
+    param(
+        [Parameter(ValueFromRemainingArguments = $true)]
+        [object[]]$Results
+    )
+
+    $merged = New-SyncResult
+    foreach ($result in $Results) {
+        if (-not $result) { continue }
+        $merged.FilesAdded += @($result.FilesAdded)
+        $merged.FilesUpdated += @($result.FilesUpdated)
+        $merged.FilesSkipped += @($result.FilesSkipped)
+        $merged.FilesConflicted += @($result.FilesConflicted)
+    }
+    return $merged
+}
+
+function Add-SyncRecord {
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Result,
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('added', 'updated', 'skipped', 'conflicted')]
+        [string]$Status,
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [string]$Suffix = ''
+    )
+
+    $normalized = $Path -replace '\\', '/'
+    if ($Suffix) {
+        $normalized = "$normalized $Suffix"
+    }
+
+    switch ($Status) {
+        'added'      { $Result.FilesAdded += $normalized }
+        'updated'    { $Result.FilesUpdated += $normalized }
+        'skipped'    { $Result.FilesSkipped += $normalized }
+        'conflicted' { $Result.FilesConflicted += $normalized }
+    }
+}
+
+function Normalize-RelativePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    return ($Path -replace '\\', '/').TrimStart('.', '/')
+}
+
+function Test-ShouldExcludeRelative {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RelativePath,
+        [string[]]$ExcludePatterns = @()
+    )
+
+    $normalized = (Normalize-RelativePath $RelativePath).ToLowerInvariant()
+    $parts = $normalized -split '/'
+
+    foreach ($pattern in $ExcludePatterns) {
+        $candidate = (Normalize-RelativePath $pattern).ToLowerInvariant().Trim('/')
+        if ($candidate.Contains('/')) {
+            if ($normalized.StartsWith($candidate)) {
+                return $true
+            }
+            continue
+        }
+
+        if ($candidate -in @('codeowners', 'dependabot.yml')) {
+            if ($parts[-1] -eq $candidate) {
+                return $true
+            }
+            continue
+        }
+
+        if ($parts -contains $candidate) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Normalize-TextContent {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Content
+    )
+
+    if ($Content.EndsWith("`n")) {
+        return $Content
+    }
+    return "$Content`n"
+}
+
+function Get-BytesHash {
+    param(
+        [Parameter(Mandatory = $true)]
+        [byte[]]$Bytes
+    )
+
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hashBytes = $sha256.ComputeHash($Bytes)
+        return "sha256:$([Convert]::ToHexString($hashBytes).ToLowerInvariant())"
+    } finally {
+        $sha256.Dispose()
+    }
+}
+
+function Get-PathHash {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (-not (Test-Path $Path) -or (Test-Path $Path -PathType Container)) {
+        return $null
+    }
+
+    $hash = Get-FileHash256 -Path $Path
+    if (-not $hash) {
+        return $null
+    }
+
+    return "sha256:$($hash.ToLowerInvariant())"
+}
+
+function Get-InstallManifest {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath
+    )
+
+    $manifestPath = Join-Path $TargetPath '.ai-workflow-install.json'
+    $entries = @{}
+
+    if (-not (Test-Path $manifestPath)) {
+        return $entries
+    }
+
+    try {
+        $manifest = Get-Content -Raw $manifestPath | ConvertFrom-Json -AsHashtable
+        foreach ($component in @($manifest.components)) {
+            if ($component.ContainsKey('name') -and $component.name) {
+                $entries[$component.name] = $component
+            }
+        }
+    } catch {
+        return @{}
+    }
+
+    return $entries
+}
+
+function Set-ManifestEntry {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$ManifestEntries,
+        [Parameter(Mandatory = $true)]
+        [string]$RelativePath,
+        [Parameter(Mandatory = $true)]
+        [string]$Ownership,
+        [Parameter(Mandatory = $true)]
+        [string]$SourceLabel,
+        [Parameter(Mandatory = $true)]
+        [string]$Kind,
+        [string]$ManagedHash,
+        [string]$ObservedHash,
+        [Parameter(Mandatory = $true)]
+        [string]$Status
+    )
+
+    $normalized = Normalize-RelativePath $RelativePath
+    $previous = if ($ManifestEntries.ContainsKey($normalized)) { $ManifestEntries[$normalized] } else { $null }
+    $installedAt = if ($previous -and $previous.installed_at) { $previous.installed_at } else { (Get-Date).ToString('o') }
+
+    $ManifestEntries[$normalized] = [ordered]@{
+        name         = $normalized
+        installed_at = $installedAt
+        updated_at   = (Get-Date).ToString('o')
+        source_hash  = $ManagedHash
+        managed_hash = $ManagedHash
+        observed_hash = $ObservedHash
+        ownership    = $Ownership
+        kind         = $Kind
+        source       = $SourceLabel
+        status       = $Status
+    }
+}
+
+function Write-InstallManifest {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+        [Parameter(Mandatory = $true)]
+        [string]$SourceRoot,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$ManifestEntries
+    )
+
+    $sourceRef = (& git -C $SourceRoot rev-parse --short HEAD 2>$null)
+    if (-not $sourceRef) {
+        $sourceRef = 'unknown'
+    }
+
+    $components = foreach ($name in ($ManifestEntries.Keys | Sort-Object)) {
+        $ManifestEntries[$name]
+    }
+
+    $manifest = [ordered]@{
+        schema_version = 2
+        installed_at   = (Get-Date).ToString('o')
+        source_ref     = $sourceRef
+        components     = @($components)
+    }
+
+    $manifestPath = Join-Path $TargetPath '.ai-workflow-install.json'
+    $manifest | ConvertTo-Json -Depth 6 | Set-Content -Path $manifestPath -Encoding UTF8
+}
+
+function Set-ManagedBytes {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [string]$RelativePath,
+        [Parameter(Mandatory = $true)]
+        [byte[]]$Bytes,
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Result,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$ManifestEntries,
+        [Parameter(Mandatory = $true)]
+        [string]$Ownership,
+        [Parameter(Mandatory = $true)]
+        [string]$SourceLabel,
+        [switch]$Force,
+        [switch]$AlwaysOverwrite,
+        [bool]$PreserveUntracked = $true
+    )
+
+    $normalizedRelative = Normalize-RelativePath $RelativePath
+    $previous = if ($ManifestEntries.ContainsKey($normalizedRelative)) { $ManifestEntries[$normalizedRelative] } else { $null }
+    $previousManagedHash = if ($previous) {
+        if ($previous.managed_hash) { $previous.managed_hash } else { $previous.source_hash }
+    } else {
+        $null
+    }
+    $currentHash = if (Test-Path $Path -PathType Leaf) { Get-PathHash -Path $Path } else { $null }
+    $desiredHash = Get-BytesHash -Bytes $Bytes
+
+    if (-not (Test-Path $Path -PathType Leaf)) {
+        $parent = Split-Path $Path -Parent
+        if ($parent -and -not (Test-Path $parent)) {
+            New-Item -ItemType Directory -Path $parent -Force | Out-Null
+        }
+        [System.IO.File]::WriteAllBytes($Path, $Bytes)
+        Add-SyncRecord -Result $Result -Status 'added' -Path $normalizedRelative
+        Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $normalizedRelative -Ownership $Ownership -SourceLabel $SourceLabel -Kind 'file' -ManagedHash $desiredHash -ObservedHash $desiredHash -Status 'managed'
+        return
+    }
+
+    if ($currentHash -eq $desiredHash) {
+        Add-SyncRecord -Result $Result -Status 'skipped' -Path $normalizedRelative
+        Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $normalizedRelative -Ownership $Ownership -SourceLabel $SourceLabel -Kind 'file' -ManagedHash $desiredHash -ObservedHash $desiredHash -Status 'in-sync'
+        return
+    }
+
+    if ($AlwaysOverwrite -or $Force -or ($previousManagedHash -and $currentHash -eq $previousManagedHash)) {
+        $parent = Split-Path $Path -Parent
+        if ($parent -and -not (Test-Path $parent)) {
+            New-Item -ItemType Directory -Path $parent -Force | Out-Null
+        }
+        [System.IO.File]::WriteAllBytes($Path, $Bytes)
+        Add-SyncRecord -Result $Result -Status 'updated' -Path $normalizedRelative
+        Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $normalizedRelative -Ownership $Ownership -SourceLabel $SourceLabel -Kind 'file' -ManagedHash $desiredHash -ObservedHash $desiredHash -Status 'managed'
+        return
+    }
+
+    if ($PreserveUntracked) {
+        $suffix = if ($previousManagedHash) { '[preserved customization]' } else { '[preserved existing]' }
+        $manifestStatus = if ($previousManagedHash) { 'preserved-customization' } else { 'preserved-existing' }
+        Add-SyncRecord -Result $Result -Status 'skipped' -Path $normalizedRelative -Suffix $suffix
+        Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $normalizedRelative -Ownership $Ownership -SourceLabel $SourceLabel -Kind 'file' -ManagedHash $previousManagedHash -ObservedHash $currentHash -Status $manifestStatus
+        return
+    }
+
+    Add-SyncRecord -Result $Result -Status 'conflicted' -Path $normalizedRelative
+    Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $normalizedRelative -Ownership $Ownership -SourceLabel $SourceLabel -Kind 'file' -ManagedHash $previousManagedHash -ObservedHash $currentHash -Status 'conflicted'
+}
+
+function Sync-DirectoryWithPolicy {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath,
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+        [Parameter(Mandatory = $true)]
+        [string]$BaseRelative,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$ManifestEntries,
+        [Parameter(Mandatory = $true)]
+        [string]$Ownership,
+        [Parameter(Mandatory = $true)]
+        [string]$SourceLabelPrefix,
+        [switch]$Force,
+        [switch]$AlwaysOverwrite,
+        [bool]$PreserveUntracked = $true,
+        [string[]]$ExcludePatterns = @()
+    )
+
+    if (-not (Test-Path $SourcePath)) {
+        throw "Source path not found: $SourcePath"
+    }
+
+    $resolvedSourcePath = (Resolve-Path $SourcePath).Path
+    $result = New-SyncResult
+
+    Get-ChildItem -Path $resolvedSourcePath -Recurse -File | ForEach-Object {
+        $relativePath = $_.FullName.Substring($resolvedSourcePath.Length).TrimStart([char[]]@('\', '/'))
+        $recordPath = Normalize-RelativePath (Join-Path $BaseRelative $relativePath)
+        if (Test-ShouldExcludeRelative -RelativePath $relativePath -ExcludePatterns $ExcludePatterns) {
+            Add-SyncRecord -Result $result -Status 'skipped' -Path $recordPath
+            return
+        }
+
+        $bytes = [System.IO.File]::ReadAllBytes($_.FullName)
+        Set-ManagedBytes `
+            -Path (Join-Path $TargetPath $recordPath) `
+            -RelativePath $recordPath `
+            -Bytes $bytes `
+            -Result $result `
+            -ManifestEntries $ManifestEntries `
+            -Ownership $Ownership `
+            -SourceLabel "$SourceLabelPrefix/$($relativePath -replace '\\', '/')" `
+            -Force:$Force `
+            -AlwaysOverwrite:$AlwaysOverwrite `
+            -PreserveUntracked:$PreserveUntracked
+    }
+
+    return $result
+}
+
+function Seed-DirectoryFromLegacyRuntime {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+        [Parameter(Mandatory = $true)]
+        [string]$RelativeDirectory,
+        [string[]]$ExcludePatterns = @()
+    )
+
+    $legacySource = Join-Path $TargetPath ".github\$RelativeDirectory"
+    $targetDirectory = Join-Path $TargetPath $RelativeDirectory
+
+    if ((Test-Path $targetDirectory) -or (-not (Test-Path $legacySource))) {
+        return (New-SyncResult)
+    }
+
+    return Sync-DirectoryTree -SourcePath $legacySource -TargetPath $targetDirectory -ExcludePatterns $ExcludePatterns
+}
+
+function Sync-DirectoryTree {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath,
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+        [switch]$Force,
+        [string[]]$ExcludePatterns = @()
+    )
+
+    if (-not (Test-Path $SourcePath)) {
+        throw "Source path not found: $SourcePath"
+    }
+
+    $resolvedSourcePath = (Resolve-Path $SourcePath).Path
+    if (-not (Test-Path $TargetPath)) {
+        New-Item -ItemType Directory -Path $TargetPath -Force | Out-Null
+    }
+
+    $result = New-SyncResult
+
+    Get-ChildItem -Path $resolvedSourcePath -Recurse -File | ForEach-Object {
+        $relativePath = $_.FullName.Substring($resolvedSourcePath.Length).TrimStart([char[]]@('\', '/'))
+        if (Test-ShouldExcludeRelative -RelativePath $relativePath -ExcludePatterns $ExcludePatterns) {
+            $result.FilesSkipped += (Normalize-RelativePath $relativePath)
+            return
+        }
+
+        $targetFile = Join-Path $TargetPath $relativePath
+        $targetDir = Split-Path $targetFile -Parent
+        if (-not (Test-Path $targetDir)) {
+            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+        }
+
+        if (Test-Path $targetFile) {
+            if (Test-FilesIdentical -Path1 $_.FullName -Path2 $targetFile) {
+                $result.FilesSkipped += (Normalize-RelativePath $relativePath)
+            } elseif ($Force) {
+                Copy-Item -Path $_.FullName -Destination $targetFile -Force
+                $result.FilesUpdated += (Normalize-RelativePath $relativePath)
+            } else {
+                $result.FilesConflicted += (Normalize-RelativePath $relativePath)
+            }
+        } else {
+            Copy-Item -Path $_.FullName -Destination $targetFile -Force
+            $result.FilesAdded += (Normalize-RelativePath $relativePath)
+        }
+    }
+
+    return $result
+}
+
+function Unquote-FrontmatterValue {
+    param([string]$Value)
+
+    $trimmed = $Value.Trim()
+    if ($trimmed.Length -ge 2 -and $trimmed[0] -eq $trimmed[$trimmed.Length - 1] -and $trimmed[0] -in @('"', "'")) {
+        return $trimmed.Substring(1, $trimmed.Length - 2)
+    }
+    return $trimmed
+}
+
+function Get-AgentDefinition {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    $raw = Get-Content -Raw $Path
+    $match = [regex]::Match($raw, '(?s)^---\r?\n(.*?)\r?\n---\r?\n?(.*)$')
+    if (-not $match.Success) {
+        throw "Invalid agent file: $Path"
+    }
+
+    $frontmatter = $match.Groups[1].Value
+    $body = $match.Groups[2].Value.Trim()
+    $descriptionMatch = [regex]::Match($frontmatter, '(?m)^description:\s*(.+)$')
+    $description = if ($descriptionMatch.Success) {
+        Unquote-FrontmatterValue $descriptionMatch.Groups[1].Value
+    } else {
+        ''
+    }
+    $name = ((Split-Path $Path -Leaf) -replace '\.agent\.md$', '')
+
+    return [PSCustomObject]@{
+        Name = $name
+        Description = $description
+        Body = $body
+    }
+}
+
+function Build-ClaudeAgentContent {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [Parameter(Mandatory = $true)]
+        [string]$Description,
+        [Parameter(Mandatory = $true)]
+        [string]$Body
+    )
+
+    $nameLiteral = $Name | ConvertTo-Json -Compress
+    $descriptionLiteral = $Description | ConvertTo-Json -Compress
+
+    return (@(
+        '---'
+        "name: $nameLiteral"
+        "description: $descriptionLiteral"
+        '---'
+        ''
+        $Body.TrimEnd()
+        ''
+    ) -join "`n")
+}
+
+function Build-CodexAgentContent {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [Parameter(Mandatory = $true)]
+        [string]$Description,
+        [Parameter(Mandatory = $true)]
+        [string]$Body
+    )
+
+    $nameLiteral = $Name | ConvertTo-Json -Compress
+    $descriptionLiteral = $Description | ConvertTo-Json -Compress
+    $escapedBody = $Body.TrimEnd() -replace '"""', '\"""'
+
+    return (@(
+        "name = $nameLiteral"
+        "description = $descriptionLiteral"
+        'developer_instructions = """'
+        $escapedBody
+        '"""'
+        ''
+    ) -join "`n")
+}
+
+function Set-ManagedTextFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [string]$Content,
+        [switch]$Force
+    )
+
+    $normalized = if ($Content.EndsWith("`n")) { $Content } else { "$Content`n" }
+
+    if (Test-Path $Path) {
+        $existing = Get-Content -Raw $Path
+        if ($existing -eq $normalized) {
+            return 'skipped'
+        }
+        if (-not $Force) {
+            return 'conflicted'
+        }
+        $status = 'updated'
+    } else {
+        $status = 'added'
+    }
+
+    $parent = Split-Path $Path -Parent
+    if ($parent -and -not (Test-Path $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
+    Set-Content -Path $Path -Value $normalized -Encoding UTF8
+    return $status
+}
+
+function Remove-ManagedPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (-not (Test-Path $Path)) {
+        return
+    }
+
+    Remove-Item -LiteralPath $Path -Recurse -Force
+}
+
+function Ensure-SkillLink {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$LinkPath,
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+        [switch]$Force
+    )
+
+    $suffix = ''
+    if (Test-Path $LinkPath) {
+        try {
+            $resolvedLink = (Resolve-Path $LinkPath).Path
+            $resolvedTarget = (Resolve-Path $TargetPath).Path
+            if ($resolvedLink -eq $resolvedTarget) {
+                return [PSCustomObject]@{ Status = 'skipped'; Suffix = $suffix }
+            }
+        } catch {
+            # Ignore resolution errors and treat as drift
+        }
+
+        if (-not $Force) {
+            return [PSCustomObject]@{ Status = 'conflicted'; Suffix = $suffix }
+        }
+
+        Remove-ManagedPath -Path $LinkPath
+        $status = 'updated'
+    } else {
+        $status = 'added'
+    }
+
+    $parent = Split-Path $LinkPath -Parent
+    if (-not (Test-Path $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
+
+    try {
+        if ($IsWindows) {
+            New-Item -ItemType Junction -Path $LinkPath -Target $TargetPath -Force | Out-Null
+        } else {
+            $relativeTarget = [IO.Path]::GetRelativePath($parent, $TargetPath)
+            New-Item -ItemType SymbolicLink -Path $LinkPath -Target $relativeTarget -Force | Out-Null
+        }
+    } catch {
+        Copy-Item -Path $TargetPath -Destination $LinkPath -Recurse -Force
+        $suffix = '[copy fallback]'
+    }
+
+    return [PSCustomObject]@{ Status = $status; Suffix = $suffix }
+}
+
+function Install-PortableRuntime {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourceRoot,
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$ManifestEntries,
+        [switch]$Force
+    )
+
+    $sourceRootResolved = (Resolve-Path $SourceRoot).Path
+    $targetPathResolved = (Resolve-Path $TargetPath).Path
+    $skillExcludes = if ($sourceRootResolved -ne $targetPathResolved) { @('gate-check') } else { @() }
+
+    $result = Merge-SyncResults `
+        (Seed-DirectoryFromLegacyRuntime -TargetPath $TargetPath -RelativeDirectory 'skills' -ExcludePatterns $skillExcludes) `
+        (Seed-DirectoryFromLegacyRuntime -TargetPath $TargetPath -RelativeDirectory 'agents') `
+        (Sync-DirectoryWithPolicy -SourcePath (Join-Path $SourceRoot 'skills') -TargetPath $TargetPath -BaseRelative 'skills' -ManifestEntries $ManifestEntries -Ownership 'template-managed' -SourceLabelPrefix 'template:skills' -Force:$Force -ExcludePatterns $skillExcludes) `
+        (Sync-DirectoryWithPolicy -SourcePath (Join-Path $SourceRoot 'agents') -TargetPath $TargetPath -BaseRelative 'agents' -ManifestEntries $ManifestEntries -Ownership 'template-managed' -SourceLabelPrefix 'template:agents' -Force:$Force)
+
+    $guideTemplates = @(
+        @{ RelativePath = 'AGENTS.md';  Template = Join-Path $SourceRoot 'docs\AGENTS.template.md' },
+        @{ RelativePath = 'CLAUDE.md'; Template = Join-Path $SourceRoot 'docs\CLAUDE.template.md' },
+        @{ RelativePath = 'GEMINI.md'; Template = Join-Path $SourceRoot 'docs\GEMINI.template.md' }
+    )
+
+    foreach ($guide in $guideTemplates) {
+        if (-not (Test-Path $guide.Template)) { continue }
+        $normalized = Normalize-TextContent (Get-Content -Raw $guide.Template)
+        $guidePath = Join-Path $TargetPath $guide.RelativePath
+        $guideBytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
+
+        if (Test-Path $guidePath -PathType Leaf) {
+            Add-SyncRecord -Result $result -Status 'skipped' -Path $guide.RelativePath -Suffix '[project-owned]'
+            Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $guide.RelativePath -Ownership 'project-owned' -SourceLabel "template:docs/$([IO.Path]::GetFileName($guide.Template))" -Kind 'file' -ManagedHash (Get-BytesHash -Bytes $guideBytes) -ObservedHash (Get-PathHash -Path $guidePath) -Status 'project-owned'
+            continue
+        }
+
+        $parent = Split-Path $guidePath -Parent
+        if ($parent -and -not (Test-Path $parent)) {
+            New-Item -ItemType Directory -Path $parent -Force | Out-Null
+        }
+        [System.IO.File]::WriteAllBytes($guidePath, $guideBytes)
+        Add-SyncRecord -Result $result -Status 'added' -Path $guide.RelativePath
+        Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $guide.RelativePath -Ownership 'project-owned' -SourceLabel "template:docs/$([IO.Path]::GetFileName($guide.Template))" -Kind 'file' -ManagedHash (Get-BytesHash -Bytes $guideBytes) -ObservedHash (Get-PathHash -Path $guidePath) -Status 'project-owned'
+    }
+
+    $sharedSkills = Join-Path $TargetPath 'skills'
+    foreach ($relativeLink in $script:PortableSkillLinks) {
+        $linkResult = Ensure-SkillLink -LinkPath (Join-Path $TargetPath $relativeLink) -TargetPath $sharedSkills -Force
+        Add-SyncRecord -Result $result -Status $linkResult.Status -Path $relativeLink -Suffix $linkResult.Suffix
+        Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $relativeLink -Ownership 'derived-runtime' -SourceLabel 'project:skills' -Kind 'mount' -ManagedHash $null -ObservedHash $null -Status 'derived-runtime'
+    }
+
+    $targetAgentsDir = Join-Path $TargetPath 'agents'
+    if (Test-Path $targetAgentsDir) {
+        Get-ChildItem -Path $targetAgentsDir -Filter '*.agent.md' | Sort-Object Name | ForEach-Object {
+            $definition = Get-AgentDefinition -Path $_.FullName
+
+            $claudeRelative = ".claude/agents/$($definition.Name).md"
+            $claudeBytes = [System.Text.Encoding]::UTF8.GetBytes((Normalize-TextContent (Build-ClaudeAgentContent -Name $definition.Name -Description $definition.Description -Body $definition.Body)))
+            Set-ManagedBytes `
+                -Path (Join-Path $TargetPath $claudeRelative) `
+                -RelativePath $claudeRelative `
+                -Bytes $claudeBytes `
+                -Result $result `
+                -ManifestEntries $ManifestEntries `
+                -Ownership 'derived-runtime' `
+                -SourceLabel "project:agents/$($_.Name)" `
+                -AlwaysOverwrite `
+                -PreserveUntracked:$false
+
+            $codexRelative = ".codex/agents/$($definition.Name).toml"
+            $codexBytes = [System.Text.Encoding]::UTF8.GetBytes((Normalize-TextContent (Build-CodexAgentContent -Name $definition.Name -Description $definition.Description -Body $definition.Body)))
+            Set-ManagedBytes `
+                -Path (Join-Path $TargetPath $codexRelative) `
+                -RelativePath $codexRelative `
+                -Bytes $codexBytes `
+                -Result $result `
+                -ManifestEntries $ManifestEntries `
+                -Ownership 'derived-runtime' `
+                -SourceLabel "project:agents/$($_.Name)" `
+                -AlwaysOverwrite `
+                -PreserveUntracked:$false
+        }
+    }
+
+    $result = Merge-SyncResults `
+        $result `
+        (Sync-DirectoryWithPolicy -SourcePath (Join-Path $TargetPath 'skills') -TargetPath $TargetPath -BaseRelative '.github/skills' -ManifestEntries $ManifestEntries -Ownership 'derived-runtime' -SourceLabelPrefix 'project:skills' -AlwaysOverwrite -PreserveUntracked:$false) `
+        (Sync-DirectoryWithPolicy -SourcePath (Join-Path $TargetPath 'agents') -TargetPath $TargetPath -BaseRelative '.github/agents' -ManifestEntries $ManifestEntries -Ownership 'derived-runtime' -SourceLabelPrefix 'project:agents' -AlwaysOverwrite -PreserveUntracked:$false)
+
+    return $result
 }
 
 # ============================================================================
@@ -964,11 +1702,11 @@ function Main {
     Write-Host ""
     
     # 檢查 Update 模式
-    $forceMode = $Force -or $Update
+    $forceMode = $Force
     $backupMode = $Backup -or $Update  # Update 模式自動啟用備份
     
     if ($Update -and -not $Force) {
-        Write-Host "ℹ️  執行 --update 模式（將檢查衝突並建立備份）" -ForegroundColor Cyan
+        Write-Host "ℹ️  執行 --update 模式（將保留專案客製化並建立備份）" -ForegroundColor Cyan
         Write-Host ""
     }
     
@@ -1115,28 +1853,33 @@ function Main {
     
     # 檢查未提交的變更（Update 模式）
     if ($Update) {
-        $targetGithubPath = Join-Path $targetProjectPath ".github"
-        if (Test-Path $targetGithubPath) {
-            $hasChanges = Test-GitUncommittedChanges -TargetPath $targetProjectPath -Directory ".github"
-            if ($hasChanges) {
-                if ($Force) {
-                    # -Force 旗標：跳過確認，直接繼續（備份仍會自動建立）
-                    Write-Host "⚠️  檢測到 .github/ 目錄有未提交的變更（-Force 已指定，略過確認）" -ForegroundColor Yellow
-                    Write-Host ""
-                } else {
-                    Write-Host "⚠️  檢測到 .github/ 目錄有未提交的變更" -ForegroundColor Yellow
-                    Write-Host "   提示 1：先執行 'git add .github/ && git commit' 再更新可避免此提示" -ForegroundColor Gray
-                    Write-Host "   提示 2：加上 -Force 旗標可自動跳過此確認" -ForegroundColor Gray
-                    $continue = Read-Host "是否繼續更新? (y/n)"
-                    if ($continue -ne 'y') {
-                        Write-Host "已取消。" -ForegroundColor Gray
-                        if ($script:IsRemoteMode) {
-                            Remove-TempDirectory -Path $script:TempClonePath
-                        }
-                        exit 0
+        $managedTargets = @($script:PortableRuntimePaths | Where-Object { Test-Path (Join-Path $targetProjectPath $_) })
+        $hasChanges = $false
+        foreach ($managedTarget in $managedTargets) {
+            if (Test-GitUncommittedChanges -TargetPath $targetProjectPath -Directory $managedTarget) {
+                $hasChanges = $true
+                break
+            }
+        }
+
+        if ($hasChanges) {
+            if ($Force) {
+                # -Force 旗標：跳過確認，直接繼續（備份仍會自動建立）
+                Write-Host "⚠️  檢測到 AI workflow 管理目錄有未提交的變更（-Force 已指定，略過確認）" -ForegroundColor Yellow
+                Write-Host ""
+            } else {
+                Write-Host "⚠️  檢測到 AI workflow 管理目錄有未提交的變更" -ForegroundColor Yellow
+                Write-Host "   提示 1：先執行 'git add .github skills agents .claude .codex .agent .agents AGENTS.md CLAUDE.md GEMINI.md && git commit' 再更新可避免此提示" -ForegroundColor Gray
+                Write-Host "   提示 2：加上 -Force 旗標可自動跳過此確認" -ForegroundColor Gray
+                $continue = Read-Host "是否繼續更新? (y/n)"
+                if ($continue -ne 'y') {
+                    Write-Host "已取消。" -ForegroundColor Gray
+                    if ($script:IsRemoteMode) {
+                        Remove-TempDirectory -Path $script:TempClonePath
                     }
-                    Write-Host ""
+                    exit 0
                 }
+                Write-Host ""
             }
         }
     }
@@ -1144,9 +1887,27 @@ function Main {
     Write-Host "同步工作流檔案..." -ForegroundColor Cyan
     Write-Host ""
     
+    $manifestEntries = Get-InstallManifest -TargetPath $targetProjectPath
+
     try {
         # 執行檔案同步
-        $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $targetProjectPath -Force:$forceMode -Backup:$backupMode
+        $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $targetProjectPath -ManifestEntries $manifestEntries -Force:$forceMode -Backup:$backupMode
+        if ($backupMode) {
+            $portableBackupResult = Backup-ManagedPaths -TargetPath $targetProjectPath -RelativePaths $script:PortableBackupPaths
+            if ($portableBackupResult.BackupPath) {
+                if ($portableBackupResult.Success) {
+                    Write-Host "✅ $($portableBackupResult.Message)" -ForegroundColor Green
+                } else {
+                    Write-Host "⚠️  $($portableBackupResult.Message)" -ForegroundColor Yellow
+                }
+            }
+        }
+        $portableResult = Install-PortableRuntime -SourceRoot $script:RepoRoot -TargetPath $targetProjectPath -ManifestEntries $manifestEntries -Force:$forceMode
+        $syncResult = Merge-SyncResults $syncResult $portableResult
+
+        if (([IO.Path]::GetFullPath($targetProjectPath)) -ne ([IO.Path]::GetFullPath($script:RepoRoot))) {
+            Write-InstallManifest -TargetPath $targetProjectPath -SourceRoot $script:RepoRoot -ManifestEntries $manifestEntries
+        }
         
         # 顯示同步結果
         if ($syncResult.FilesAdded.Count -gt 0) {
@@ -1158,7 +1919,7 @@ function Main {
         }
         
         if ($syncResult.FilesSkipped.Count -gt 0) {
-            Write-Host "⏭️  跳過 $($syncResult.FilesSkipped.Count) 個檔案（workflows/CODEOWNERS 或內容相同）" -ForegroundColor Gray
+            Write-Host "⏭️  跳過 $($syncResult.FilesSkipped.Count) 個檔案（保留既有客製、排除項或內容相同）" -ForegroundColor Gray
         }
         
         if ($syncResult.FilesConflicted.Count -gt 0) {
@@ -1169,7 +1930,7 @@ function Main {
                 }
             }
             Write-Host ""
-            Write-Host "提示：使用 -Force 或 -Update 參數強制覆蓋衝突檔案" -ForegroundColor Cyan
+            Write-Host "提示：使用 -Force 參數強制覆蓋模板管理的衝突檔案" -ForegroundColor Cyan
         }
         
         Write-Host ""

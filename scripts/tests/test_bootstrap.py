@@ -16,6 +16,72 @@ def test_is_version_ge_comparison() -> None:
     assert not bootstrap.is_version_ge("1.9.9", "2.0.0")
 
 
+def test_parse_agent_definition_uses_filename_as_portable_name(tmp_path: Path) -> None:
+    agent_file = tmp_path / "coder.agent.md"
+    agent_file.write_text(
+        """---
+name: coder-agent
+description: Test coder description
+---
+
+# Coder
+
+Follow the workflow.
+""",
+        encoding="utf-8",
+    )
+
+    name, description, body = bootstrap.parse_agent_definition(agent_file)
+
+    assert name == "coder"
+    assert description == "Test coder description"
+    assert "Follow the workflow." in body
+
+
+def test_install_portable_runtime_creates_mounts_and_generated_agents(tmp_path: Path) -> None:
+    source_root = tmp_path / "template"
+    target_root = tmp_path / "project"
+
+    (source_root / "skills" / "demo-skill").mkdir(parents=True)
+    (source_root / "skills" / "demo-skill" / "SKILL.md").write_text(
+        "---\nname: demo-skill\ndescription: demo\n---\n",
+        encoding="utf-8",
+    )
+    (source_root / "agents").mkdir(parents=True)
+    (source_root / "agents" / "coder.agent.md").write_text(
+        """---
+name: coder-agent
+description: Demo coder
+---
+
+# Demo Coder
+
+Be precise.
+""",
+        encoding="utf-8",
+    )
+    (source_root / "docs").mkdir(parents=True)
+    (source_root / "docs" / "AGENTS.template.md").write_text("# Shared guide\n", encoding="utf-8")
+    (source_root / "docs" / "CLAUDE.template.md").write_text("@AGENTS.md\n", encoding="utf-8")
+    (source_root / "docs" / "GEMINI.template.md").write_text("Read AGENTS.md\n", encoding="utf-8")
+    target_root.mkdir()
+
+    result = bootstrap.install_portable_runtime(
+        source_root,
+        target_root,
+        force=False,
+        manifest_entries={},
+    )
+
+    assert (target_root / "skills" / "demo-skill" / "SKILL.md").exists()
+    assert (target_root / ".claude" / "skills" / "demo-skill" / "SKILL.md").exists()
+    assert (target_root / ".agents" / "skills" / "demo-skill" / "SKILL.md").exists()
+    assert (target_root / ".codex" / "agents" / "coder.toml").exists()
+    assert (target_root / ".claude" / "agents" / "coder.md").exists()
+    assert (target_root / "AGENTS.md").read_text(encoding="utf-8") == "# Shared guide\n"
+    assert "GEMINI.md" in result.files_added
+
+
 def test_sync_workflow_files_respects_exclusions(tmp_path: Path) -> None:
     source = tmp_path / ".github"
     project_root = tmp_path / "project"
@@ -28,7 +94,12 @@ def test_sync_workflow_files_respects_exclusions(tmp_path: Path) -> None:
     (docs_dir / "notes.txt").write_text("notes")
 
     project_root.mkdir()
-    result = bootstrap.sync_workflow_files(source, project_root, force=False)
+    result = bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=False,
+        manifest_entries={},
+    )
 
     added = set(result.files_added)
     skipped = set(result.files_skipped)
@@ -49,7 +120,12 @@ def test_sync_workflow_files_force_overwrites(tmp_path: Path) -> None:
     target_github.mkdir(parents=True, exist_ok=True)
     (target_github / "README.md").write_text("old content")
 
-    result = bootstrap.sync_workflow_files(source, project_root, force=True)
+    result = bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=True,
+        manifest_entries={},
+    )
 
     assert "README.md" in result.files_updated
     assert (target_github / "README.md").read_text() == "new content"
@@ -87,7 +163,12 @@ def test_sync_detects_conflicts_without_force(tmp_path: Path) -> None:
     target_github.mkdir(parents=True)
     (target_github / "config.yml").write_text("old config")
     
-    result = bootstrap.sync_workflow_files(source, project_root, force=False)
+    result = bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=False,
+        manifest_entries={},
+    )
     
     assert "config.yml" in result.files_conflicted
     assert "config.yml" not in result.files_updated
@@ -122,7 +203,13 @@ def test_sync_with_backup_creates_backup(tmp_path: Path) -> None:
     target_github.mkdir(parents=True)
     (target_github / "old.txt").write_text("old")
     
-    result = bootstrap.sync_workflow_files(source, project_root, force=True, backup=True)
+    result = bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=True,
+        manifest_entries={},
+        backup=True,
+    )
     
     # Check that backup was created
     backup_dirs = list(project_root.glob(".github.backup-*"))
@@ -246,7 +333,12 @@ def test_sync_without_force_skips_identical_files(tmp_path: Path) -> None:
     target_github.mkdir(parents=True)
     (target_github / "same.txt").write_text("identical content")
     
-    result = bootstrap.sync_workflow_files(source, project_root, force=False)
+    result = bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=False,
+        manifest_entries={},
+    )
     
     assert "same.txt" in result.files_skipped
     assert "same.txt" not in result.files_added
@@ -266,7 +358,12 @@ def test_sync_with_force_overwrites_different_files(tmp_path: Path) -> None:
     target_github.mkdir(parents=True)
     (target_github / "config.yml").write_text("old config v1")
     
-    result = bootstrap.sync_workflow_files(source, project_root, force=True)
+    result = bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=True,
+        manifest_entries={},
+    )
     
     assert "config.yml" in result.files_updated
     assert (target_github / "config.yml").read_text() == "new config v2"
@@ -281,7 +378,12 @@ def test_sync_adds_new_files(tmp_path: Path) -> None:
     
     project_root.mkdir()
     
-    result = bootstrap.sync_workflow_files(source, project_root, force=False)
+    result = bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=False,
+        manifest_entries={},
+    )
     
     assert "newfile.md" in result.files_added
     target_file = project_root / ".github" / "newfile.md"
@@ -301,7 +403,12 @@ def test_sync_respects_exclusion_patterns_workflows(tmp_path: Path) -> None:
     
     project_root.mkdir()
     
-    result = bootstrap.sync_workflow_files(source, project_root, force=False)
+    result = bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=False,
+        manifest_entries={},
+    )
     
     # workflows should be skipped
     assert any("workflows" in s for s in result.files_skipped)
@@ -321,7 +428,12 @@ def test_sync_respects_exclusion_patterns_codeowners(tmp_path: Path) -> None:
     
     project_root.mkdir()
     
-    result = bootstrap.sync_workflow_files(source, project_root, force=False)
+    result = bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=False,
+        manifest_entries={},
+    )
     
     assert any("CODEOWNERS" in s for s in result.files_skipped)
     assert "other.md" in result.files_added
@@ -461,7 +573,12 @@ def test_sync_workflow_files_raises_error_for_nonexistent_source(tmp_path: Path)
     target = tmp_path / "target"
     
     try:
-        bootstrap.sync_workflow_files(nonexistent_source, target, force=False)
+        bootstrap.sync_workflow_files(
+            nonexistent_source,
+            target,
+            force=False,
+            manifest_entries={},
+        )
         assert False, "Should have raised FileNotFoundError"
     except FileNotFoundError as e:
         assert "not found" in str(e).lower()
@@ -476,7 +593,12 @@ def test_sync_workflow_files_creates_target_if_not_exists(tmp_path: Path) -> Non
     target = tmp_path / "new-target"
     # Target doesn't exist yet
     
-    result = bootstrap.sync_workflow_files(source, target, force=False)
+    result = bootstrap.sync_workflow_files(
+        source,
+        target,
+        force=False,
+        manifest_entries={},
+    )
     
     assert target.exists()
     assert (target / ".github").exists()
@@ -495,7 +617,13 @@ def test_sync_with_backup_prints_success_message(tmp_path: Path, capsys) -> None
     target_github.mkdir()
     (target_github / "old.txt").write_text("old")
     
-    bootstrap.sync_workflow_files(source, target, force=True, backup=True)
+    bootstrap.sync_workflow_files(
+        source,
+        target,
+        force=True,
+        manifest_entries={},
+        backup=True,
+    )
     
     captured = capsys.readouterr()
     assert "Backup created" in captured.out or "备份" in captured.out.lower()
@@ -531,7 +659,12 @@ def test_sync_creates_nested_directories(tmp_path: Path) -> None:
     
     target = tmp_path / "target"
     
-    result = bootstrap.sync_workflow_files(source, target, force=False)
+    result = bootstrap.sync_workflow_files(
+        source,
+        target,
+        force=False,
+        manifest_entries={},
+    )
     
     assert "docs/guides/guide.md" in result.files_added
     target_file = target / ".github" / "docs" / "guides" / "guide.md"
@@ -548,7 +681,12 @@ def test_sync_handles_windows_path_separators(tmp_path: Path) -> None:
     
     target = tmp_path / "target"
     
-    result = bootstrap.sync_workflow_files(source, target, force=False)
+    result = bootstrap.sync_workflow_files(
+        source,
+        target,
+        force=False,
+        manifest_entries={},
+    )
     
     # Should use forward slashes in result
     added_files = " ".join(result.files_added)
@@ -625,7 +763,12 @@ def test_sync_workflow_files_with_empty_source(tmp_path: Path) -> None:
     
     target = tmp_path / "target"
     
-    result = bootstrap.sync_workflow_files(source, target, force=False)
+    result = bootstrap.sync_workflow_files(
+        source,
+        target,
+        force=False,
+        manifest_entries={},
+    )
     
     assert len(result.files_added) == 0
     assert len(result.files_updated) == 0
@@ -667,3 +810,114 @@ def test_calculate_file_hash_binary_file(tmp_path: Path) -> None:
     # Should be a valid 64-character hexadecimal SHA256 hash
     assert len(hash_result) == 64
     assert all(c in "0123456789abcdef" for c in hash_result)
+
+
+def test_install_portable_runtime_seeds_legacy_runtime_and_preserves_existing_customization(
+    tmp_path: Path,
+) -> None:
+    source_root = tmp_path / "template"
+    target_root = tmp_path / "project"
+    manifest_entries = {}
+
+    (source_root / "skills" / "demo-skill").mkdir(parents=True)
+    (source_root / "skills" / "demo-skill" / "SKILL.md").write_text(
+        "---\nname: demo-skill\ndescription: template version\n---\n",
+        encoding="utf-8",
+    )
+    (source_root / "skills" / "gate-check").mkdir(parents=True)
+    (source_root / "skills" / "gate-check" / "SKILL.md").write_text(
+        "---\nname: gate-check\ndescription: maintainer only\n---\n",
+        encoding="utf-8",
+    )
+    (source_root / "agents").mkdir(parents=True)
+    (source_root / "agents" / "coder.agent.md").write_text(
+        """---
+name: coder-agent
+description: Template coder
+---
+
+# Template Coder
+""",
+        encoding="utf-8",
+    )
+    (source_root / "docs").mkdir(parents=True)
+    (source_root / "docs" / "AGENTS.template.md").write_text("# Shared guide\n", encoding="utf-8")
+    (source_root / "docs" / "CLAUDE.template.md").write_text("@AGENTS.md\n", encoding="utf-8")
+    (source_root / "docs" / "GEMINI.template.md").write_text("Read AGENTS.md\n", encoding="utf-8")
+
+    (target_root / ".github" / "skills" / "demo-skill").mkdir(parents=True)
+    (target_root / ".github" / "skills" / "demo-skill" / "SKILL.md").write_text(
+        "---\nname: demo-skill\ndescription: project customized\n---\n",
+        encoding="utf-8",
+    )
+    (target_root / ".github" / "agents").mkdir(parents=True)
+    (target_root / ".github" / "agents" / "coder.agent.md").write_text(
+        """---
+name: coder-agent
+description: Project coder
+---
+
+# Project Coder
+""",
+        encoding="utf-8",
+    )
+
+    bootstrap.install_portable_runtime(
+        source_root,
+        target_root,
+        force=False,
+        manifest_entries=manifest_entries,
+    )
+
+    assert (target_root / "skills" / "demo-skill" / "SKILL.md").read_text(encoding="utf-8").startswith(
+        "---\nname: demo-skill\ndescription: project customized"
+    )
+    assert (target_root / "agents" / "coder.agent.md").read_text(encoding="utf-8").startswith(
+        "---\nname: coder-agent\ndescription: Project coder"
+    )
+    assert (target_root / ".github" / "skills" / "demo-skill" / "SKILL.md").read_text(encoding="utf-8").startswith(
+        "---\nname: demo-skill\ndescription: project customized"
+    )
+    assert not (target_root / "skills" / "gate-check").exists()
+    assert manifest_entries["skills/demo-skill/SKILL.md"]["status"] == "preserved-existing"
+
+
+def test_sync_workflow_files_update_preserves_forked_template_managed_file(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "template" / ".github"
+    project_root = tmp_path / "project"
+    manifest_entries = {}
+
+    (source / "instructions").mkdir(parents=True)
+    source_file = source / "instructions" / "demo.instructions.md"
+    source_file.write_text("template-v1\n", encoding="utf-8")
+    project_root.mkdir()
+
+    bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=False,
+        manifest_entries=manifest_entries,
+    )
+
+    target_file = project_root / ".github" / "instructions" / "demo.instructions.md"
+    target_file.write_text("project-customized\n", encoding="utf-8")
+    source_file.write_text("template-v2\n", encoding="utf-8")
+
+    result = bootstrap.sync_workflow_files(
+        source,
+        project_root,
+        force=False,
+        manifest_entries=manifest_entries,
+    )
+
+    assert target_file.read_text(encoding="utf-8") == "project-customized\n"
+    assert any(
+        item == ".github/instructions/demo.instructions.md [preserved customization]"
+        for item in result.files_skipped
+    )
+    assert (
+        manifest_entries[".github/instructions/demo.instructions.md"]["status"]
+        == "preserved-customization"
+    )

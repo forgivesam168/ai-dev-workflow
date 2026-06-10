@@ -114,15 +114,28 @@ pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1
 ```
 
 **會安裝什麼：**
-- `.github/` 目錄，包含 agents、instructions、prompts、skills
-- `.github/mcp.json` MCP 伺服器配置
+- `.github/` 相容層，保留給 Copilot / VS Code 工作流程
+- 專案根目錄的共享 `skills/` 與 `agents/`
+- `.agents/skills/`、`.claude/skills/`、`.agent/skills/`，全部指向共享 skill 庫
+- 產生的 `.codex/agents/` 與 `.claude/agents/` custom agents
+- `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 專案 guidance 檔
+- `.ai-workflow-install.json` ownership / update manifest
 - `.gitattributes` 跨平台行尾標準化設定
 - Git repository 初始化（如果尚未存在）
+
+**Session 重新載入提醒：**
+- 第一次安裝或更新後，請重新開一個新的 Codex / Claude session，讓新 skills 與 custom agents 重新載入。
+- 在 Codex CLI 內，請用 `/skills` 檢視技能，明確呼叫則用 `$skill-name`。
 
 **會保留什麼：**
 - `.github/workflows/` (你的 CI/CD 管線)
 - `.github/CODEOWNERS` (你的 code owners 設定)
 - `.github/dependabot.yml` (你的依賴管理設定)
+
+**安裝後的 ownership 規則：**
+- 要客製工作流能力，請改 `skills/` 與 `agents/`，並把修改 commit。
+- `.github/skills/`、`.github/agents/`、`.codex/agents/`、`.claude/agents/` 以及 skill mounts 都是 derived runtime。
+- `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 屬於 project-owned guidance files。
 
 ---
 
@@ -150,8 +163,8 @@ cd my-new-project
 rm -rf .git
 git init
 
-# 部署工作流到 .github/
-pwsh .\Init-Project.ps1
+# 從已 clone 的模板部署工作流
+pwsh -ExecutionPolicy Bypass -File .\scripts\bootstrap.ps1 -TargetPath .
 
 # 提交初始設定
 git add .
@@ -182,33 +195,44 @@ cat BOOTSTRAP-GUIDE.md # Bootstrap 使用指南
 ### 步驟 1：檢查檔案結構
 
 ```bash
-# 驗證 .github 目錄
-ls .github/agents/      # 應有 5 個 agent 檔案
-ls .github/skills/      # 應有 28 個 skill 目錄
-ls .github/instructions/ # 應有 instruction 檔案
-ls .github/prompts/     # 應有 10 個 prompt 檔案
+# 驗證 .github 相容層
+ls .github/agents/
+ls .github/skills/
+ls .github/instructions/
+ls .github/prompts/
+
+# 驗證 portable runtime
+ls skills/
+ls agents/
+ls .agents/skills/
+ls .claude/skills/
+ls .codex/agents/
+cat AGENTS.md
+cat CLAUDE.md
+cat GEMINI.md
 
 # 驗證根目錄檔案
-cat .gitattributes      # 行尾標準化設定
-cat .github/mcp.json    # MCP 伺服器設定
+cat .gitattributes
+cat .github/mcp.json
 ```
 
 ### 步驟 2：驗證 Agent 檔案
 
 ```bash
-# 應存在以下檔案：
+# .github 相容層範例：
 # .github/agents/architect.agent.md
 # .github/agents/coder.agent.md
-# .github/agents/code-reviewer.agent.md
-# .github/agents/plan.agent.md
-# .github/agents/spec.agent.md
+#
+# portable runtime 範例：
+# .codex/agents/coder.toml
+# .claude/agents/coder.md
 ```
 
 ### 步驟 3：初次提交
 
 ```bash
 # 暫存所有工作流檔案
-git add .github/ .gitattributes
+git add .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json .gitattributes
 
 # 提交
 git commit -m "chore: initialize AI development workflow
@@ -429,10 +453,10 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-w
 pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Update
 
 # 檢視變更
-git diff .github/
+git diff .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 
 # 若滿意則提交
-git add .github/
+git add .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 git commit -m "chore: 更新 AI 工作流程至最新版本"
 git push
 
@@ -451,8 +475,8 @@ curl -O https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scr
 python3 bootstrap.py --update
 
 # 檢視並提交
-git diff .github/
-git add .github/
+git diff .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
+git add .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 git commit -m "chore: 更新 AI 工作流程至最新版本"
 git push
 
@@ -469,10 +493,13 @@ pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1 -Update
 
 **更新模式功能：**
 - 自動建立備份 (`.github.backup-YYYYMMDD-HHMMSS/`)
+- 若共享 runtime 路徑已存在，會另外建立 portable runtime 備份 (`.ai-workflow-portable.backup-YYYYMMDD-HHMMSS/`)
 - 更新前檢查未提交的變更
 - 若偵測到變更會提示確認
-- 強制覆蓋衝突的檔案
+- 預設保留專案已 fork 的 template-managed 檔案
+- 依據 `skills/` 與 `agents/` 重新產生 derived runtime
 - 腳本在專案根目錄執行時自動進入遠端模式（不需本機 clone）
+- 既有 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 都會保留；若要採用最新模板 wording，請手動 merge
 
 ---
 
@@ -584,14 +611,19 @@ git checkout HEAD -- .github/workflows/
 **解決方法：**
 ```bash
 # 方式 1：檢視衝突並手動決定
-git diff .github/
+git diff .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 
-# 方式 2：強制覆蓋（會先建立備份）
-pwsh bootstrap.ps1 --force --backup
+# 方式 2：強制覆蓋 template-managed 檔案
+pwsh bootstrap.ps1 -Force -Backup
 
-# 方式 3：更新模式（會先檢查 Git 狀態）
-pwsh bootstrap.ps1 --update
+# 方式 3：更新模式（保留 project forks，並重建 derived runtime）
+pwsh bootstrap.ps1 -Update
 ```
+
+**實務規則：**
+- 要客製共用工作流能力，請改 `skills/` 或 `agents/`。
+- 不要直接手改 `.github/skills/`、`.github/agents/`、`.codex/agents/`、`.claude/agents/`；bootstrap 會重新產生它們。
+- 請把 `.ai-workflow-install.json` 一起 commit，下一次 `--update` 才知道哪些檔案仍可安全自動更新。
 
 ---
 
@@ -600,8 +632,8 @@ pwsh bootstrap.ps1 --update
 成功安裝後：
 
 1. **檢視工作流程**: 閱讀 `WORKFLOW.md` 了解詳細工作流程文件
-2. **探索 Skills**: 瀏覽 `.github/skills/` 了解可用功能
-3. **客製化 Instructions**: 編輯 `.github/instructions/` 以符合你的技術堆疊
+2. **探索 Skills**: 瀏覽 `skills/`（source of truth）了解可用功能
+3. **客製化 Instructions**: 編輯 `.github/instructions/`，並視需要調整 `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`
 4. **試用 Agents**: 使用 `/workflow` 開始你的第一個功能
 5. **分享給團隊**: 將此指南傳送給新團隊成員
 

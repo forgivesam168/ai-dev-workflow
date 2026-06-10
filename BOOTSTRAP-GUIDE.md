@@ -3,6 +3,11 @@
 ## Overview
 The bootstrap installer is a cross-platform tool that initializes the AI development workflow into your project. It supports Windows (PowerShell), Linux, and macOS (Python/Bash).
 
+Bootstrap now installs two layers at once:
+
+- **Portable runtime**: `skills/`, `agents/`, `.agents/skills/`, `.claude/skills/`, `.agent/skills/`, `.codex/agents/`, `.claude/agents/`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`
+- **Legacy compatibility layer**: `.github/**` for Copilot / VS Code prompt and instruction compatibility
+
 ## 選擇你的使用方式
 
 | 你是誰 | 建議方式 | 理由 |
@@ -57,7 +62,7 @@ rm bootstrap.py
 # Force overwrite existing files
 .\scripts\bootstrap.ps1 -Force
 
-# Update mode with backup
+# Update mode with backup and fork preservation
 .\scripts\bootstrap.ps1 -Update
 
 # Manual backup before sync
@@ -69,10 +74,10 @@ rm bootstrap.py
 # Standard installation
 python3 scripts/bootstrap.py
 
-# Force overwrite existing files
+# Force overwrite template-managed files
 python3 scripts/bootstrap.py --force
 
-# Update mode with backup
+# Update mode with backup and fork preservation
 python3 scripts/bootstrap.py --update
 
 # Manual backup before sync
@@ -85,8 +90,8 @@ python3 scripts/bootstrap.py --backup
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `-Force` | Switch | Overwrite conflicting files without prompting | `.\bootstrap.ps1 -Force` |
-| `-Update` | Switch | Safe update mode (backup + force overwrite) | `.\bootstrap.ps1 -Update` |
+| `-Force` | Switch | Overwrite template-managed files even if the project forked them | `.\bootstrap.ps1 -Force` |
+| `-Update` | Switch | Safe update mode: backup + preserve project forks + refresh derived runtime | `.\bootstrap.ps1 -Update` |
 | `-Backup` | Switch | Create backup before sync | `.\bootstrap.ps1 -Backup` |
 | `-SkipHooks` | Switch | Skip Git initialization | `.\bootstrap.ps1 -SkipHooks` |
 | `-Verbose` | Switch | Show detailed file list | `.\bootstrap.ps1 -Verbose` |
@@ -98,8 +103,8 @@ python3 scripts/bootstrap.py --backup
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `--force` | Flag | Overwrite conflicting files |
-| `--update` | Flag | Safe update mode (backup + force) |
+| `--force` | Flag | Overwrite template-managed files even if the project forked them |
+| `--update` | Flag | Safe update mode: backup + preserve project forks + refresh derived runtime |
 | `--backup` | Flag | Create backup before sync |
 | `--skip-hooks` | Flag | Skip Git initialization |
 | `--verbose` | Flag | Show detailed file list |
@@ -117,7 +122,7 @@ The script automatically enters remote mode when:
 **What happens in remote mode:**
 1. Creates a temporary directory (`%TEMP%\ai-workflow-bootstrap-<timestamp>`)
 2. Clones the template repository using shallow clone (`--depth 1`)
-3. Uses sparse checkout to download only `.github/`, `.gitattributes`, and `.editorconfig`
+3. Uses sparse checkout to download `.github/`, `agents/`, `skills/`, `docs/`, `.gitattributes`, and `.editorconfig`
 4. Syncs files to your project
 5. Cleans up temporary directory
 
@@ -162,10 +167,10 @@ $ python3 scripts/bootstrap.py
 同步工作流檔案...
 
 ✅ 新增 96 個檔案
-⏭️  跳過 3 個檔案（workflows/CODEOWNERS 或內容相同）
+⏭️  跳過 3 個檔案（保留既有客製、排除項或內容相同）
 ⚠️  偵測到 1 個衝突檔案（內容不同但未覆蓋）
 
-提示：使用 --force 或 --update 參數強制覆蓋衝突檔案
+提示：使用 --force 參數強制覆蓋模板管理的衝突檔案
 ```
 
 **Use cases**:
@@ -195,6 +200,13 @@ $ python3 scripts/bootstrap.py --force --backup
   ├── instructions/
   ├── prompts/
   └── ... (complete directory structure)
+
+.ai-workflow-portable.backup-YYYYMMDD-HHMMSS/
+  ├── skills/
+  ├── agents/
+  ├── .agents/
+  ├── .claude/
+  └── ... (shared runtime paths that already existed)
 ```
 
 **Use cases**:
@@ -210,26 +222,30 @@ $ python3 scripts/bootstrap.py --force --backup
 - Detects uncommitted Git changes
 - Prompts for user confirmation
 - Automatically creates backup
-- Force overwrites conflicting files
+- Preserves project-forked template-managed files by default
+- Rebuilds derived runtime from top-level `skills/` and `agents/`
+- Preserves existing `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`
 
 **Example**:
 ```bash
 $ python3 scripts/bootstrap.py --update
 
-ℹ️  執行 --update 模式（將檢查衝突並建立備份）
+ℹ️  執行 --update 模式（將保留專案客製化並建立備份）
 
 環境檢測:
 ✅ Git 2.52.0 detected
 ...
 
-⚠️  檢測到 .github/ 目錄有未提交的變更
+⚠️  檢測到 AI workflow 管理目錄有未提交的變更
    建議先提交變更後再執行 --update
 是否繼續更新? (y/n): y
 
 同步工作流檔案...
 
 ✅ Backup created: .github.backup-20260209-102530
+✅ Backup created: .ai-workflow-portable.backup-20260209-102530
 ✅ 更新 5 個檔案
+⏭️  跳過 2 個檔案（保留既有客製、排除項或內容相同）
 ...
 ```
 
@@ -246,7 +262,9 @@ $ python3 scripts/bootstrap.py --update
 |----------|-------------|------------|----------|----------|
 | File doesn't exist | ✅ Add | ✅ Add | ✅ Add | ✅ Add |
 | Identical content | ⏭️ Skip | ⏭️ Skip | ⏭️ Skip | ⏭️ Skip |
-| Different content | ⚠️ Conflict | ✅ Overwrite | ✅ Overwrite | 🔄 Backup first |
+| Project changed a template-managed file | ⏭️ Preserve | ✅ Overwrite | ⏭️ Preserve | 🔄 Backup first |
+| Template-managed file still matches last managed version | ⚠️ Conflict | ✅ Overwrite | ✅ Refresh | 🔄 Backup first |
+| Derived runtime (`.github/skills`, `.github/agents`, `.codex/agents`, `.claude/agents`) | 🔄 Regenerate | 🔄 Regenerate | 🔄 Regenerate | 🔄 Backup first |
 | Excluded pattern | ⏭️ Skip | ⏭️ Skip | ⏭️ Skip | ⏭️ Skip |
 
 **Exclusion patterns** (always preserved):
@@ -254,14 +272,20 @@ $ python3 scripts/bootstrap.py --update
 - `.github/CODEOWNERS` - Your code ownership rules
 - `.github/dependabot.yml` - Your dependency config
 
+**Ownership classes**:
+- `template-managed`: top-level `skills/`, top-level `agents/`, `.github/instructions/`, `.github/prompts/`, `.github/copilot-instructions.md`, `.gitattributes`, `.editorconfig`
+- `project-owned`: `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`
+- `derived-runtime`: `.github/skills/`, `.github/agents/`, `.agents/skills/`, `.claude/skills/`, `.agent/skills/`, `.codex/agents/`, `.claude/agents/`
+- Commit `.ai-workflow-install.json` so future `--update` runs know which template-managed files are still safe to refresh automatically.
+
 ## Command Reference
 
 ### PowerShell Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `-Force` | Switch | Force overwrite all files (no conflict detection) |
-| `-Update` | Switch | Update mode: checks Git status, creates backup, overwrites |
+| `-Force` | Switch | Force overwrite template-managed files |
+| `-Update` | Switch | Update mode: checks Git status, creates backup, preserves project forks, refreshes derived runtime |
 | `-Backup` | Switch | Create backup before sync |
 | `-SkipHooks` | Switch | Skip Git hooks installation |
 | `-Verbose` | Switch | Show detailed file lists |
@@ -271,8 +295,8 @@ $ python3 scripts/bootstrap.py --update
 
 | Argument | Type | Description |
 |----------|------|-------------|
-| `--force` | Flag | Force overwrite all files (no conflict detection) |
-| `--update` | Flag | Update mode: checks Git status, creates backup, overwrites |
+| `--force` | Flag | Force overwrite template-managed files |
+| `--update` | Flag | Update mode: checks Git status, creates backup, preserves project forks, refreshes derived runtime |
 | `--backup` | Flag | Create backup before sync |
 | `--verbose` | Flag | Show detailed file lists |
 
@@ -288,7 +312,7 @@ cd your-project
 python3 /path/to/ai-workflow/scripts/bootstrap.py
 
 # Commit the workflow
-git add .github/
+git add .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 git commit -m "chore: initialize AI workflow"
 git push
 ```
@@ -296,16 +320,16 @@ git push
 ### Updating Existing Workflow
 ```bash
 # Check for uncommitted changes first
-git status .github/
+git status .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 
 # If clean, run update
 python3 /path/to/ai-workflow/scripts/bootstrap.py --update
 
 # Review changes
-git diff .github/
+git diff .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 
 # Commit if satisfied
-git add .github/
+git add .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 git commit -m "chore: update AI workflow"
 ```
 
@@ -326,23 +350,36 @@ python3 scripts/bootstrap.py --force
 # Or rollback if needed
 rm -rf .github/
 mv .github.backup-YYYYMMDD-HHMMSS/ .github/
+
+# If the shared runtime was also updated and you need to restore it:
+rm -rf skills agents .agents .agent .claude .codex CLAUDE.md GEMINI.md
+cp -R .ai-workflow-portable.backup-YYYYMMDD-HHMMSS/* .
 ```
 
 ### Custom Installation (Selective Files)
 ```bash
-# Standard approach: bootstrap installs everything except workflows
+# Standard approach: bootstrap installs the shared runtime plus the .github compatibility layer
 python3 scripts/bootstrap.py
 
 # Your workflows remain intact in .github/workflows/
 # Your CODEOWNERS remains intact
 # Your dependabot.yml remains intact
 
-# Only workflow templates are installed to:
+# Shared runtime is installed to:
+# - skills/
+# - agents/
+# - .agents/skills/
+# - .claude/skills/
+# - .agent/skills/
+# - .codex/agents/
+# - .claude/agents/
+# - AGENTS.md / CLAUDE.md / GEMINI.md
+#
+# Legacy compatibility files are installed to:
 # - .github/agents/
 # - .github/instructions/
 # - .github/prompts/
 # - .github/skills/
-# - .github/hooks/   (security hooks for pre-commit checks)
 # - etc.
 ```
 
@@ -367,12 +404,12 @@ python3 scripts/bootstrap.py
 ### Issue: Uncommitted changes warning
 **Symptoms**:
 ```
-⚠️  檢測到 .github/ 目錄有未提交的變更
+⚠️  檢測到 AI workflow 管理目錄有未提交的變更
 ```
 **Solution**:
-1. Commit your changes: `git add .github/ && git commit -m "save changes"`
+1. Commit your changes: `git add .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json` then `git commit -m "save changes"`
 2. Or stash them: `git stash`
-3. Or force update: `python3 scripts/bootstrap.py --update` and answer 'y'
+3. Or run `python3 scripts/bootstrap.py --update` and answer `y` to keep going after the warning
 
 ### Issue: Conflicts detected but not overwritten
 **Symptoms**:
@@ -382,7 +419,7 @@ python3 scripts/bootstrap.py
 **Solution**:
 - Review conflicted files manually
 - Backup important customizations
-- Use `--force` or `--update` to overwrite:
+- Use `--force` to overwrite template-managed files:
   ```bash
   python3 scripts/bootstrap.py --force --backup
   ```
@@ -397,8 +434,8 @@ A: Yes. Update mode automatically creates a backup. Find it at `.github.backup-Y
 
 **Q: What's the difference between --force and --update?**  
 A: 
-- `--force`: Overwrites files immediately (no Git checks, no auto-backup)
-- `--update`: Checks Git status, prompts for confirmation, creates backup, then overwrites
+- `--force`: Overwrites template-managed files immediately
+- `--update`: Checks Git status, prompts for confirmation, creates backup, preserves project forks, and regenerates derived runtime
 
 **Q: How do I clean up old backups?**  
 A: Manually delete backup directories:
@@ -528,9 +565,10 @@ To add additional MCP servers (e.g., Brave Search, Filesystem):
 
 After bootstrap completes:
 
-1. **VS Code**: Restart VS Code, MCP tools should appear in Copilot Chat
-2. **CLI**: Run `copilot` and use `/mcp show` to verify servers are loaded
-3. Check logs if servers fail to start (typically missing Node.js/npx)
+1. **Codex / Claude**: Start a new session so generated skills and custom agents are reloaded
+2. **Codex CLI**: Run `/skills` or invoke a skill explicitly with `$skill-name`
+3. **VS Code**: Restart VS Code if you rely on Copilot prompt / MCP integration
+4. Check logs if MCP servers fail to start (typically missing Node.js/npx)
 
 ### Troubleshooting MCP
 

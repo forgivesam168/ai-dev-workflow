@@ -45,6 +45,7 @@ Thumbs.db
 # Backup files
 *.backup-*
 .github.backup-*
+.ai-workflow-portable.backup-*
 
 # Logs
 *.log
@@ -53,3 +54,11 @@ Thumbs.db
 bootstrap.ps1
 bootstrap.py
 bootstrap.sh
+
+# Template-repo local runtime (generated for Codex / Claude / Antigravity use only)
+.agents/
+.agent/
+.claude/
+.codex/
+CLAUDE.md
+GEMINI.md

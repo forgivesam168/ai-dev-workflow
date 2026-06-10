@@ -1,6 +1,6 @@
 # AI Development Workflow Template
 
-This repository provides a reusable AI development workflow for GitHub Copilot CLI and VS Code, suitable for any software domain (financial, HR, legal, compliance, audit, small tools, etc.).
+This repository provides a reusable AI development workflow template that can be consumed from GitHub Copilot, OpenAI Codex, Anthropic Claude Code, and Google Antigravity, suitable for any software domain (financial, HR, legal, compliance, audit, small tools, etc.).
 
 ## What You Get
 
@@ -11,13 +11,34 @@ This repository provides a reusable AI development workflow for GitHub Copilot C
 - Bootstrap installer for deploying to any project
 - **Repo Memory** for persistent project context across sessions (opt-in)
 
+## Multi-CLI Runtime
+
+Bootstrap now installs a portable runtime in addition to the legacy `.github/**` compatibility layer:
+
+- `skills/` becomes the shared skill source of truth
+- `.agents/skills/`, `.claude/skills/`, and `.agent/skills/` point to that shared skill library
+- `agents/` remains the canonical persona source
+- `.codex/agents/` and `.claude/agents/` are generated from `agents/*.agent.md`
+- `AGENTS.md` is the shared repo guidance source; `CLAUDE.md` and `GEMINI.md` are thin wrappers
+
+For existing projects, run the updater once and commit the newly added managed paths:
+`skills/`, `agents/`, `.agents/`, `.agent/`, `.claude/`, `.codex/`, `CLAUDE.md`, `GEMINI.md`, and `.ai-workflow-install.json`.
+Existing project `AGENTS.md` files are preserved and may need a manual merge if you want the new template wording.
+
+Ownership model in adopter repos:
+
+- `skills/` and `agents/` are the template-managed baseline. Customize them here and commit the changes.
+- `.github/skills/`, `.github/agents/`, `.codex/agents/`, `.claude/agents/`, and the skill mounts are derived runtime. Bootstrap regenerates them from the top-level sources.
+- `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` are project-owned. Bootstrap creates them once and then preserves local edits.
+- `bootstrap --update` refreshes template-managed files only when they still match the last managed version recorded in `.ai-workflow-install.json`. Use `--force` only when you intentionally want to overwrite a forked file with the template version.
+
 ## Getting Started
 
 Navigate to your target project directory and run:
 
 ```powershell
 # Download and run (auto-fetches template from GitHub)
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
 Remove-Item bootstrap.ps1
 ```
@@ -25,10 +46,13 @@ Remove-Item bootstrap.ps1
 To update an existing project to the latest template:
 
 ```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Update
 Remove-Item bootstrap.ps1
 ```
+
+After updating, start a new Codex / Claude session so newly generated skills and custom agents are reloaded.
+In Codex CLI, use `/skills` to inspect installed skills and `$skill-name` for explicit invocation.
 
 See [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) for all parameters and advanced options.
 
@@ -39,8 +63,10 @@ See [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) for all parameters and advanced o
 - `instructions/` - Language and domain rules
 - `prompts/` - Slash commands (10 prompts)
 - `skills/` - Skills library (35 skills)
-- `bootstrap.ps1` - Deployment & update installer
-- `tools/` - Sync scripts
+- `.codex/agents/` - Generated Codex custom agents in adopter repos
+- `.claude/agents/` - Generated Claude custom agents in adopter repos
+- `scripts/bootstrap.ps1` - Single supported public install/update entry point
+- `tools/` - Maintainer-only repo utilities (`sync-dotgithub`, `audit-catalog`)
 
 ## Agents
 
@@ -89,11 +115,11 @@ Nine specialized agents cover the full development lifecycle. Each agent has a d
 | 5 | `/code-review` | Code Review + Security Review (parallel) |
 | 6 | `/archive` | Finalize and document |
 
-> **Copilot CLI users**: The above are VS Code prompt shortcuts (`.github/prompts/`).
+> **Codex / Claude / Antigravity CLI users**: The above are VS Code prompt shortcuts (`.github/prompts/`).
 > In CLI, use natural language instead — e.g., "review my code", "create an implementation plan".
 > Note: CLI has its own built-in `/plan` (Plan Mode) and `/review` (code review agent), which are
 > different from these workflow prompts.
-> Brainstorm starts with discovery questions by default; if the skill does not auto-load, run `/brainstorming` manually.
+> Brainstorm starts with discovery questions by default; if the skill does not auto-load, use the tool-native explicit invocation (`$brainstorming` in Codex CLI, `/brainstorming` in Copilot / VS Code).
 
 ### Workflow Orchestrator
 
@@ -140,7 +166,7 @@ Most of this behavior is now always-on through the constitution and core agents.
 
 - Keep instructions in Traditional Chinese for explanations as defined in the constitution.
 - Update the skill set per your tech stack and product needs.
-- Run `pwsh -File .\tools\sync-dotgithub.ps1` after editing instructions.
+- Template maintainers only: run `pwsh -File .\tools\sync-dotgithub.ps1` after editing top-level source files that must stay mirrored under this repo's `.github/**`.
 
 See `WORKFLOW.md` for detailed workflow documentation.
 
@@ -167,7 +193,7 @@ Repo Memory lets the AI retain project context across sessions — no re-explain
 
 **Enable it** (add `-EnableMemory` flag):
 ```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/bootstrap.ps1" -OutFile "bootstrap.ps1"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.ps1" -OutFile "bootstrap.ps1"
 pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -EnableMemory
 Remove-Item bootstrap.ps1
 ```
@@ -190,7 +216,7 @@ Remove-Item bootstrap.ps1
 
 | Step | Document | Purpose |
 |------|----------|---------|
-| 1 | [ONBOARDING.md](./ONBOARDING.md) | Environment checklist — Copilot subscription, CLI install, execution policy |
+| 1 | [ONBOARDING.md](./ONBOARDING.md) | Environment checklist — Codex / Claude / Copilot tooling, CLI install, execution policy |
 | 2 | [INSTALL.md](./INSTALL.md) | Detailed installation & troubleshooting guide |
 | 3 | [QUICKSTART.md](./QUICKSTART.md) | **5-minute quick start** — 6-stage workflow + CLI flow demo + skills overview |
 | 4 | [WORKFLOW.md](./WORKFLOW.md) | **Full workflow reference** — paths, skills mapping, decision rules, memory tips |

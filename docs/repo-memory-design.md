@@ -93,11 +93,11 @@ The `.ai-workflow-memory/` directory is **NOT created by default** when the temp
 
 ### Activation Methods
 
-1. **Via install-apply flag** (future implementation):
+1. **Via bootstrap flag**:
    ```powershell
-   pwsh -File .\Init-Project.ps1 --enable-memory
+   pwsh -File .\scripts\bootstrap.ps1 -EnableMemory
    ```
-   Creates the `.ai-workflow-memory/` skeleton with placeholder files.
+   Creates the `.ai-workflow-memory/` skeleton with placeholder files. In an existing project, re-running bootstrap is safe; unchanged managed files are skipped.
 
 2. **Manual creation**:
    ```powershell
@@ -135,7 +135,7 @@ If session journals are not intended to be committed (e.g., in private or epheme
 ## Lifecycle Summary
 
 ```
-install-apply --enable-memory
+bootstrap --enable-memory
     → Creates .ai-workflow-memory/ skeleton (PROJECT_CONTEXT.md, CURRENT_STATE.md, session-journal/)
 
 Session begins

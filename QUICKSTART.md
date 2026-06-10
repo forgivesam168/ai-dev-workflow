@@ -4,14 +4,15 @@
 
 ### Step 1: 選擇你的環境
 
-- **Copilot CLI**: 終端機使用者 → 使用自然語言觸發
-- **VS Code**: 編輯器內使用者 → 可用斜線指令快捷
+- **Codex CLI**: 終端機主力使用者 → 使用自然語言、`/skills`、`$skill-name`
+- **Claude Code / Antigravity**: 終端機或 IDE 使用者 → 使用自然語言 + 共享 `skills/`
+- **VS Code Copilot**: 編輯器內使用者 → 可用 workflow prompt 斜線指令快捷
 
 ### Step 2: 開始一個新功能
 
 **CLI**:
 ```bash
-copilot
+codex
 > 我要開始一個新功能的 brainstorming
 ```
 
@@ -90,7 +91,9 @@ copilot
 | Review | `code-security-review`, `security-review` | 程式碼品質 + 安全審核 |
 | Archive | `work-archiving`, `git-commit` | 歸檔紀錄 + Conventional Commit |
 
-> 💡 **Skill 沒自動載入？** 可在 CLI 中直接輸入 `/skill-name` 手動觸發，例如 `/brainstorming`、`/implementation-planning`。
+> 💡 **Skill 沒自動載入？**
+> - Codex CLI：用 `$brainstorming`、`$implementation-planning`，或先輸入 `/skills`
+> - VS Code / Copilot：可用 `/brainstorming`、`/implementation-planning`
 > 每個 Agent 的 Skill Integration 區塊也會提示對應的 skill 指令。
 > Brainstorm 預設會先問至少五題再收斂方案；只有在你明確表示可直接假設時，才會改走 assumption-driven 模式。
 
@@ -259,13 +262,12 @@ CLI（自然語言）:
 
 VS Code（斜線指令快捷）:
 ```bash
-/skills list
-/skills info brainstorming
+/skills
 ```
 
 ### 技巧 2: 同步最新設定
 ```powershell
-# 將 source 同步到 .github/
+# 僅限 template 維護者：將 source 同步到本 repo 的 .github/ mirror
 pwsh -File .\tools\sync-dotgithub.ps1
 ```
 
@@ -282,8 +284,11 @@ pwsh -File .\tools\sync-dotgithub.ps1
 # 新專案初始化時啟用
 pwsh -File .\scripts\bootstrap.ps1 -EnableMemory
 
-# 現有專案（只建立記憶骨架，不重新部署元件）
-pwsh -File .\tools\install-apply.ps1 -EnableMemory
+# 現有專案也直接用 bootstrap
+pwsh -File .\scripts\bootstrap.ps1 -EnableMemory
+
+# 若同時要更新到最新 workflow baseline
+pwsh -File .\scripts\bootstrap.ps1 -Update -EnableMemory
 ```
 
 啟用後，`.ai-workflow-memory/` 目錄會建立 `PROJECT_CONTEXT.md`（技術棧/架構摘要）與 `CURRENT_STATE.md`（當前工作狀態）。AI 會在開始任何分析前自動讀取這些檔案，並在 session 結束時更新。
@@ -319,8 +324,8 @@ pwsh -File .\tools\install-apply.ps1 -EnableMemory
 ## 🎉 開始使用
 
 1. **確保環境設置完成**:
-   - Copilot CLI 已安裝並登入
-   - 或 VS Code 已安裝 GitHub Copilot 擴充功能
+   - Codex CLI / Claude Code / Antigravity / Copilot 其中至少一套已安裝
+   - 若使用 VS Code，已安裝對應擴充功能
 
 2. **同步最新設定**:
    ```powershell
@@ -329,7 +334,7 @@ pwsh -File .\tools\install-apply.ps1 -EnableMemory
 
 3. **啟動 CLI（如使用 CLI）**:
    ```bash
-   copilot
+   codex
    ```
 
 4. **開始你的第一個工作流程**:

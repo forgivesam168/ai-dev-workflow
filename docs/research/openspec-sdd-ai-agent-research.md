@@ -1,5 +1,7 @@
 # OpenSpec / Superpowers / SDD + AI Agent 協作專案研究：`ai-dev-workflow` 可強化方向
 
+> Historical note: this research document predates the current bootstrap-only install surface. References below to `install-plan` / `install-apply` describe an older design direction and are not the active entry point of this repo.
+
 ## Executive Summary
 
 你的 `ai-dev-workflow` 已經有很強的骨架：**可稽核的 change package、六階段流程、pointer-style 載入、source-of-truth 與 `.github/**` runtime 同步規則**，這些都是很多同類專案沒有做好的地方。[^1][^2][^3][^5]

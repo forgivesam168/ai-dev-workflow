@@ -114,15 +114,29 @@ pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1
 ```
 
 **What Gets Installed:**
-- `.github/` directory with agents, instructions, prompts, skills
-- `.github/mcp.json` for MCP server configuration
+- Legacy `.github/` compatibility layer for Copilot / VS Code workflows
+- Shared `skills/` library at the project root
+- Shared `agents/` persona source at the project root
+- `.agents/skills/`, `.claude/skills/`, `.agent/skills/` mounts that point to the shared skill library
+- Generated `.codex/agents/` and `.claude/agents/` custom agents
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` project guidance files
+- `.ai-workflow-install.json` ownership/update manifest
 - `.gitattributes` for cross-platform line ending normalization
 - Git repository initialization (if not already present)
+
+**Session reload note:**
+- After first install or update, start a new Codex / Claude session so the new skills and generated custom agents are loaded.
+- In Codex CLI, use `/skills` to inspect installed skills and `$skill-name` for explicit invocation.
 
 **What Gets Preserved:**
 - `.github/workflows/` (your CI/CD pipelines)
 - `.github/CODEOWNERS` (your code owners)
 - `.github/dependabot.yml` (your dependency config)
+
+**Ownership rules after installation:**
+- Edit and commit workflow customizations in `skills/` and `agents/`.
+- Treat `.github/skills/`, `.github/agents/`, `.codex/agents/`, `.claude/agents/`, and the skill mounts as derived runtime.
+- Treat `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` as project-owned guidance files.
 
 ---
 
@@ -150,8 +164,8 @@ cd my-new-project
 rm -rf .git
 git init -b main
 
-# Deploy workflow assets (bootstrap auto-downloads latest version from GitHub)
-pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1
+# Deploy workflow assets from the cloned template
+pwsh -ExecutionPolicy Bypass -File .\scripts\bootstrap.ps1 -TargetPath .
 
 # Commit initial setup
 git add .
@@ -182,33 +196,44 @@ cat BOOTSTRAP-GUIDE.md # Bootstrap usage guide
 ### Step 1: Check File Structure
 
 ```bash
-# Verify .github directory
-ls .github/agents/      # Should have 5 agent files
-ls .github/skills/      # Should have 28 skill directories
-ls .github/instructions/ # Should have instruction files
-ls .github/prompts/     # Should have 10 prompt files
+# Verify legacy compatibility layer
+ls .github/agents/
+ls .github/skills/
+ls .github/instructions/
+ls .github/prompts/
+
+# Verify portable runtime
+ls skills/
+ls agents/
+ls .agents/skills/
+ls .claude/skills/
+ls .codex/agents/
+cat AGENTS.md
+cat CLAUDE.md
+cat GEMINI.md
 
 # Verify root files
-cat .gitattributes      # Line ending normalization config
-cat .github/mcp.json    # MCP server configuration
+cat .gitattributes
+cat .github/mcp.json
 ```
 
 ### Step 2: Verify Agent Files
 
 ```bash
-# Should exist:
+# Legacy compatibility examples:
 # .github/agents/architect.agent.md
 # .github/agents/coder.agent.md
-# .github/agents/code-reviewer.agent.md
-# .github/agents/plan.agent.md
-# .github/agents/spec.agent.md
+#
+# Portable runtime examples:
+# .codex/agents/coder.toml
+# .claude/agents/coder.md
 ```
 
 ### Step 3: Initial Commit
 
 ```bash
 # Stage all workflow files
-git add .github/ .gitattributes
+git add .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json .gitattributes
 
 # Commit
 git commit -m "chore: initialize AI development workflow
@@ -429,10 +454,10 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/forgivesam168/ai-dev-w
 pwsh -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Update
 
 # Review changes
-git diff .github/
+git diff .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 
 # Commit if satisfied
-git add .github/
+git add .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 git commit -m "chore: update AI workflow to latest version"
 git push
 
@@ -451,8 +476,8 @@ curl -O https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scr
 python3 bootstrap.py --update
 
 # Review and commit
-git diff .github/
-git add .github/
+git diff .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
+git add .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 git commit -m "chore: update AI workflow to latest version"
 git push
 
@@ -469,10 +494,13 @@ pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1 -Update
 
 **Update mode features:**
 - Automatically creates backup (`.github.backup-YYYYMMDD-HHMMSS/`)
+- Creates a portable runtime backup when shared paths already exist (`.ai-workflow-portable.backup-YYYYMMDD-HHMMSS/`)
 - Checks for uncommitted changes before updating
 - Prompts for confirmation if changes detected
-- Force overwrites conflicting files
+- Preserves project-forked template-managed files by default
+- Refreshes derived runtime from `skills/` and `agents/`
 - Script auto-detects Remote Mode when run from project root (no local clone needed)
+- Existing `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` are preserved; merge manually if you want new template wording
 
 ---
 
@@ -595,14 +623,19 @@ git checkout HEAD -- .github/workflows/
 **Solution:**
 ```bash
 # Option 1: Review conflicts and decide manually
-git diff .github/
+git diff .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLAUDE.md GEMINI.md .ai-workflow-install.json
 
-# Option 2: Force overwrite (creates backup first)
-pwsh bootstrap.ps1 --force --backup
+# Option 2: Force overwrite template-managed files
+pwsh bootstrap.ps1 -Force -Backup
 
-# Option 3: Update mode (checks Git status first)
-pwsh bootstrap.ps1 --update
+# Option 3: Update mode (preserves project forks, refreshes derived runtime)
+pwsh bootstrap.ps1 -Update
 ```
+
+**Rule of thumb:**
+- If you customized a shared workflow capability, edit `skills/` or `agents/`.
+- Do not hand-edit `.github/skills/`, `.github/agents/`, `.codex/agents/`, or `.claude/agents/`; bootstrap will regenerate them.
+- Commit `.ai-workflow-install.json` so the next `--update` knows which files are still safe to refresh automatically.
 
 ---
 
@@ -611,8 +644,8 @@ pwsh bootstrap.ps1 --update
 After successful installation:
 
 1. **Review the Workflow**: Read `WORKFLOW.md` for detailed workflow documentation
-2. **Explore Skills**: Browse `.github/skills/` to understand available capabilities
-3. **Customize Instructions**: Edit `.github/instructions/` for your tech stack
+2. **Explore Skills**: Browse `skills/` (source of truth) to understand available capabilities
+3. **Customize Instructions**: Edit `.github/instructions/` plus `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` for your team and toolchain
 4. **Try the Agents**: Use `/workflow` to start your first feature
 5. **Share with Team**: Send this guide to new team members
 

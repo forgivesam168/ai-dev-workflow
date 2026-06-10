@@ -266,8 +266,11 @@ gh copilot memory clear
 # 新專案初始化時啟用
 pwsh -File .\scripts\bootstrap.ps1 -EnableMemory
 
-# 現有專案（只建立記憶骨架，不重新部署元件）
-pwsh -File .\tools\install-apply.ps1 -EnableMemory
+# 現有專案也直接用 bootstrap
+pwsh -File .\scripts\bootstrap.ps1 -EnableMemory
+
+# 若同時要更新到最新 workflow baseline
+pwsh -File .\scripts\bootstrap.ps1 -Update -EnableMemory
 ```
 
 ### 建立的目錄結構
