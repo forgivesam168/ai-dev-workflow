@@ -1,15 +1,17 @@
 # Current State
 
-## Status as of 2026-05-05
+## Status as of 2026-07-11
 
-- **Active work**: Shared guardrails integration for workflow quality stabilization
-- **Stage**: Implementation complete for core integration（constitution + agents + guardrail skill + rubric + docs + sync）
-- **Last action**: 新增 `execution-guardrails` skill，將 shared guardrails 置入 constitution / core agents，擴充 `agentic-eval` rubrics，並同步 `.github/**`
-- **Next step**: 觀察 adopters 實際使用回饋，再決定是否獨立推出 Lite / Guardrail-only install mode
-- **Blockers**: 無
+- **Active work**: Trustworthy Baseline Recovery (`changes/2026-07-11-trustworthy-baseline-recovery/`)
+- **Stage**: P0 implementation and Windows-local baseline green; cross-platform CI observation pending
+- **Last action**: 新增唯讀 sync checker、35/34/1 catalog contract、relative-path regression、pinned test gate 與 Windows/Ubuntu CI matrix
+- **Next step**: 在另行核准 commit/push 後觀察 Windows/Ubuntu GitHub Actions matrix；未實跑前不得宣稱 cross-platform baseline green
+- **Blockers**: 本機沒有可用 Ubuntu runtime（無 WSL distro；Docker daemon unavailable），且本輪禁止 push，因此 Ubuntu matrix 尚未實際執行
 - **Latest progress**:
-  - Shared guardrails architecture documented in `AGENTS.md`
-  - New skill added: `skills/execution-guardrails/`
-  - Guardrail-aware scoring added to `skills/agentic-eval/references/stage-rubrics.md`
-  - User docs updated: `README.md`, `README.zh-TW.md`, `QUICKSTART.md`, `WORKFLOW.md`
-  - Sync + catalog audit ✅ clean（9 agents / 10 prompts / 32 skills）
+  - `tools/check-sync.ps1` 僅檢查 generator-managed `.github` destinations，並以 isolated fixtures 覆蓋 clean / drift / unmanaged paths
+  - Catalog contract 固定為 35 total / 34 adopter / 1 maintainer-only `gate-check`
+  - Python / PowerShell relative-path normalization 保留 dot-directory 與 `../` identity
+  - Windows-local baseline green ✅（Python 59 / Pester 39 / catalog 9 agents, 10 prompts, 35 total skills = 34 adopter + 1 maintainer-only）
+  - Read-only checker ✅ clean，執行前後 `git status --porcelain=v1` 完全相同
+  - Windows/Ubuntu CI matrix configured，但 Ubuntu 尚未 observed
+  - Cross-platform baseline 尚不能宣稱 green

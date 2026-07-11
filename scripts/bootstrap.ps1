@@ -914,7 +914,13 @@ function Normalize-RelativePath {
         [string]$Path
     )
 
-    return ($Path -replace '\\', '/').TrimStart('.', '/')
+    # Representation normalization only; this is not a path traversal sanitizer.
+    $normalized = $Path -replace '\\', '/'
+    while ($normalized.StartsWith('./', [StringComparison]::Ordinal)) {
+        $normalized = $normalized.Substring(2)
+    }
+
+    return $normalized
 }
 
 function Test-ShouldExcludeRelative {

@@ -239,7 +239,7 @@ git add .github/ skills/ agents/ .agents/ .agent/ .claude/ .codex/ AGENTS.md CLA
 git commit -m "chore: initialize AI development workflow
 
 - Add agents (architect, coder, code-reviewer, plan, spec)
-- Add 32 skills for specialized capabilities
+- Add 34 adopter skills for specialized capabilities (`gate-check` remains maintainer-only and is not deployed)
 - Add instructions for coding standards
 - Add MCP configuration (context7, memory)
 - Add .gitattributes for line ending normalization"

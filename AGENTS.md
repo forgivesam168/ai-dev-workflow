@@ -6,7 +6,7 @@ It contains:
 - Agent personas (`agents/*.agent.md`) — 9 agents
 - Instruction files (`instructions/*.instructions.md`)
 - Prompt library (`prompts/*.prompt.md`) — 10 prompts
-- Skills library (`skills/**/SKILL.md`) — 35 skills
+- Skills library (`skills/**/SKILL.md`) — 35 total skills: 34 adopter skills + 1 maintainer-only `gate-check`
 - Bootstrap installer (`bootstrap.ps1`) to deploy these assets into any project.
 
 ## Cross-CLI Constitutional Baseline
@@ -181,7 +181,7 @@ Operational rule:
 | `/readme` | Tool | Create README |
 | `/learn` | Tool | Learn and improve AI behavior |
 
-## Skills (35)
+## Skills (35 total: 34 adopter + 1 maintainer-only)
 
 Skills provide methodology and toolkits that are automatically loaded into the current agent's context.
 
@@ -329,6 +329,7 @@ run the sync script to update `.github/**`:
 
 ```powershell
 pwsh -File .\tools\sync-dotgithub.ps1
+pwsh -File .\tools\check-sync.ps1
 ```
 
 ## Usage in other repositories

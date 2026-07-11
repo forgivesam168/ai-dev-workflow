@@ -1,7 +1,42 @@
 # Bootstrap.Tests.ps1 - Pester 測試套件
 # 測試 Bootstrap.ps1 的所有功能
 
-. "$PSScriptRoot\bootstrap.ps1"
+BeforeAll {
+    . "$PSScriptRoot\bootstrap.ps1"
+}
+
+Describe "Normalize-RelativePath" {
+    It "preserves dot-directory and parent-segment identity" {
+        Normalize-RelativePath '.github/x' | Should -Be '.github/x'
+        Normalize-RelativePath './.github/x' | Should -Be '.github/x'
+        Normalize-RelativePath '.agents/skills/x' | Should -Be '.agents/skills/x'
+        Normalize-RelativePath './skills/x' | Should -Be 'skills/x'
+        Normalize-RelativePath '../outside' | Should -Be '../outside'
+    }
+}
+
+Describe "Install-PortableRuntime maintainer-only exclusions" {
+    It "does not deploy gate-check to an adopter target" {
+        $sourceRoot = Join-Path $TestDrive 'template'
+        $targetRoot = Join-Path $TestDrive 'target'
+        foreach ($directory in @('skills/demo-skill', 'skills/gate-check', 'agents')) {
+            New-Item -ItemType Directory -Path (Join-Path $sourceRoot $directory) -Force | Out-Null
+        }
+        New-Item -ItemType Directory -Path $targetRoot | Out-Null
+        Set-Content (Join-Path $sourceRoot 'skills/demo-skill/SKILL.md') 'demo'
+        Set-Content (Join-Path $sourceRoot 'skills/gate-check/SKILL.md') 'maintainer'
+        Set-Content (Join-Path $sourceRoot 'agents/demo.agent.md') "---`nname: demo`ndescription: demo`n---`n`n# Demo agent`n"
+
+        $manifest = @{}
+        $null = Install-PortableRuntime -SourceRoot $sourceRoot -TargetPath $targetRoot -ManifestEntries $manifest
+
+        Test-Path (Join-Path $targetRoot 'skills/demo-skill/SKILL.md') | Should -BeTrue
+        Test-Path (Join-Path $targetRoot 'skills/gate-check') | Should -BeFalse
+        Test-Path (Join-Path $targetRoot '.github/skills/gate-check') | Should -BeFalse
+        $manifest.ContainsKey('.github/skills/demo-skill/SKILL.md') | Should -BeTrue
+        $manifest.ContainsKey('github/skills/demo-skill/SKILL.md') | Should -BeFalse
+    }
+}
 
 Describe "Test-GitInstalled" {
     Context "當 Git 已安裝且版本符合要求" {

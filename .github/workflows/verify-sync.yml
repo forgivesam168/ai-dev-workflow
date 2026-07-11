@@ -6,10 +6,37 @@ on:
   pull_request:
 
 jobs:
-  sync_check:
-    runs-on: ubuntu-latest
+  baseline:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Sync check (.github mirror)
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Prepare pinned test environment
         shell: pwsh
-        run: pwsh -File ./tools/check-sync.ps1
+        run: |
+          python -m pip install -r requirements-test.txt
+          $moduleRoot = Join-Path $env:RUNNER_TEMP 'pester-modules'
+          New-Item -ItemType Directory -Path $moduleRoot -Force | Out-Null
+          Save-Module -Name Pester -RequiredVersion 5.6.1 -Path $moduleRoot -Repository PSGallery -Force
+          "PSModulePath=$moduleRoot$([IO.Path]::PathSeparator)$env:PSModulePath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Run baseline gate and prove worktree invariance
+        shell: pwsh
+        run: |
+          $before = @(git status --porcelain=v1)
+          & pwsh -NoProfile -File ./skills/gate-check/scripts/run-gate-check.ps1
+          $gateExit = $LASTEXITCODE
+          $after = @(git status --porcelain=v1)
+          if (-not [System.Linq.Enumerable]::SequenceEqual([string[]]$before, [string[]]$after)) {
+            Write-Error 'Worktree changed while running the baseline gate.'
+            exit 1
+          }
+          exit $gateExit

@@ -62,11 +62,11 @@ See [BOOTSTRAP-GUIDE.md](./BOOTSTRAP-GUIDE.md) for all parameters and advanced o
 - `agents/` - Persona definitions (9 agents)
 - `instructions/` - Language and domain rules
 - `prompts/` - Slash commands (10 prompts)
-- `skills/` - Skills library (35 skills)
+- `skills/` - Skills library (35 total: 34 deployed to adopter projects + maintainer-only `gate-check`)
 - `.codex/agents/` - Generated Codex custom agents in adopter repos
 - `.claude/agents/` - Generated Claude custom agents in adopter repos
 - `scripts/bootstrap.ps1` - Single supported public install/update entry point
-- `tools/` - Maintainer-only repo utilities (`sync-dotgithub`, `audit-catalog`)
+- `tools/` - Maintainer-only repo utilities (`sync-dotgithub`, read-only `check-sync`, `audit-catalog`)
 
 ## Agents
 
@@ -170,7 +170,7 @@ Most of this behavior is now always-on through the constitution and core agents.
 
 See `WORKFLOW.md` for detailed workflow documentation.
 
-## Skills (35) — What's New
+## Skills (35 total; 34 adopter + 1 maintainer-only) — What's New
 
 Skills are the methodology layer loaded automatically by agents. Recent additions expand the toolkit significantly:
 
@@ -185,7 +185,7 @@ Skills are the methodology layer loaded automatically by agents. Recent addition
 | **Microsoft & GitHub** (5) | `microsoft-docs`, `microsoft-code-reference`, `copilot-sdk`, `gh-cli`, `github-issues` | — |
 | **Content & Viz** (4) | `excalidraw-diagram-generator`, `markdown-to-html`, `web-design-reviewer`, `chrome-devtools` | — |
 
-✨ = newly added in this release. Full descriptions in `AGENTS.md` → Skills (35).
+✨ = newly added in this release. Full descriptions in `AGENTS.md` → Skills (35 total: 34 adopter + 1 maintainer-only).
 
 ## Repo Memory (Opt-In)
 

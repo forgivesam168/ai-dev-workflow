@@ -1,4 +1,7 @@
 #Requires -Version 7
+param(
+    [string]$RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path
+)
 <#
 .SYNOPSIS
     Audits the AI workflow template catalog for count and contract parity.
@@ -20,13 +23,11 @@ $ErrorActionPreference = 'Stop'
 
 # ─── Expected count constants ──────────────────────────────────────────────
 # Update these constants in the same commit that adds/removes files.
-# Phase 3 update: 28 → 30  (explore + gate-check added)
-# Phase 5 update: 30 → 31  (debug added)
-# Phase 7 update: 31 → 32  (execution-guardrails added)
-# Phase 6 update:  6 →  9  (pm + frontend-designer + dba added)
-$ExpectedAgentCount  = 9
-$ExpectedPromptCount = 10
-$ExpectedSkillCount  = 32   # <-- update here when adding new skills
+$ExpectedAgentCount       = 9
+$ExpectedPromptCount      = 10
+$ExpectedTotalSkillCount  = 35
+$MaintainerOnlySkills     = @('gate-check')
+$ExpectedAdopterSkillCount = $ExpectedTotalSkillCount - $MaintainerOnlySkills.Count
 
 # ─── Required change-package files (canonical source: changes.instructions.md)
 $RequiredChangeFiles = @(
@@ -42,7 +43,7 @@ $RequiredChangeFiles = @(
 
 # ─── Helpers ───────────────────────────────────────────────────────────────
 $results = [System.Collections.Generic.List[PSCustomObject]]::new()
-$rootDir = Split-Path $PSScriptRoot -Parent
+$rootDir = (Resolve-Path $RepoRoot).Path
 
 function Add-Result {
     param([string]$Category, [object]$Expected, [object]$Actual, [string]$Status, [string]$Note = '')
@@ -58,11 +59,45 @@ function Add-Result {
 # ─── Check 1: Count parity ─────────────────────────────────────────────────
 $agentActual  = (Get-ChildItem (Join-Path $rootDir 'agents')  -Filter '*.agent.md').Count
 $promptActual = (Get-ChildItem (Join-Path $rootDir 'prompts') -Filter '*.prompt.md').Count
-$skillActual  = (Get-ChildItem (Join-Path $rootDir 'skills')  -Directory).Count
+$skillNames = @(Get-ChildItem (Join-Path $rootDir 'skills') -Directory |
+    Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') } |
+    Select-Object -ExpandProperty Name)
+$totalSkillActual = $skillNames.Count
+$maintainerSkillActual = @($skillNames | Where-Object { $_ -in $MaintainerOnlySkills }).Count
+$adopterSkillNames = @($skillNames | Where-Object { $_ -notin $MaintainerOnlySkills })
+$adopterSkillActual = $adopterSkillNames.Count
+
+$mirrorSkillsPath = Join-Path $rootDir '.github\skills'
+$mirrorSkillNames = if (Test-Path $mirrorSkillsPath) {
+    @(Get-ChildItem $mirrorSkillsPath -Directory |
+        Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') } |
+        Select-Object -ExpandProperty Name)
+} else {
+    @()
+}
+$unexpectedMaintainerDeployments = @($mirrorSkillNames | Where-Object { $_ -in $MaintainerOnlySkills })
+$missingAdopterSkills = @($adopterSkillNames | Where-Object { $_ -notin $mirrorSkillNames })
+$extraMirrorSkills = @($mirrorSkillNames | Where-Object { $_ -notin $adopterSkillNames })
 
 Add-Result 'Agent files'   $ExpectedAgentCount  $agentActual  $(if ($agentActual  -eq $ExpectedAgentCount)  { 'PASS' } else { 'FAIL' })
 Add-Result 'Prompt files'  $ExpectedPromptCount $promptActual $(if ($promptActual -eq $ExpectedPromptCount) { 'PASS' } else { 'FAIL' })
-Add-Result 'Skill dirs'    $ExpectedSkillCount  $skillActual  $(if ($skillActual  -eq $ExpectedSkillCount)  { 'PASS' } else { 'FAIL' })
+Add-Result 'Skills total' $ExpectedTotalSkillCount $totalSkillActual $(if ($totalSkillActual -eq $ExpectedTotalSkillCount) { 'PASS' } else { 'FAIL' }) `
+    $(if ($totalSkillActual -ne $ExpectedTotalSkillCount) { 'Catalog contract changed; update the reviewed 35 total / 34 adopter / 1 maintainer-only contract.' } else { '' })
+Add-Result 'Skills adopter' $ExpectedAdopterSkillCount $adopterSkillActual $(if ($adopterSkillActual -eq $ExpectedAdopterSkillCount) { 'PASS' } else { 'FAIL' })
+Add-Result 'Skills maintainer-only' $MaintainerOnlySkills.Count $maintainerSkillActual $(if ($maintainerSkillActual -eq $MaintainerOnlySkills.Count) { 'PASS' } else { 'FAIL' }) `
+    "Expected: $($MaintainerOnlySkills -join ', ')"
+
+$deploymentStatus = if (
+    $unexpectedMaintainerDeployments.Count -eq 0 -and
+    $missingAdopterSkills.Count -eq 0 -and
+    $extraMirrorSkills.Count -eq 0
+) { 'PASS' } else { 'FAIL' }
+$deploymentNote = @(
+    if ($unexpectedMaintainerDeployments.Count) { "Maintainer-only deployed: $($unexpectedMaintainerDeployments -join ', ')" }
+    if ($missingAdopterSkills.Count) { "Missing adopter skills: $($missingAdopterSkills -join ', ')" }
+    if ($extraMirrorSkills.Count) { "Extra mirror skills: $($extraMirrorSkills -join ', ')" }
+) -join '. '
+Add-Result 'Skill deployment contract' '34 adopter; gate-check excluded' $mirrorSkillNames.Count $deploymentStatus $deploymentNote
 
 # ─── Check 2: Change-package contract parity ──────────────────────────────
 $workflowPath     = Join-Path $rootDir 'WORKFLOW.md'
@@ -95,6 +130,8 @@ Write-Host ''
 Write-Host '╔══════════════════════════════════════════════════════════════╗'
 Write-Host '║              AI Workflow Template — Catalog Audit            ║'
 Write-Host '╚══════════════════════════════════════════════════════════════╝'
+Write-Host ''
+Write-Host "Skills summary: total=$totalSkillActual adopter=$adopterSkillActual maintainer-only=$maintainerSkillActual [$($MaintainerOnlySkills -join ',')]"
 Write-Host ''
 
 $results | Format-Table -AutoSize @(
