@@ -11,6 +11,19 @@ def test_extract_version_returns_present_match() -> None:
     assert bootstrap.extract_version(text, pattern) == "2.43.0"
 
 
+def test_normalize_relative_path_preserves_path_identity() -> None:
+    cases = {
+        ".github/x": ".github/x",
+        "./.github/x": ".github/x",
+        ".agents/skills/x": ".agents/skills/x",
+        "./skills/x": "skills/x",
+        "../outside": "../outside",
+    }
+
+    for raw, expected in cases.items():
+        assert bootstrap.normalize_relative_path(raw) == expected
+
+
 def test_is_version_ge_comparison() -> None:
     assert bootstrap.is_version_ge("2.49.0", "2.0.0")
     assert not bootstrap.is_version_ge("1.9.9", "2.0.0")
@@ -104,9 +117,9 @@ def test_sync_workflow_files_respects_exclusions(tmp_path: Path) -> None:
     added = set(result.files_added)
     skipped = set(result.files_skipped)
 
-    assert "README.md" in added
-    assert not any(item.startswith("workflows") for item in added)
-    assert any(item.startswith("workflows") for item in skipped)
+    assert ".github/README.md" in added
+    assert not any(item.startswith(".github/workflows") for item in added)
+    assert any(item.startswith(".github/workflows") for item in skipped)
     assert any("CODEOWNERS" in item for item in skipped)
 
 
@@ -127,7 +140,7 @@ def test_sync_workflow_files_force_overwrites(tmp_path: Path) -> None:
         manifest_entries={},
     )
 
-    assert "README.md" in result.files_updated
+    assert ".github/README.md" in result.files_updated
     assert (target_github / "README.md").read_text() == "new content"
 
 
@@ -151,8 +164,8 @@ def test_files_are_identical_detects_different_content(tmp_path: Path) -> None:
     assert not bootstrap.files_are_identical(file1, file2)
 
 
-def test_sync_detects_conflicts_without_force(tmp_path: Path) -> None:
-    """Test that sync detects conflicts when files differ and force=False."""
+def test_sync_without_force_preserves_untracked_existing_file(tmp_path: Path) -> None:
+    """Untracked legacy-compatible files are preserved when force is false."""
     source = tmp_path / ".github"
     project_root = tmp_path / "project-conflict"
     source.mkdir(parents=True)
@@ -170,9 +183,11 @@ def test_sync_detects_conflicts_without_force(tmp_path: Path) -> None:
         manifest_entries={},
     )
     
-    assert "config.yml" in result.files_conflicted
-    assert "config.yml" not in result.files_updated
-    assert "config.yml" not in result.files_added
+    assert ".github/config.yml [preserved existing]" in result.files_skipped
+    assert ".github/config.yml" not in result.files_updated
+    assert ".github/config.yml" not in result.files_added
+    assert not result.files_conflicted
+    assert (target_github / "config.yml").read_text() == "old config"
 
 
 def test_backup_directory_creates_timestamped_backup(tmp_path: Path) -> None:
@@ -340,10 +355,10 @@ def test_sync_without_force_skips_identical_files(tmp_path: Path) -> None:
         manifest_entries={},
     )
     
-    assert "same.txt" in result.files_skipped
-    assert "same.txt" not in result.files_added
-    assert "same.txt" not in result.files_updated
-    assert "same.txt" not in result.files_conflicted
+    assert ".github/same.txt" in result.files_skipped
+    assert ".github/same.txt" not in result.files_added
+    assert ".github/same.txt" not in result.files_updated
+    assert ".github/same.txt" not in result.files_conflicted
 
 
 def test_sync_with_force_overwrites_different_files(tmp_path: Path) -> None:
@@ -365,7 +380,7 @@ def test_sync_with_force_overwrites_different_files(tmp_path: Path) -> None:
         manifest_entries={},
     )
     
-    assert "config.yml" in result.files_updated
+    assert ".github/config.yml" in result.files_updated
     assert (target_github / "config.yml").read_text() == "new config v2"
 
 
@@ -385,7 +400,7 @@ def test_sync_adds_new_files(tmp_path: Path) -> None:
         manifest_entries={},
     )
     
-    assert "newfile.md" in result.files_added
+    assert ".github/newfile.md" in result.files_added
     target_file = project_root / ".github" / "newfile.md"
     assert target_file.exists()
     assert target_file.read_text() == "brand new file"
@@ -415,7 +430,7 @@ def test_sync_respects_exclusion_patterns_workflows(tmp_path: Path) -> None:
     assert not any("workflows" in a for a in result.files_added)
     
     # README should be added
-    assert "README.md" in result.files_added
+    assert ".github/README.md" in result.files_added
 
 
 def test_sync_respects_exclusion_patterns_codeowners(tmp_path: Path) -> None:
@@ -436,7 +451,7 @@ def test_sync_respects_exclusion_patterns_codeowners(tmp_path: Path) -> None:
     )
     
     assert any("CODEOWNERS" in s for s in result.files_skipped)
-    assert "other.md" in result.files_added
+    assert ".github/other.md" in result.files_added
 
 
 def test_backup_directory_custom_name(tmp_path: Path) -> None:
@@ -602,7 +617,7 @@ def test_sync_workflow_files_creates_target_if_not_exists(tmp_path: Path) -> Non
     
     assert target.exists()
     assert (target / ".github").exists()
-    assert "file.txt" in result.files_added
+    assert ".github/file.txt" in result.files_added
 
 
 def test_sync_with_backup_prints_success_message(tmp_path: Path, capsys) -> None:
@@ -666,7 +681,7 @@ def test_sync_creates_nested_directories(tmp_path: Path) -> None:
         manifest_entries={},
     )
     
-    assert "docs/guides/guide.md" in result.files_added
+    assert ".github/docs/guides/guide.md" in result.files_added
     target_file = target / ".github" / "docs" / "guides" / "guide.md"
     assert target_file.exists()
     assert target_file.read_text() == "guide content"
@@ -879,7 +894,10 @@ description: Project coder
         "---\nname: demo-skill\ndescription: project customized"
     )
     assert not (target_root / "skills" / "gate-check").exists()
+    assert not (target_root / ".github" / "skills" / "gate-check").exists()
     assert manifest_entries["skills/demo-skill/SKILL.md"]["status"] == "preserved-existing"
+    assert ".github/skills/demo-skill/SKILL.md" in manifest_entries
+    assert "github/skills/demo-skill/SKILL.md" not in manifest_entries
 
 
 def test_sync_workflow_files_update_preserves_forked_template_managed_file(

@@ -33,28 +33,30 @@ If you are using this template in your own project (via `bootstrap.ps1` or `inst
 ### Concrete Examples
 
 **GATE PASSED**
-> Source vs `.github/**` drift check: no drift. Catalog parity: 6/10/28 match. → `GATE PASSED`
+> Managed `.github` destinations: no drift. Catalog parity: 9 agents / 10 prompts / 35 total skills / 34 adopter skills / 1 maintainer-only skill. → `GATE PASSED`
 
 **GATE PASSED WITH NOTES**
-> Catalog check: 30 skills found, expected 28. New skills were added intentionally (Phase 3 delivery). Constant not yet updated.
-> → `GATE PASSED WITH NOTES` — update `$ExpectedSkillCount` in `audit-catalog.ps1`; log to `02-decision-log.md`.
+> Catalog check: 36 total skills found, expected 35. A new skill was added without updating the reviewed contract.
+> → `GATE PASSED WITH NOTES` — update the 35/34/1 catalog contract in the same reviewed change; log to `02-decision-log.md`.
 
 **GATE FAILED**
-> `sync-dotgithub.ps1` reports drift: `.github/agents/coder.agent.md` is out of date with source.
+> `check-sync.ps1` reports drift: `.github/agents/coder.agent.md` is out of date with source.
 > → `GATE FAILED` — run `pwsh -File .\tools\sync-dotgithub.ps1` and re-run gate-check.
 
 ## Minimum Check Set
 
 | Check | Required? | Command / Method |
 |-------|-----------|-----------------|
-| Source vs `.github/**` drift | **Required** | `pwsh -File .\tools\sync-dotgithub.ps1` (exit code 0 = clean) |
+| Managed source vs `.github` destinations | **Required** | `pwsh -File .\tools\check-sync.ps1` (read-only; exit code 0 = clean) |
 | Catalog count parity | **Required** | `pwsh -File .\tools\audit-catalog.ps1` (exit code 0 = clean) |
-| TypeScript / PowerShell type-check | Conditional | Run if type-checker is configured in the repo |
-| Lint | Conditional | Run if linter is configured |
-| Tests | Conditional | Run if test suite is configured |
-| Build | Conditional | Run if build step is configured |
+| Python bootstrap tests | **Required** | pytest 8.3.5 |
+| PowerShell bootstrap/tool tests | **Required** | Pester 5.6.1 |
+| Diff hygiene | **Required** | `git diff --check` |
+| Worktree invariant | **Required** | `git status --porcelain=v1` unchanged before/after |
 
-Required checks must pass for `GATE PASSED`. Conditional checks are skipped if not configured.
+The gate never installs dependencies or repairs drift. Missing pytest or Pester is reported as `ENVIRONMENT_PREREQUISITE_MISSING` and stops with a nonzero exit code. CI is responsible for preparing the pinned test environment.
+
+Every required check above must pass for `GATE PASSED`. The gate does not install missing prerequisites or repair drift.
 
 ## Boundary: gate-check vs agentic-eval
 
@@ -96,7 +98,4 @@ When the verdict is `GATE PASSED WITH NOTES`:
 
 ## Hard-Stop Enforcement
 
-Current mode: **Advisory** — gate-check reports `GATE FAILED` and stops the agent's forward progress.
-Future graduation criteria for Strict Mode (documented here, not yet enforced):
-- All required checks automated in `run-gate-check.ps1`
-- CI integration available to block PR merges on gate failure
+Execution mode: **hard-fail** — `run-gate-check.ps1` exits nonzero on any required-check failure, and maintainer CI runs the same gate. Whether a failing workflow blocks merging remains a repository branch-protection setting outside this script.

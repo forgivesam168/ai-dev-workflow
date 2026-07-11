@@ -192,7 +192,15 @@ def merge_sync_results(*results: SyncResult) -> SyncResult:
 
 
 def normalize_relative_path(path: Union[Path, str]) -> str:
-    return str(path).replace("\\", "/").lstrip("./")
+    """Normalize separators and complete leading ./ segments.
+
+    This function normalizes representation only. It is not a path traversal
+    sanitizer and intentionally preserves parent segments such as ../.
+    """
+    normalized = str(path).replace("\\", "/")
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized
 
 
 def should_exclude_relative(relative: Path, excludes: Sequence[str]) -> bool:
