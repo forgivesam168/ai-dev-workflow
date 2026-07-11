@@ -145,6 +145,20 @@ $results | Format-Table -AutoSize @(
     @{L='Note';     E='Note'; Width=60}
 )
 
+$failedResults = @($results | Where-Object { $_.Status -eq 'FAIL' })
+if ($failedResults.Count -gt 0) {
+    Write-Host ''
+    Write-Host 'Failure diagnostics:'
+    foreach ($result in $failedResults) {
+        $note = if ([string]::IsNullOrWhiteSpace([string]$result.Note)) {
+            'No additional note.'
+        } else {
+            [string]$result.Note
+        }
+        Write-Host "FAIL DIAGNOSTIC: $($result.Category): $note"
+    }
+}
+
 $failCount = @($results | Where-Object { $_.Status -eq 'FAIL' }).Count
 if ($failCount -gt 0) {
     Write-Host "Audit FAILED: $failCount check(s) failed." -ForegroundColor Red

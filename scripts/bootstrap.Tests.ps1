@@ -242,6 +242,7 @@ Describe "Test-PythonInstalled" {
         It "應該返回 Installed=false" {
             # Arrange
             Mock python { throw "command not found" } -Verifiable
+            Mock python3 { throw "command not found" } -Verifiable
             
             # Act
             $result = Test-PythonInstalled

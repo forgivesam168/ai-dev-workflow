@@ -57,7 +57,7 @@ Describe 'catalog 35 total / 34 adopter / 1 maintainer-only contract' {
         $result = Invoke-CatalogAudit -Root $fixture
 
         $result.ExitCode | Should -Be 1
-        $result.Output | Should -Match 'Catalog contract changed'
+        $result.Output | Should -Match 'FAIL DIAGNOSTIC: Skills total: Catalog contract changed'
     }
 
     It 'fails clearly when a reviewed skill is removed' {
@@ -65,7 +65,7 @@ Describe 'catalog 35 total / 34 adopter / 1 maintainer-only contract' {
         $result = Invoke-CatalogAudit -Root $fixture
 
         $result.ExitCode | Should -Be 1
-        $result.Output | Should -Match 'Catalog contract changed'
+        $result.Output | Should -Match 'FAIL DIAGNOSTIC: Skills total: Catalog contract changed'
     }
 
     It 'fails when the maintainer-only skill is deployed' {
@@ -74,6 +74,6 @@ Describe 'catalog 35 total / 34 adopter / 1 maintainer-only contract' {
         $result = Invoke-CatalogAudit -Root $fixture
 
         $result.ExitCode | Should -Be 1
-        $result.Output | Should -Match 'Maintainer-only deployed'
+        $result.Output | Should -Match 'FAIL DIAGNOSTIC: Skill deployment contract: Maintainer-only deployed'
     }
 }
