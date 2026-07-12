@@ -403,6 +403,63 @@ def sync_managed_bytes(
     )
 
 
+def install_adopter_constitution(
+    source_root: Path,
+    target_root: Path,
+    manifest_entries: Dict[str, dict],
+) -> SyncResult:
+    relative_path = Path(".github/copilot-instructions.md")
+    source_relative = Path("docs/copilot-instructions.template.md")
+    source_path = source_root / source_relative
+    target_path = target_root / relative_path
+    result = SyncResult([], [], [], [])
+
+    if not source_path.is_file():
+        raise FileNotFoundError(f"Source path not found: {source_path}")
+
+    safe_print(f"ℹ️  Constitution source: {normalize_relative_path(source_relative)}")
+
+    if target_path.exists():
+        # Phase 0A cannot prove manifest trust state, so every existing
+        # constitution requires an explicit adoption decision.
+        previous = manifest_entries.get(normalize_relative_path(relative_path), {})
+        previous_managed_hash = (
+            previous.get("managed_hash") or previous.get("source_hash")
+            if isinstance(previous, dict)
+            else None
+        )
+        previous_source = previous.get("source") if isinstance(previous, dict) else None
+        current_hash = get_path_hash(target_path)
+
+        if not previous_managed_hash or not previous_source or previous_source == "unknown":
+            preservation_class = "legacy/unknown"
+        elif current_hash != previous_managed_hash:
+            preservation_class = "customization"
+        else:
+            preservation_class = "existing-unproven"
+
+        record_managed_path(
+            result,
+            relative_path,
+            "skipped",
+            f"[preserved {preservation_class}; manual decision required]",
+        )
+        safe_print("⚠️  Constitution outcome: preserved; manual decision required")
+        return result
+
+    sync_managed_bytes(
+        target_path,
+        relative_path,
+        source_path.read_bytes(),
+        result,
+        manifest_entries,
+        ownership="template-managed",
+        source_label="template:docs/copilot-instructions.template.md",
+    )
+    safe_print("✅ Constitution outcome: installed")
+    return result
+
+
 def sync_tree_with_policy(
     source: Path,
     target_root: Path,
@@ -768,6 +825,7 @@ def sync_workflow_files(
     force: bool,
     manifest_entries: Dict[str, dict],
     backup: bool = False,
+    constitution_source_root: Optional[Path] = None,
 ) -> SyncResult:
     if not source.exists():
         raise FileNotFoundError(f"Source path not found: {source}")
@@ -784,6 +842,8 @@ def sync_workflow_files(
     
     target_github.mkdir(parents=True, exist_ok=True)
 
+    legacy_excludes = set(LEGACY_RUNTIME_EXCLUDES) | {"copilot-instructions.md"}
+
     result = sync_tree_with_policy(
         source,
         target_root,
@@ -792,8 +852,21 @@ def sync_workflow_files(
         ownership="legacy-compat",
         source_label_prefix="template:.github",
         force=force,
-        excludes=LEGACY_RUNTIME_EXCLUDES,
+        excludes=legacy_excludes,
     )
+
+    if constitution_source_root is not None:
+        constitution_result = install_adopter_constitution(
+            constitution_source_root,
+            target_root,
+            manifest_entries,
+        )
+        result.files_skipped = [
+            item
+            for item in result.files_skipped
+            if item != ".github/copilot-instructions.md"
+        ]
+        result = merge_sync_results(result, constitution_result)
 
     # Also copy root-level template files (e.g. .gitattributes, .editorconfig) into project root
     root_files = [".gitattributes", ".editorconfig"]
@@ -1022,6 +1095,7 @@ def main() -> None:
             force_mode,
             manifest_entries,
             backup_mode,
+            constitution_source_root=repo_root,
         )
     except FileNotFoundError as error:
         safe_print(f"❌ 檔案同步失敗: {error}")
