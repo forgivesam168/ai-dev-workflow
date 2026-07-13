@@ -1,7 +1,12 @@
 # Bootstrap Installer User Guide
 
 ## Overview
-The bootstrap installer is a cross-platform tool that initializes the AI development workflow into your project. It supports Windows (PowerShell), Linux, and macOS (Python/Bash).
+The bootstrap installer initializes the AI development workflow into your project.
+Supported installers:
+
+- Windows: PowerShell
+- Linux/macOS: Python
+- Bash: deprecated compatibility path for initial install from a valid local template clone only
 
 Bootstrap now installs two layers at once:
 
@@ -83,6 +88,17 @@ python3 scripts/bootstrap.py --update
 # Manual backup before sync
 python3 scripts/bootstrap.py --backup
 ```
+
+**Linux/macOS (Deprecated Bash compatibility path):**
+```bash
+# Initial install only from a valid local template clone
+bash ~/ai-dev-workflow/scripts/bootstrap.sh
+
+# Existing adopters must use Python
+python3 ~/ai-dev-workflow/scripts/bootstrap.py --update
+```
+
+Deprecated Bash only seeds the legacy `.github/**` compatibility layer, copies root `.gitattributes` / `.editorconfig` when present, and initializes Git if the target does not already have `.git`. Use PowerShell or Python for the full portable runtime install.
 
 ## Parameters Reference
 

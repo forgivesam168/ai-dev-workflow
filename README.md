@@ -21,6 +21,8 @@ Bootstrap now installs a portable runtime in addition to the legacy `.github/**`
 - `.codex/agents/` and `.claude/agents/` are generated from `agents/*.agent.md`
 - `AGENTS.md` is the shared repo guidance source; `CLAUDE.md` and `GEMINI.md` are thin wrappers
 
+Deprecated `scripts/bootstrap.sh` does not install that full portable runtime. It is a compatibility-only Bash path that seeds the legacy `.github/**` layer, copies root `.gitattributes` / `.editorconfig` when present, and initializes Git if the target repo does not already have `.git`.
+
 For existing projects, run the updater once and commit the newly added managed paths:
 `skills/`, `agents/`, `.agents/`, `.agent/`, `.claude/`, `.codex/`, `CLAUDE.md`, `GEMINI.md`, and `.ai-workflow-install.json`.
 Existing project `AGENTS.md` files are preserved and may need a manual merge if you want the new template wording.
@@ -30,7 +32,7 @@ Ownership model in adopter repos:
 - `skills/` and `agents/` are the template-managed baseline. Customize them here and commit the changes.
 - `.github/skills/`, `.github/agents/`, `.codex/agents/`, `.claude/agents/`, and the skill mounts are derived runtime. Bootstrap regenerates them from the top-level sources.
 - `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` are project-owned. Bootstrap creates them once and then preserves local edits.
-- `bootstrap --update` refreshes template-managed files only when they still match the last managed version recorded in `.ai-workflow-install.json`. Use `--force` only when you intentionally want to overwrite a forked file with the template version.
+- Supported update paths are `.\scripts\bootstrap.ps1 -Update` on Windows and `python3 scripts/bootstrap.py --update` on Linux/macOS. Bash is deprecated and does not provide update, force, or backup modes.
 
 ## Getting Started
 

@@ -27,12 +27,15 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\bootstrap.ps1
 ```
 
-#### 方案 C：使用 Python 或 Bash（跨平台備選方案）
+#### 方案 C：使用 Python（Linux/macOS 正式支援路徑）
 ```bash
 # Python 版本（Windows/macOS/Linux 都可用）
 curl -sO https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.py
-python bootstrap.py
+python3 bootstrap.py
 ```
+
+> Bash installer 已 deprecated，不支援 standalone remote download，不支援 update/force/backup。既有 adopter 請改用：
+> `python3 /path/to/ai-dev-workflow/scripts/bootstrap.py --update`
 
 ---
 
@@ -81,12 +84,11 @@ cd YourProject
 curl -sO https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.py && python3 bootstrap.py && rm bootstrap.py
 ```
 
-### Linux/macOS (Bash)
+### Linux/macOS (Deprecated Bash compatibility path)
 
-```bash
-cd YourProject
-curl -sO https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.sh && bash bootstrap.sh && rm bootstrap.sh
-```
+只保留從有效本機 template clone 執行、對新 target 做 initial install 的相容路徑。
+它只會建立 legacy `.github/**` 相容層，複製存在時的 root `.gitattributes` / `.editorconfig`，並在 target 尚未有 `.git` 時初始化 Git。
+既有 adopter 與所有 update 行為都必須改用 Python。
 
 ---
 

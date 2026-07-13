@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# Bootstrap AI Workflow Installer - Bash Version
-# 
-# This script initializes the AI development workflow into the current project.
-# It provides cross-platform support for Linux and macOS environments.
+# Bootstrap AI Workflow Installer - Deprecated Bash Compatibility Path
+#
+# Bash is deprecated. Python is the supported Linux/macOS installer.
+# This retained Bash path only supports warning-emitting initial install
+# from a valid local template clone into a new target project.
 #
 # Usage:
-#   ./bootstrap.sh                # Standard initialization
-#   ./bootstrap.sh --force        # Force overwrite existing files
-#   ./bootstrap.sh --update       # Refresh workflow files (includes backup)
-#   ./bootstrap.sh --backup       # Create backup before syncing
-#   ./bootstrap.sh --verbose      # Verbose output
+#   ./bootstrap.sh                # Deprecated initial install only
+#   ./bootstrap.sh --verbose      # Deprecated initial install with verbose output
+#   ./bootstrap.sh --help         # Show deprecation guidance and support matrix
 
 set -e  # Exit on error
 
@@ -53,8 +52,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --update)
             UPDATE_MODE=1
-            FORCE_MODE=1
-            BACKUP_MODE=1
             shift
             ;;
         --verbose)
@@ -62,16 +59,31 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h|--help)
-            echo "Bootstrap AI Workflow Installer"
+            echo "Bootstrap AI Workflow Installer - Deprecated Bash Compatibility Path"
+            echo ""
+            echo "Bash installer is deprecated."
+            echo "Python is the supported Linux/macOS installer."
+            echo "Existing adopters must use Python."
             echo ""
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --force       Force overwrite existing workflow files"
-            echo "  --update      Refresh workflow files (includes backup)"
-            echo "  --backup      Create backup before syncing"
-            echo "  --verbose     Verbose output"
+            echo "  --verbose     Show detailed output for deprecated initial install"
             echo "  -h, --help    Show this help message"
+            echo ""
+            echo "Unsupported in Bash:"
+            echo "  --update      Refused; use Python for existing adopters"
+            echo "  --force       Refused; no Bash overwrite path"
+            echo "  --backup      Refused; no Bash backup/update path"
+            echo ""
+            echo "Supported matrix:"
+            echo "  Windows:     PowerShell installer"
+            echo "  Linux/macOS: Python installer"
+            echo "  Bash:        Deprecated compatibility path for initial install only"
+            echo ""
+            echo "Use Python instead:"
+            echo "  python3 /path/to/ai-dev-workflow/scripts/bootstrap.py"
+            echo "  python3 /path/to/ai-dev-workflow/scripts/bootstrap.py --update"
             exit 0
             ;;
         *)
@@ -103,6 +115,101 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}❌${NC} $1"
+}
+
+# Guidance helpers
+python_initial_command() {
+    local repo_root=$1
+
+    if [ -n "$repo_root" ] && [ -f "$repo_root/scripts/bootstrap.py" ]; then
+        echo "python3 $repo_root/scripts/bootstrap.py"
+    else
+        echo "python3 /path/to/ai-dev-workflow/scripts/bootstrap.py"
+    fi
+}
+
+python_update_command() {
+    local repo_root=$1
+
+    if [ -n "$repo_root" ] && [ -f "$repo_root/scripts/bootstrap.py" ]; then
+        echo "python3 $repo_root/scripts/bootstrap.py --update"
+    else
+        echo "python3 /path/to/ai-dev-workflow/scripts/bootstrap.py --update"
+    fi
+}
+
+print_bash_deprecation_guidance() {
+    local repo_root=$1
+
+    echo "Bash installer is deprecated."
+    echo "Python is the supported Linux/macOS installer."
+    echo "Existing adopters must use Python."
+    echo "Initial install: $(python_initial_command "$repo_root")"
+    echo "Update existing adopters: $(python_update_command "$repo_root")"
+}
+
+refuse_bash_operation() {
+    local repo_root=$1
+    local reason=$2
+
+    log_error "$reason"
+    print_bash_deprecation_guidance "$repo_root"
+    return 1
+}
+
+is_valid_template_source() {
+    local repo_root=$1
+    local target_root=$2
+    local markers=(
+        ".github"
+        "scripts/bootstrap.py"
+        "AGENTS.md"
+        "README.md"
+        "docs/copilot-instructions.template.md"
+        "skills"
+        "agents"
+    )
+
+    if [ -z "$repo_root" ]; then
+        return 1
+    fi
+
+    if [ "$repo_root" = "$target_root" ]; then
+        return 1
+    fi
+
+    for marker in "${markers[@]}"; do
+        if [ ! -e "$repo_root/$marker" ]; then
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+has_existing_workflow_footprint() {
+    local target_root=$1
+    local markers=(
+        ".ai-workflow-install.json"
+        ".agents/skills"
+        ".agent/skills"
+        ".claude/skills"
+        ".claude/agents"
+        ".codex/agents"
+        ".github/agents"
+        ".github/skills"
+        ".github/prompts"
+        ".github/instructions"
+        ".github/copilot-instructions.md"
+    )
+
+    for marker in "${markers[@]}"; do
+        if [ -e "$target_root/$marker" ]; then
+            return 0
+        fi
+    done
+
+    return 1
 }
 
 # Version comparison function
@@ -321,6 +428,7 @@ sync_workflow_files() {
     local target_root=$2
     local force=$3
     local backup=$4
+    local template_root
     
     log_verbose "Syncing workflow files from $source to $target_root"
     
@@ -423,7 +531,7 @@ sync_workflow_files() {
     
     if [ $files_conflicted -gt 0 ]; then
         log_warning "偵測到 $files_conflicted 個衝突檔案（內容不同但未覆蓋）"
-        echo "   Tip: Use --force or --update to override"
+        echo "   Tip: Bash cannot overwrite conflicts. Use the supported Python or PowerShell installer."
     fi
     
     return 0
@@ -460,36 +568,42 @@ initialize_git_repo() {
 main() {
     echo -e "${GREEN}🚀 Bootstrap AI Workflow Installer${NC}"
     echo ""
-    
-    if [ $UPDATE_MODE -eq 1 ] && [ $FORCE_MODE -eq 1 ]; then
-        log_info "Running --update mode (will check for conflicts and create backup)."
-        echo ""
-    fi
-    
+
     # Determine paths
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     local repo_root="$(cd "$script_dir/.." && pwd)"
     local current_path="$(pwd)"
-    
-    # Detect if running from installed location (check for .github in parent)
-    if [ ! -d "$repo_root/.github" ]; then
-        # If not found, assume we're running in a project that used bootstrap
-        # and the source is the current directory
-        if [ -d "$current_path/.github" ]; then
-            repo_root="$current_path"
-        else
-            log_error "❌ Cannot find .github directory. Please ensure:"
-            echo "   1. Run this script from ai-dev-workflow project root"
-            echo "   2. Or ensure current project has .github/ structure"
-            exit 1
-        fi
+
+    if [ $UPDATE_MODE -eq 1 ] || [ $FORCE_MODE -eq 1 ] || [ $BACKUP_MODE -eq 1 ]; then
+        refuse_bash_operation \
+            "$repo_root" \
+            "Bash does not support --update, --force, or --backup."
+        exit 1
     fi
-    
+
+    if ! is_valid_template_source "$repo_root" "$current_path"; then
+        refuse_bash_operation \
+            "" \
+            "Bash initial install requires a valid local ai-dev-workflow template clone."
+        exit 1
+    fi
+
+    if has_existing_workflow_footprint "$current_path"; then
+        refuse_bash_operation \
+            "$repo_root" \
+            "Existing AI workflow adopters are not supported by Bash."
+        exit 1
+    fi
+
+    log_warning "Bash installer is deprecated."
+    print_bash_deprecation_guidance "$repo_root"
+    echo ""
+
     local template_source="$repo_root/.github"
-    
+
     # Environment checks
     echo "Environment Check:"
-    
+
     if ! check_git; then
         echo ""
         log_error "Git is required but not found."
@@ -502,33 +616,7 @@ main() {
     check_node
     check_gh
     echo ""
-    
-    # Check if running inside template repo
-    if [ "$current_path" = "$repo_root" ]; then
-        log_warning "Warning: Running bootstrap inside template repo"
-        read -p "Continue (will copy to current directory)? (y/n): " response
-        if [ "$response" != "y" ]; then
-            echo "Cancelled."
-            exit 0
-        fi
-        echo ""
-    fi
-    
-    # Check for uncommitted changes in update mode
-    if [ $UPDATE_MODE -eq 1 ]; then
-        if [ -d "$current_path/.github" ]; then
-            if check_uncommitted_changes "$current_path" ".github"; then
-                log_warning "Detected uncommitted changes in .github/"
-                read -p "Continue with update? (y/n): " continue_update
-                if [ "$continue_update" != "y" ]; then
-                    echo "Update cancelled"
-                    exit 0
-                fi
-                echo ""
-            fi
-        fi
-    fi
-    
+
     # Sync workflow files
     log_info "Syncing workflow files..."
     if sync_workflow_files "$template_source" "$current_path" $FORCE_MODE $BACKUP_MODE; then
@@ -548,11 +636,13 @@ main() {
     
     echo ""
     log_success "Bootstrap completed!"
+    log_warning "Bash remains deprecated. Use Python for future Linux/macOS installs and all updates."
     echo ""
     echo "Next Steps:"
     echo "  1. View synced files: ls -la .github/"
     echo "  2. Commit changes: git add . && git commit -m 'chore: initialize AI workflow'"
-    echo "  3. Start developing: See .github/WORKFLOW.md"
+    echo "  3. If the target was not already a git repo, Bash initialized one for you."
+    echo "  4. For the full portable runtime or any future update, use: $(python_update_command "$repo_root")"
 }
 
 # Run main function

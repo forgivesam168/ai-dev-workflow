@@ -1,10 +1,125 @@
+import hashlib
 import os
+import shlex
+import shutil
 import subprocess
 from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Tuple
 
+import pytest
+
 from scripts import bootstrap
+
+
+PHASE0B_REPO_ROOT = Path(bootstrap.__file__).resolve().parent.parent
+PHASE0B_SCRIPT = PHASE0B_REPO_ROOT / "scripts" / "bootstrap.sh"
+
+
+def _find_phase0b_bash() -> str:
+    candidates = []
+    explicit = os.environ.get("PHASE0B_BASH")
+    if explicit:
+        candidates.append(explicit)
+
+    resolved = shutil.which("bash")
+    if resolved:
+        candidates.append(resolved)
+
+    git_bash = Path(r"C:\Program Files\Git\bin\bash.exe")
+    if git_bash.exists():
+        candidates.append(str(git_bash))
+
+    seen = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        try:
+            result = subprocess.run(
+                [candidate, "--version"],
+                capture_output=True,
+                check=False,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+        except OSError:
+            continue
+
+        output = result.stdout + result.stderr
+        if result.returncode == 0 and "GNU bash" in output:
+            return candidate
+
+    pytest.skip("No usable Bash runtime found for Phase 0B tests")
+
+
+def _run_phase0b_bash(script: Path, cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    quoted = " ".join(shlex.quote(part) for part in (script.as_posix(), *args))
+    return subprocess.run(
+        [_find_phase0b_bash(), "-lc", quoted],
+        cwd=cwd,
+        capture_output=True,
+        check=False,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+
+
+def _phase0b_output(result: subprocess.CompletedProcess[str]) -> str:
+    return result.stdout + result.stderr
+
+
+def _snapshot_tree(root: Path) -> Tuple[Dict[str, str], Tuple[str, ...]]:
+    files: Dict[str, str] = {}
+    directories = []
+
+    if not root.exists():
+        return files, tuple(directories)
+
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root).as_posix()
+        if path.is_dir():
+            directories.append(f"{relative}/")
+            continue
+        files[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+
+    return files, tuple(directories)
+
+
+def _assert_phase0b_no_write(
+    target_root: Path,
+    before_files: Dict[str, str],
+    before_directories: Tuple[str, ...],
+) -> None:
+    after_files, after_directories = _snapshot_tree(target_root)
+
+    assert after_files == before_files
+    assert after_directories == before_directories
+    assert not list(target_root.glob(".github.backup-*"))
+    assert not (target_root / ".git").exists()
+    assert not (target_root / ".ai-workflow-install.json").exists()
+
+
+def _create_phase0b_existing_adopter(target_root: Path) -> None:
+    (target_root / ".github" / "agents").mkdir(parents=True)
+    (target_root / ".github" / "agents" / "coder.agent.md").write_text(
+        "# Existing workflow\n",
+        encoding="utf-8",
+    )
+    (target_root / "AGENTS.md").write_text(
+        "# Existing adopter\n",
+        encoding="utf-8",
+    )
+
+
+def _create_phase0b_workflows_only_project(target_root: Path) -> bytes:
+    workflow = target_root / ".github" / "workflows" / "ci.yml"
+    workflow.parent.mkdir(parents=True)
+    original = b"name: ci\non: [push]\n"
+    workflow.write_bytes(original)
+    return original
 
 
 def _create_phase0a_constitution_fixture(
@@ -172,6 +287,252 @@ def test_phase0a_existing_constitution_is_preserved_without_trusted_manifest_pro
     output = capsys.readouterr().out
     assert output.count("Constitution source: docs/copilot-instructions.template.md") == len(cases)
     assert output.count("Constitution outcome: preserved; manual decision required") == len(cases)
+
+
+def test_phase0b_update_refuses_before_target_write(tmp_path: Path) -> None:
+    target_root = tmp_path / "project-update"
+    target_root.mkdir()
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0b_bash(PHASE0B_SCRIPT, target_root, "--update")
+    output = _phase0b_output(result)
+
+    assert result.returncode != 0
+    assert "Bash installer is deprecated" in output
+    assert "Python is the supported Linux/macOS installer" in output
+    assert "Existing adopters must use Python" in output
+    assert "bootstrap.py --update" in output
+    _assert_phase0b_no_write(target_root, before_files, before_directories)
+
+
+def test_phase0b_update_force_backup_refuses_before_target_write(tmp_path: Path) -> None:
+    target_root = tmp_path / "project-update-force-backup"
+    target_root.mkdir()
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0b_bash(
+        PHASE0B_SCRIPT,
+        target_root,
+        "--update",
+        "--force",
+        "--backup",
+    )
+    output = _phase0b_output(result)
+
+    assert result.returncode != 0
+    assert "Bash installer is deprecated" in output
+    assert "bootstrap.py --update" in output
+    _assert_phase0b_no_write(target_root, before_files, before_directories)
+
+
+def test_phase0b_force_refuses_before_target_write(tmp_path: Path) -> None:
+    target_root = tmp_path / "project-force"
+    target_root.mkdir()
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0b_bash(PHASE0B_SCRIPT, target_root, "--force")
+    output = _phase0b_output(result)
+
+    assert result.returncode != 0
+    assert "Bash installer is deprecated" in output
+    assert "bootstrap.py --update" in output
+    _assert_phase0b_no_write(target_root, before_files, before_directories)
+
+
+def test_phase0b_backup_refuses_before_target_write(tmp_path: Path) -> None:
+    target_root = tmp_path / "project-backup"
+    target_root.mkdir()
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0b_bash(PHASE0B_SCRIPT, target_root, "--backup")
+    output = _phase0b_output(result)
+
+    assert result.returncode != 0
+    assert "Bash installer is deprecated" in output
+    assert "bootstrap.py --update" in output
+    _assert_phase0b_no_write(target_root, before_files, before_directories)
+
+
+def test_phase0b_existing_adopter_without_flags_refuses_before_target_write(
+    tmp_path: Path,
+) -> None:
+    target_root = tmp_path / "existing-adopter"
+    target_root.mkdir()
+    _create_phase0b_existing_adopter(target_root)
+    before_files, before_directories = _snapshot_tree(target_root)
+    original_agents = (target_root / "AGENTS.md").read_bytes()
+    original_generated = (
+        target_root / ".github" / "agents" / "coder.agent.md"
+    ).read_bytes()
+
+    result = _run_phase0b_bash(PHASE0B_SCRIPT, target_root)
+    output = _phase0b_output(result)
+
+    assert result.returncode != 0
+    assert "Bash installer is deprecated" in output
+    assert "Existing adopters must use Python" in output
+    assert "bootstrap.py --update" in output
+    assert (target_root / "AGENTS.md").read_bytes() == original_agents
+    assert (
+        target_root / ".github" / "agents" / "coder.agent.md"
+    ).read_bytes() == original_generated
+    _assert_phase0b_no_write(target_root, before_files, before_directories)
+
+
+def test_phase0b_project_with_github_workflows_only_is_not_treated_as_existing_adopter(
+    tmp_path: Path,
+) -> None:
+    target_root = tmp_path / "workflows-only"
+    target_root.mkdir()
+    original_workflow = _create_phase0b_workflows_only_project(target_root)
+
+    result = _run_phase0b_bash(PHASE0B_SCRIPT, target_root)
+    output = _phase0b_output(result)
+
+    assert result.returncode == 0
+    assert "Bash installer is deprecated" in output
+    assert "Python is the supported Linux/macOS installer" in output
+    assert "bootstrap.py" in output
+    assert (target_root / ".github" / "workflows" / "ci.yml").read_bytes() == original_workflow
+    assert (target_root / ".github" / "prompts").exists()
+    assert not any(path.name.startswith(".github.backup-") for path in target_root.iterdir())
+
+
+def test_phase0b_project_with_generic_skills_and_agents_is_not_treated_as_existing_adopter(
+    tmp_path: Path,
+) -> None:
+    target_root = tmp_path / "generic-skills-agents"
+    target_root.mkdir()
+    (target_root / "skills").mkdir()
+    (target_root / "agents").mkdir()
+
+    result = _run_phase0b_bash(PHASE0B_SCRIPT, target_root)
+    output = _phase0b_output(result)
+
+    assert result.returncode == 0
+    assert "Bash installer is deprecated" in output
+    assert (target_root / ".github" / "copilot-instructions.md").exists()
+
+
+def test_phase0b_project_with_preexisting_guidance_files_is_not_treated_as_existing_adopter(
+    tmp_path: Path,
+) -> None:
+    target_root = tmp_path / "generic-guidance-files"
+    target_root.mkdir()
+    (target_root / "AGENTS.md").write_text("# Unrelated guidance\n", encoding="utf-8")
+    (target_root / "CLAUDE.md").write_text("# Unrelated guidance\n", encoding="utf-8")
+    (target_root / "GEMINI.md").write_text("# Unrelated guidance\n", encoding="utf-8")
+
+    result = _run_phase0b_bash(PHASE0B_SCRIPT, target_root)
+    output = _phase0b_output(result)
+
+    assert result.returncode == 0
+    assert "Bash installer is deprecated" in output
+    assert (target_root / ".github" / "copilot-instructions.md").exists()
+
+
+def test_phase0b_retained_initial_install_warns_and_remains_functional(
+    tmp_path: Path,
+) -> None:
+    target_root = tmp_path / "new-project"
+    target_root.mkdir()
+
+    result = _run_phase0b_bash(PHASE0B_SCRIPT, target_root)
+    output = _phase0b_output(result)
+
+    assert result.returncode == 0
+    assert "Bash installer is deprecated" in output
+    assert "Python is the supported Linux/macOS installer" in output
+    assert "python3" in output
+    assert "bootstrap.py" in output
+    assert (target_root / ".github").exists()
+    assert (target_root / ".github" / "copilot-instructions.md").exists()
+    assert (target_root / ".gitattributes").exists()
+    assert (target_root / ".git").exists()
+
+
+def test_phase0b_standalone_script_without_valid_template_source_refuses_before_write(
+    tmp_path: Path,
+) -> None:
+    standalone_root = tmp_path / "standalone"
+    standalone_root.mkdir()
+    standalone_script = standalone_root / "bootstrap.sh"
+    standalone_script.write_bytes(PHASE0B_SCRIPT.read_bytes())
+
+    target_root = tmp_path / "project"
+    target_root.mkdir()
+    original_workflow = _create_phase0b_workflows_only_project(target_root)
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0b_bash(standalone_script, target_root)
+    output = _phase0b_output(result)
+
+    assert result.returncode != 0
+    assert "Bash installer is deprecated" in output
+    assert "Python is the supported Linux/macOS installer" in output
+    assert "bootstrap.py" in output
+    assert (target_root / ".github" / "workflows" / "ci.yml").read_bytes() == original_workflow
+    _assert_phase0b_no_write(target_root, before_files, before_directories)
+
+
+def test_phase0b_source_probe_rejects_non_template_repo_before_write(
+    tmp_path: Path,
+) -> None:
+    fake_source_root = tmp_path / "fake-source"
+    (fake_source_root / ".github").mkdir(parents=True)
+    (fake_source_root / "scripts").mkdir()
+    (fake_source_root / "scripts" / "bootstrap.py").write_text(
+        "# fake python bootstrap\n",
+        encoding="utf-8",
+    )
+    fake_script = fake_source_root / "scripts" / "bootstrap.sh"
+    fake_script.write_bytes(PHASE0B_SCRIPT.read_bytes())
+
+    target_root = tmp_path / "target"
+    target_root.mkdir()
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0b_bash(fake_script, target_root)
+    output = _phase0b_output(result)
+
+    assert result.returncode != 0
+    assert "Bash installer is deprecated" in output
+    assert "valid local ai-dev-workflow template clone" in output
+    _assert_phase0b_no_write(target_root, before_files, before_directories)
+
+
+def test_phase0b_help_reports_deprecated_bash_and_python_guidance() -> None:
+    result = _run_phase0b_bash(PHASE0B_SCRIPT, PHASE0B_REPO_ROOT, "--help")
+    output = _phase0b_output(result)
+
+    assert result.returncode == 0
+    assert "Bash installer is deprecated" in output
+    assert "Python is the supported Linux/macOS installer" in output
+    assert "bootstrap.py" in output
+    assert "Refresh workflow files (includes backup)" not in output
+    assert "Force overwrite existing workflow files" not in output
+    assert "Create backup before syncing" not in output
+    assert "cross-platform support" not in output
+
+
+def test_phase0b_refused_operations_preserve_fixture_invariance(tmp_path: Path) -> None:
+    cases = (
+        ("update", ("--update",)),
+        ("update-force-backup", ("--update", "--force", "--backup")),
+        ("force", ("--force",)),
+        ("backup", ("--backup",)),
+    )
+
+    for case_name, args in cases:
+        target_root = tmp_path / case_name
+        target_root.mkdir()
+        _create_phase0b_workflows_only_project(target_root)
+        before_files, before_directories = _snapshot_tree(target_root)
+
+        result = _run_phase0b_bash(PHASE0B_SCRIPT, target_root, *args)
+
+        assert result.returncode != 0
+        _assert_phase0b_no_write(target_root, before_files, before_directories)
 
 
 def test_extract_version_returns_present_match() -> None:
