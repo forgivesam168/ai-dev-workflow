@@ -441,6 +441,9 @@ function Sync-WorkflowFiles {
     .PARAMETER TargetPath
     目標專案根目錄
     
+    .PARAMETER ConstitutionSourceRoot
+    Template repository root containing docs/copilot-instructions.template.md.
+
     .PARAMETER Force
     強制覆蓋現有檔案
     
@@ -451,7 +454,7 @@ function Sync-WorkflowFiles {
     PSCustomObject with properties: FilesAdded, FilesUpdated, FilesSkipped, FilesConflicted
     
     .EXAMPLE
-    $result = Sync-WorkflowFiles -SourcePath ".\.github" -TargetPath "C:\Projects\MyApp"
+    $result = Sync-WorkflowFiles -SourcePath ".\.github" -TargetPath "C:\Projects\MyApp" -ConstitutionSourceRoot "."
     #>
     
     param(
@@ -463,6 +466,8 @@ function Sync-WorkflowFiles {
 
         [Parameter(Mandatory=$true)]
         [hashtable]$ManifestEntries,
+
+        [string]$ConstitutionSourceRoot,
         
         [switch]$Force,
         
@@ -491,6 +496,8 @@ function Sync-WorkflowFiles {
         New-Item -ItemType Directory -Path $targetGithubPath -Force | Out-Null
     }
 
+    $legacyExcludes = @($script:LegacyRuntimeExcludes) + @('copilot-instructions.md')
+
     $result = Sync-DirectoryWithPolicy `
         -SourcePath $SourcePath `
         -TargetPath $TargetPath `
@@ -499,7 +506,16 @@ function Sync-WorkflowFiles {
         -Ownership 'legacy-compat' `
         -SourceLabelPrefix 'template:.github' `
         -Force:$Force `
-        -ExcludePatterns $script:LegacyRuntimeExcludes
+        -ExcludePatterns $legacyExcludes
+
+    if ($ConstitutionSourceRoot) {
+        $constitutionResult = Install-AdopterConstitution `
+            -SourceRoot $ConstitutionSourceRoot `
+            -TargetPath $TargetPath `
+            -ManifestEntries $ManifestEntries
+        $result.FilesSkipped = @($result.FilesSkipped | Where-Object { $_ -ne '.github/copilot-instructions.md' })
+        $result = Merge-SyncResults $result $constitutionResult
+    }
 
     # Copy root-level template files (e.g. .gitattributes, .editorconfig) into target project root
     $rootFiles = @('.gitattributes', '.editorconfig')
@@ -1164,6 +1180,70 @@ function Set-ManagedBytes {
 
     Add-SyncRecord -Result $Result -Status 'conflicted' -Path $normalizedRelative
     Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $normalizedRelative -Ownership $Ownership -SourceLabel $SourceLabel -Kind 'file' -ManagedHash $previousManagedHash -ObservedHash $currentHash -Status 'conflicted'
+}
+
+function Install-AdopterConstitution {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourceRoot,
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$ManifestEntries
+    )
+
+    $relativePath = '.github/copilot-instructions.md'
+    $sourceRelative = 'docs/copilot-instructions.template.md'
+    $sourcePath = Join-Path $SourceRoot $sourceRelative
+    $destinationPath = Join-Path $TargetPath $relativePath
+    $result = New-SyncResult
+
+    if (-not (Test-Path $sourcePath -PathType Leaf)) {
+        throw "Source path not found: $sourcePath"
+    }
+
+    Write-Host "ℹ️  Constitution source: $sourceRelative" -ForegroundColor Cyan
+
+    if (Test-Path $destinationPath) {
+        # Phase 0A cannot prove manifest trust state, so every existing
+        # constitution requires an explicit adoption decision.
+        $previous = if ($ManifestEntries.ContainsKey($relativePath)) { $ManifestEntries[$relativePath] } else { $null }
+        $previousManagedHash = if ($previous) {
+            if ($previous.managed_hash) { $previous.managed_hash } else { $previous.source_hash }
+        } else {
+            $null
+        }
+        $previousSource = if ($previous) { $previous.source } else { $null }
+        $currentHash = if (Test-Path $destinationPath -PathType Leaf) { Get-PathHash -Path $destinationPath } else { $null }
+
+        $preservationClass = if (-not $previousManagedHash -or -not $previousSource -or $previousSource -eq 'unknown') {
+            'legacy/unknown'
+        } elseif ($currentHash -ne $previousManagedHash) {
+            'customization'
+        } else {
+            'existing-unproven'
+        }
+
+        Add-SyncRecord `
+            -Result $result `
+            -Status 'skipped' `
+            -Path $relativePath `
+            -Suffix "[preserved $preservationClass; manual decision required]"
+        Write-Host '⚠️  Constitution outcome: preserved; manual decision required' -ForegroundColor Yellow
+        return $result
+    }
+
+    $bytes = [IO.File]::ReadAllBytes($sourcePath)
+    Set-ManagedBytes `
+        -Path $destinationPath `
+        -RelativePath $relativePath `
+        -Bytes $bytes `
+        -Result $result `
+        -ManifestEntries $ManifestEntries `
+        -Ownership 'template-managed' `
+        -SourceLabel 'template:docs/copilot-instructions.template.md'
+    Write-Host '✅ Constitution outcome: installed' -ForegroundColor Green
+    return $result
 }
 
 function Sync-DirectoryWithPolicy {
@@ -1897,7 +1977,7 @@ function Main {
 
     try {
         # 執行檔案同步
-        $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $targetProjectPath -ManifestEntries $manifestEntries -Force:$forceMode -Backup:$backupMode
+        $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $targetProjectPath -ManifestEntries $manifestEntries -ConstitutionSourceRoot $script:RepoRoot -Force:$forceMode -Backup:$backupMode
         if ($backupMode) {
             $portableBackupResult = Backup-ManagedPaths -TargetPath $targetProjectPath -RelativePaths $script:PortableBackupPaths
             if ($portableBackupResult.BackupPath) {

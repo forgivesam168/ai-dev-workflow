@@ -1,8 +1,177 @@
 import os
 import subprocess
+from copy import deepcopy
 from pathlib import Path
+from typing import Dict, Tuple
 
 from scripts import bootstrap
+
+
+def _create_phase0a_constitution_fixture(
+    tmp_path: Path,
+) -> Tuple[Path, Path, bytes, bytes]:
+    template_root = tmp_path / "template"
+    target_root = tmp_path / "project"
+    maintainer_content = (
+        b"# Maintainer Constitution\n"
+        b"Run tools/sync-dotgithub.ps1 and maintain the template catalog.\n"
+    )
+    adopter_content = b"# Adopter Constitution\nProject-facing guidance only.\n"
+
+    (template_root / ".github").mkdir(parents=True)
+    (template_root / "docs").mkdir()
+    (template_root / ".github" / "copilot-instructions.md").write_bytes(
+        maintainer_content
+    )
+    (template_root / "docs" / "copilot-instructions.template.md").write_bytes(
+        adopter_content
+    )
+    target_root.mkdir()
+    return template_root, target_root, maintainer_content, adopter_content
+
+
+def test_phase0a_new_adopter_uses_adopter_constitution_without_maintainer_policy(
+    tmp_path: Path, capsys,
+) -> None:
+    template_root, target_root, maintainer_content, adopter_content = (
+        _create_phase0a_constitution_fixture(tmp_path)
+    )
+    manifest_entries: Dict[str, dict] = {}
+
+    result = bootstrap.sync_workflow_files(
+        template_root / ".github",
+        target_root,
+        force=False,
+        manifest_entries=manifest_entries,
+        constitution_source_root=template_root,
+    )
+
+    destination = target_root / ".github" / "copilot-instructions.md"
+    assert destination.read_bytes() == adopter_content
+    assert destination.read_bytes() != maintainer_content
+    assert b"sync-dotgithub" not in destination.read_bytes()
+    assert ".github/copilot-instructions.md" in result.files_added
+    assert ".github/copilot-instructions.md" not in result.files_skipped
+    assert (
+        manifest_entries[".github/copilot-instructions.md"]["source"]
+        == "template:docs/copilot-instructions.template.md"
+    )
+    output = capsys.readouterr().out
+    assert "Constitution source: docs/copilot-instructions.template.md" in output
+    assert "Constitution outcome: installed" in output
+
+
+def test_phase0a_canonical_adopter_source_excludes_maintainer_policy() -> None:
+    repo_root = Path(bootstrap.__file__).resolve().parent.parent
+    adopter_content = (
+        repo_root / "docs" / "copilot-instructions.template.md"
+    ).read_text(encoding="utf-8")
+
+    forbidden = (
+        "sync-dotgithub.ps1",
+        "check-sync.ps1",
+        "audit-catalog.ps1",
+        "Never commit source without syncing",
+    )
+    assert not any(token in adopter_content for token in forbidden)
+
+
+def test_phase0a_generic_sync_never_falls_back_to_maintainer_constitution(
+    tmp_path: Path,
+) -> None:
+    template_root, target_root, _, _ = _create_phase0a_constitution_fixture(tmp_path)
+
+    result = bootstrap.sync_workflow_files(
+        template_root / ".github",
+        target_root,
+        force=True,
+        manifest_entries={},
+    )
+
+    assert not (target_root / ".github" / "copilot-instructions.md").exists()
+    assert ".github/copilot-instructions.md" in result.files_skipped
+
+
+def test_phase0a_existing_constitution_is_preserved_without_trusted_manifest_proof(
+    tmp_path: Path, capsys,
+) -> None:
+    template_root, target_root, _, _ = _create_phase0a_constitution_fixture(tmp_path)
+    destination = target_root / ".github" / "copilot-instructions.md"
+    destination.parent.mkdir()
+
+    cases = (
+        ("missing-manifest", {}, b"legacy policy\r\n"),
+        (
+            "missing-exact-component",
+            {".github/other.md": {"managed_hash": bootstrap.hash_bytes(b"other\n")}},
+            b"unknown ownership\n",
+        ),
+        (
+            "customized",
+            {
+                ".github/copilot-instructions.md": {
+                    "managed_hash": bootstrap.hash_bytes(b"previous baseline\n"),
+                    "source": "template:.github/copilot-instructions.md",
+                }
+            },
+            b"project-customized\x00policy\n",
+        ),
+        (
+            "generic-baseline-match",
+            {
+                ".github/copilot-instructions.md": {
+                    "managed_hash": bootstrap.hash_bytes(b"recorded baseline\n"),
+                    "source": "template:.github/copilot-instructions.md",
+                }
+            },
+            b"recorded baseline\n",
+        ),
+        (
+            "unclear-source",
+            {
+                ".github/copilot-instructions.md": {
+                    "managed_hash": bootstrap.hash_bytes(b"legacy policy\n"),
+                    "source": "unknown",
+                }
+            },
+            b"legacy policy\n",
+        ),
+    )
+
+    for case_name, manifest_entries, existing_content in cases:
+        destination.write_bytes(existing_content)
+        original_constitution_entry = deepcopy(
+            manifest_entries.get(".github/copilot-instructions.md")
+        )
+
+        result = bootstrap.sync_workflow_files(
+            template_root / ".github",
+            target_root,
+            force=True,
+            manifest_entries=manifest_entries,
+            constitution_source_root=template_root,
+        )
+
+        assert destination.read_bytes() == existing_content, case_name
+        assert any(
+            item.startswith(
+                ".github/copilot-instructions.md [preserved"
+            )
+            and "manual decision required" in item
+            for item in result.files_skipped
+        ), case_name
+        assert sum(
+            item.startswith(".github/copilot-instructions.md")
+            for item in result.files_skipped
+        ) == 1, case_name
+        assert (
+            manifest_entries.get(".github/copilot-instructions.md")
+            == original_constitution_entry
+        ), case_name
+
+    output = capsys.readouterr().out
+    assert output.count("Constitution source: docs/copilot-instructions.template.md") == len(cases)
+    assert output.count("Constitution outcome: preserved; manual decision required") == len(cases)
 
 
 def test_extract_version_returns_present_match() -> None:

@@ -5,6 +5,97 @@ BeforeAll {
     . "$PSScriptRoot\bootstrap.ps1"
 }
 
+Describe "Phase 0A adopter constitution containment" {
+    BeforeEach {
+        $script:Phase0ATemplateRoot = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        $script:Phase0ATargetRoot = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        $script:Phase0AMaintainerBytes = [Text.Encoding]::UTF8.GetBytes("# Maintainer Constitution`nRun tools/sync-dotgithub.ps1 and maintain the template catalog.`n")
+        $script:Phase0AAdopterBytes = [Text.Encoding]::UTF8.GetBytes("# Adopter Constitution`nProject-facing guidance only.`n")
+
+        New-Item -ItemType Directory -Path (Join-Path $script:Phase0ATemplateRoot '.github') -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $script:Phase0ATemplateRoot 'docs') -Force | Out-Null
+        New-Item -ItemType Directory -Path $script:Phase0ATargetRoot -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $script:Phase0ATemplateRoot '.github/copilot-instructions.md'), $script:Phase0AMaintainerBytes)
+        [IO.File]::WriteAllBytes((Join-Path $script:Phase0ATemplateRoot 'docs/copilot-instructions.template.md'), $script:Phase0AAdopterBytes)
+    }
+
+    It "installs the adopter source for a new adopter without maintainer policy" {
+        $manifest = @{}
+        Mock Write-Host
+
+        $result = Sync-WorkflowFiles `
+            -SourcePath (Join-Path $script:Phase0ATemplateRoot '.github') `
+            -TargetPath $script:Phase0ATargetRoot `
+            -ManifestEntries $manifest `
+            -ConstitutionSourceRoot $script:Phase0ATemplateRoot
+
+        $destination = Join-Path $script:Phase0ATargetRoot '.github/copilot-instructions.md'
+        [IO.File]::ReadAllBytes($destination) | Should -Be $script:Phase0AAdopterBytes
+        [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($destination)) | Should -Not -Match 'sync-dotgithub'
+        $result.FilesAdded | Should -Contain '.github/copilot-instructions.md'
+        $result.FilesSkipped | Should -Not -Contain '.github/copilot-instructions.md'
+        $manifest['.github/copilot-instructions.md'].source | Should -Be 'template:docs/copilot-instructions.template.md'
+        Assert-MockCalled Write-Host -ParameterFilter { $Object -eq 'ℹ️  Constitution source: docs/copilot-instructions.template.md' }
+        Assert-MockCalled Write-Host -ParameterFilter { $Object -eq '✅ Constitution outcome: installed' }
+    }
+
+    It "keeps the canonical adopter source free of maintainer policy" {
+        $adopterContent = Get-Content -Raw (Join-Path $PSScriptRoot '../docs/copilot-instructions.template.md')
+        $forbidden = @('sync-dotgithub.ps1', 'check-sync.ps1', 'audit-catalog.ps1', 'Never commit source without syncing')
+
+        foreach ($token in $forbidden) {
+            $adopterContent | Should -Not -Match ([regex]::Escape($token))
+        }
+    }
+
+    It "never falls back to the maintainer constitution during generic sync" {
+        $result = Sync-WorkflowFiles `
+            -SourcePath (Join-Path $script:Phase0ATemplateRoot '.github') `
+            -TargetPath $script:Phase0ATargetRoot `
+            -ManifestEntries @{} `
+            -Force
+
+        Test-Path (Join-Path $script:Phase0ATargetRoot '.github/copilot-instructions.md') | Should -BeFalse
+        $result.FilesSkipped | Should -Contain '.github/copilot-instructions.md'
+    }
+
+    It "preserves every existing constitution when trusted exact proof is unavailable" {
+        $destination = Join-Path $script:Phase0ATargetRoot '.github/copilot-instructions.md'
+        New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
+        Mock Write-Host
+        $cases = @(
+            @{ Name = 'missing-manifest'; Manifest = @{}; Content = [Text.Encoding]::UTF8.GetBytes("legacy policy`r`n") },
+            @{ Name = 'missing-exact-component'; Manifest = @{ '.github/other.md' = @{ managed_hash = Get-BytesHash ([Text.Encoding]::UTF8.GetBytes("other`n")) } }; Content = [Text.Encoding]::UTF8.GetBytes("unknown ownership`n") },
+            @{ Name = 'customized'; Manifest = @{ '.github/copilot-instructions.md' = @{ managed_hash = Get-BytesHash ([Text.Encoding]::UTF8.GetBytes("previous baseline`n")); source = 'template:.github/copilot-instructions.md' } }; Content = [byte[]](0x70,0x72,0x6f,0x6a,0x65,0x63,0x74,0x00,0x0a) },
+            @{ Name = 'generic-baseline-match'; Manifest = @{ '.github/copilot-instructions.md' = @{ managed_hash = Get-BytesHash ([Text.Encoding]::UTF8.GetBytes("recorded baseline`n")); source = 'template:.github/copilot-instructions.md' } }; Content = [Text.Encoding]::UTF8.GetBytes("recorded baseline`n") },
+            @{ Name = 'unclear-source'; Manifest = @{ '.github/copilot-instructions.md' = @{ managed_hash = Get-BytesHash ([Text.Encoding]::UTF8.GetBytes("legacy policy`n")); source = 'unknown' } }; Content = [Text.Encoding]::UTF8.GetBytes("legacy policy`n") }
+        )
+
+        foreach ($case in $cases) {
+            [IO.File]::WriteAllBytes($destination, $case.Content)
+            $hadConstitutionEntry = $case.Manifest.ContainsKey('.github/copilot-instructions.md')
+            $originalConstitutionEntry = if ($hadConstitutionEntry) { $case.Manifest['.github/copilot-instructions.md'] | ConvertTo-Json -Depth 5 -Compress } else { $null }
+
+            $result = Sync-WorkflowFiles `
+                -SourcePath (Join-Path $script:Phase0ATemplateRoot '.github') `
+                -TargetPath $script:Phase0ATargetRoot `
+                -ManifestEntries $case.Manifest `
+                -ConstitutionSourceRoot $script:Phase0ATemplateRoot `
+                -Force
+
+            [IO.File]::ReadAllBytes($destination) | Should -Be $case.Content -Because $case.Name
+            ($result.FilesSkipped | Where-Object { $_.StartsWith('.github/copilot-instructions.md [preserved') -and $_.Contains('manual decision required') }).Count | Should -Be 1 -Because $case.Name
+            ($result.FilesSkipped | Where-Object { $_.StartsWith('.github/copilot-instructions.md') }).Count | Should -Be 1 -Because $case.Name
+            $case.Manifest.ContainsKey('.github/copilot-instructions.md') | Should -Be $hadConstitutionEntry -Because $case.Name
+            if ($hadConstitutionEntry) {
+                ($case.Manifest['.github/copilot-instructions.md'] | ConvertTo-Json -Depth 5 -Compress) | Should -Be $originalConstitutionEntry -Because $case.Name
+            }
+        }
+        Assert-MockCalled Write-Host -ParameterFilter { $Object -eq 'ℹ️  Constitution source: docs/copilot-instructions.template.md' } -Times $cases.Count -Exactly
+        Assert-MockCalled Write-Host -ParameterFilter { $Object -eq '⚠️  Constitution outcome: preserved; manual decision required' } -Times $cases.Count -Exactly
+    }
+}
+
 Describe "Normalize-RelativePath" {
     It "preserves dot-directory and parent-segment identity" {
         Normalize-RelativePath '.github/x' | Should -Be '.github/x'
