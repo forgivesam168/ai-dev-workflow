@@ -1,6 +1,5 @@
 import hashlib
 import os
-import shlex
 import shutil
 import subprocess
 from copy import deepcopy
@@ -55,9 +54,8 @@ def _find_phase0b_bash() -> str:
 
 
 def _run_phase0b_bash(script: Path, cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    quoted = " ".join(shlex.quote(part) for part in (script.as_posix(), *args))
     return subprocess.run(
-        [_find_phase0b_bash(), "-lc", quoted],
+        [_find_phase0b_bash(), "--login", script.as_posix(), *args],
         cwd=cwd,
         capture_output=True,
         check=False,
