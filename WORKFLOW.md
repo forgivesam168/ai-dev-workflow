@@ -52,7 +52,9 @@
 | 3. Plan | `implementation-planning` | `plan-agent` | `規劃實作計畫` | `04-plan.md` |
 | 4. Implement | `tdd-workflow` + 語言 patterns | `coder-agent` | `開始 TDD 實作` | 測試 + 程式碼 |
 | 5. Review | `code-security-review`, `security-review` | `code-reviewer` | `review 我的 code` | Review report |
-| 6. Archive | `work-archiving`, `git-commit` | Default | `archive 這個 change` | `99-archive.md` |
+| 6. Archive | `work-archiving` | Default | `archive 這個 change` | `99-archive.md` |
+
+> Archive does not grant Git or remote authorization; protected actions require separate current-task approval.
 
 **共享 Guardrails（always-on + manual fallback）**：
 
