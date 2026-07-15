@@ -84,18 +84,16 @@ python3 bootstrap.py
 rm bootstrap.py
 ```
 
-**Linux/macOS (Bash):**
+**Linux/macOS（Deprecated Bash compatibility path）:**
 ```bash
-# 進入你的專案目錄
-cd ~/Projects/YourProject
+# Bash 已 deprecated，Linux/macOS 正式支援安裝器是 Python。
+# 既有 adopter 一律使用 Python 更新：
+python3 ~/ai-dev-workflow/scripts/bootstrap.py --update
 
-# 下載並執行 bootstrap
-curl -O https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.sh
-chmod +x bootstrap.sh
-./bootstrap.sh
-
-# 清理
-rm bootstrap.sh
+# Deprecated Bash 只會建立 legacy .github/** 相容層，
+# 複製存在時的 root .gitattributes/.editorconfig，
+# 並在 target 尚未有 .git 時初始化 Git。
+# 完整 portable runtime 請使用 Python 或 PowerShell。
 ```
 
 #### 方式 2：Clone 模板後執行 Bootstrap
@@ -110,10 +108,12 @@ cd ~/Projects/YourProject
 # 從模板執行 bootstrap
 pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1
 # 或: python3 ~/ai-dev-workflow/scripts/bootstrap.py
-# 或: bash ~/ai-dev-workflow/scripts/bootstrap.sh
+# Deprecated Bash 僅限 initial install: bash ~/ai-dev-workflow/scripts/bootstrap.sh
 ```
 
 **會安裝什麼：**
+PowerShell 與 Python 會安裝下列完整 runtime。Deprecated Bash 不會；它只會建立 legacy `.github/**` 相容層，複製存在時的 root `.gitattributes` / `.editorconfig`，並在 target 尚未有 `.git` 時初始化 Git。
+
 - `.github/` 相容層，保留給 Copilot / VS Code 工作流程
 - 專案根目錄的共享 `skills/` 與 `agents/`
 - `.agents/skills/`、`.claude/skills/`、`.agent/skills/`，全部指向共享 skill 庫
@@ -584,11 +584,11 @@ npx --version
 
 **解決方法：**
 ```bash
-# 讓腳本可執行
-chmod +x bootstrap.sh
+# Deprecated Bash 僅限本機 clone 路徑
+chmod +x ~/ai-dev-workflow/scripts/bootstrap.sh
 
 # 或使用明確的直譯器執行
-bash bootstrap.sh
+bash ~/ai-dev-workflow/scripts/bootstrap.sh
 ```
 
 ### 問題：「.github/workflows/ 被覆蓋了」

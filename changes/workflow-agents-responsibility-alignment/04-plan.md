@@ -2,18 +2,18 @@
 
 ## Plan Status
 
-- **Status**: Approved architecture; implementation not started
+- **Status**: Phase 0B local implementation verified; commit/PR pending
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: None
+- **Current active phase**: Phase 0B — Bash Update Safety and Deprecation
 
 ## Phase Status Summary
 
 | Phase | Status | Separate approval | Separate PR |
 |---|---|---|---|
-| 0A — Adopter constitution containment | Pending | Required | Required |
-| 0B — Bash update safety | Pending | Required | Required |
+| 0A — Adopter constitution containment | Merged | Required | Required |
+| 0B — Bash update safety | Local implementation verified; commit/PR pending | Required | Required |
 | 0C — Manifest parse safety containment | Pending | Required | Required |
 | 0D — Archive authorization containment | Pending | Required | Required |
 | 1 — AGENTS / WORKFLOW / risk contract | Pending | Required | Required |
@@ -110,6 +110,14 @@ Revert only the Phase 0A source-mapping commit/PR. Existing adopter files must r
 
 Separate user approval and separate PR required. Stop after verification and review.
 
+### Observed Evidence
+
+- PR #4
+- Squash merge SHA: `a0628198c3ac338c19b428b09f0b502d9fbd57da`
+- Python: 63 passed
+- Pester: 43 passed
+- Remote CI: success
+
 ## Phase 0B — Bash Update Safety and Deprecation
 
 ### Objective
@@ -177,6 +185,13 @@ Restore the previous Bash entry point only if the deprecation blocks a documente
 ### Approval and PR Boundary
 
 Separate user approval and separate PR required.
+
+### Observed Evidence
+
+- Targeted Bash contract tests: `python -m pytest scripts/tests/test_bootstrap.py -q -k phase0b` → 13 passed
+- Full Python bootstrap tests: `python -m pytest scripts/tests/test_bootstrap.py -q` → 76 passed
+- Bash syntax: `bash -n scripts/bootstrap.sh` → pass
+- Full gate: `pwsh -NoProfile -File .\skills\gate-check\scripts\run-gate-check.ps1` → pass
 
 ## Phase 0C — Manifest Parse Safety Containment
 

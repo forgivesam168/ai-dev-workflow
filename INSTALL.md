@@ -84,18 +84,16 @@ python3 bootstrap.py
 rm bootstrap.py
 ```
 
-**Linux/macOS (Bash):**
+**Linux/macOS (Deprecated Bash compatibility path):**
 ```bash
-# Navigate to your project
-cd ~/Projects/YourProject
+# Bash is deprecated. Python is the supported Linux/macOS installer.
+# Existing adopters must use Python:
+python3 ~/ai-dev-workflow/scripts/bootstrap.py --update
 
-# Download and run bootstrap
-curl -O https://raw.githubusercontent.com/forgivesam168/ai-dev-workflow/main/scripts/bootstrap.sh
-chmod +x bootstrap.sh
-./bootstrap.sh
-
-# Clean up
-rm bootstrap.sh
+# Deprecated Bash only seeds the legacy .github/** compatibility layer,
+# copies root .gitattributes/.editorconfig when present,
+# and initializes Git if the target does not already have .git.
+# Use Python or PowerShell for the full portable runtime install.
 ```
 
 #### Option 2: Clone Template and Bootstrap
@@ -110,10 +108,12 @@ cd ~/Projects/YourProject
 # Run bootstrap from template
 pwsh ~/ai-dev-workflow/scripts/bootstrap.ps1
 # Or: python3 ~/ai-dev-workflow/scripts/bootstrap.py
-# Or: bash ~/ai-dev-workflow/scripts/bootstrap.sh
+# Deprecated Bash initial install only: bash ~/ai-dev-workflow/scripts/bootstrap.sh
 ```
 
 **What Gets Installed:**
+PowerShell and Python install the full runtime below. The deprecated Bash path does not; it only seeds the legacy `.github/**` compatibility layer, copies root `.gitattributes` / `.editorconfig` when present, and initializes Git if the target does not already have `.git`.
+
 - Legacy `.github/` compatibility layer for Copilot / VS Code workflows
 - Shared `skills/` library at the project root
 - Shared `agents/` persona source at the project root
@@ -596,11 +596,11 @@ npx --version
 
 **Solution:**
 ```bash
-# Make script executable
-chmod +x bootstrap.sh
+# Deprecated Bash local-clone path only
+chmod +x ~/ai-dev-workflow/scripts/bootstrap.sh
 
 # Or run with explicit interpreter
-bash bootstrap.sh
+bash ~/ai-dev-workflow/scripts/bootstrap.sh
 ```
 
 ### Issue: ".github/workflows/ was overwritten"
