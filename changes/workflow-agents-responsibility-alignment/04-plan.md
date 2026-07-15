@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Phase 0C local implementation verified; PR pending
+- **Status**: Phase 0D local implementation verified; PR pending
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 0C — Manifest Parse Safety Containment
+- **Current active phase**: Phase 0D — Archive Authorization Containment
 
 ## Phase Status Summary
 
@@ -14,8 +14,8 @@
 |---|---|---|---|
 | 0A — Adopter constitution containment | Merged | Required | Required |
 | 0B — Bash update safety | Merged | Required | Required |
-| 0C — Manifest parse safety containment | Local implementation verified; PR pending | Required | Required |
-| 0D — Archive authorization containment | Pending | Required | Required |
+| 0C — Manifest parse safety containment | Merged | Required | Required |
+| 0D — Archive authorization containment | Local implementation verified; PR pending | Required | Required |
 | 1 — AGENTS / WORKFLOW / risk contract | Pending | Required | Required |
 | 2 — Agent / Skill / Prompt / Instruction alignment | Pending | Required | Required |
 | 3 — Change Package / Review / Archive semantics | Pending | Required | Required |
@@ -267,6 +267,29 @@ Revert containment changes without changing manifests or adopter content.
 Separate user approval, implementation, verification, review, and PR required.
 
 ### Observed Evidence
+
+- RED targeted Pester: 11 total, 1 passed, 10 failed, 0 skipped, 0 not run; failed tests covered local scope, approval boundary, protected-action list, safe stop/handoff, executable command scan, legacy imperatives, Prompt privilege signal, WORKFLOW mapping, preserved semantics, and local documentation scope.
+- GREEN targeted Pester 5.6.1: 11 total, 11 passed, 0 failed, 0 skipped, 0 not run.
+- Full Pester 5.6.1 (`scripts` + `tools`): 67 total, 67 passed, 0 failed, 0 skipped, 0 not run.
+- Python regression (`python -m pytest scripts/tests/test_bootstrap.py -q -p no:cacheprovider`): 89 passed, 0 failures, 0 errors.
+- Protected-command scan: pass; no executable protected command examples in canonical Skill or Prompt.
+- Canonical/derived parity: pass; Archive Skill and Prompt mirrors are byte-for-byte equal.
+- `check-sync.ps1`: pass.
+- `audit-catalog.ps1`: pass; catalog total=35, adopter=34, maintainer-only=1.
+- Full repository gate: pass, overall exit code 0; Python PASS, Pester PASS, sync PASS, catalog PASS, `git diff --check` PASS, worktree invariance PASS. Initial environment-only Pester discovery failure was resolved by exposing the existing cached Pester module through process-local `PSModulePath`; no repository file changed.
+- Independent read-only review: 0 Critical, 0 High, 0 Medium, 0 Low; reviewer allowed local commit and made no changes.
+- Scope audit: 6 allowed tracked files modified plus `tools/archive-authorization.Tests.ps1` as the only untracked file; no Archive artifact, `CHANGELOG.md`, `docs/WORK_LOG.md`, Manifest/bootstrap, Agent/Instruction, GitHub Actions, or unrelated derived output changed.
+
+### Observed Evidence
+
+- PR #6
+- Final head: `2b40fed37d5c0ed755f76720471eeedf7808627f`
+- Squash merge SHA: `d7dc6058573c08b04fffafb685cac79e22db9d83`
+- Remote Verify Change Package: success
+- Remote verify-sync Ubuntu: success
+- Remote verify-sync Windows: success
+
+### Historical Phase 0C Verification Evidence
 
 - Python targeted: `python -m pytest scripts/tests/test_bootstrap.py -q -k phase0c` → 13 passed
 - Python full: `python -m pytest scripts/tests/test_bootstrap.py -q` → 89 passed
