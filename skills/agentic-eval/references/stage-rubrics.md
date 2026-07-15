@@ -6,6 +6,16 @@ at each quality inflection point.
 
 ---
 
+## High-Risk lifecycle boundary
+
+`agentic-eval` is risk-adaptive self-evaluation, not independent review. It cannot override test, build, or deterministic failure and never replaces the independent code/security review required for High-Risk work.
+
+The only named High-Risk gates are **Architecture Decision Exit**, **Pre-Implementation Readiness**, **Pre-Delivery Verification**, and **Migration / Deployment Readiness**. Their rule-based blocking, warning-only, N/A, ordering, and approval semantics are canonical in `WORKFLOW.md`.
+
+The weighted dimensions and PASS/FAIL prompts below are general-purpose or Standard risk-triggered refinement aids. They do not supply an aggregate score or numeric threshold for a named High-Risk gate, cannot promote a warning to blocking, and cannot override deterministic evidence. A named gate may use a rubric dimension only as supporting evidence for an approved blocking condition.
+
+---
+
 ## #brainstorm
 
 **Evaluation model**: Tier 1 self-check only (no external critic — preserve divergent thinking).
@@ -61,10 +71,10 @@ at each quality inflection point.
 
 ## #plan
 
-**Evaluation model**: Tier 1 cross-check (plan-agent self + spec consistency) → Tier 2 architect external (Med/High risk).
+**Evaluation model**: Tier 1 cross-check (plan-agent self + spec consistency) → Tier 2 architect external for Standard work when risk-triggered.
 **Who evaluates**:
 - plan-agent: Spec Evaluation Before Planning (at start), then self-check after plan
-- architect-agent: External Tier 2 evaluation for Med/High risk plans
+- architect-agent: External Tier 2 evaluation for Standard plans when risk-triggered
 
 | Dimension | Weight | PASS Criteria |
 |-----------|--------|---------------|
@@ -115,8 +125,10 @@ at each quality inflection point.
 
 ## #review
 
-**Evaluation model**: Tier 1 meta-check (architect-agent, High-risk only) after code-reviewer completes.
+**Evaluation model**: Tier 1 meta-check after code-reviewer completes, for Standard work when risk-triggered or as supporting evidence requested by a named High-Risk gate.
 **Who evaluates**: architect-agent checks whether the review itself is sufficiently thorough.
+
+This supporting meta-check is part of the `agentic-eval` self-evaluation workflow; it does not satisfy or replace the independent review required by a named High-Risk gate.
 
 | Dimension | Weight | PASS Criteria |
 |-----------|--------|---------------|

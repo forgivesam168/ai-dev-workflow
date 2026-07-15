@@ -34,7 +34,7 @@ Use this skill when:
 
 Before generating `03-spec.md`, verify input quality:
 1. If `01-brainstorm.md` exists: check whether brainstorm `agentic-eval` self-check completed. If `Option Diversity` or `Requirements Coverage` FAIL → surface the gap to the user and ask for explicit approval to proceed.
-2. No brainstorm (fast-path): ask the user to confirm the core requirement in one sentence before starting.
+2. No prior brainstorm (direct request): ask the user to confirm the core requirement in one sentence before starting.
 3. Generate a **confirmed requirements summary** (≤200 words) — confirmed items only, no inference. Store in `01-brainstorm.md`. This is the `Requirement Provenance` rubric anchor.
 
 ## Step-by-Step Workflow
@@ -293,8 +293,8 @@ Before running agentic-eval, switch through 4 specialist perspectives. Each **mu
 
 > Do NOT skip to agentic-eval until all 4 lenses are completed. See [specialist-lens-review.md](./references/specialist-lens-review.md) for full checklist.
 
-**agentic-eval Self-Review** (authoritative final gate):
-Run `/agentic-eval` with the `#spec` rubric before handoff. This is the **authoritative gate** — rubric results take precedence when any conflict exists with the checklists above.
+**agentic-eval Self-Review** (risk-adaptive supporting check):
+Run `/agentic-eval` with the `#spec` rubric only when the selected Standard mode is risk-triggered or a named High-Risk gate requests this evidence. It is self-evaluation, not independent review, and cannot override deterministic test/build/gate evidence or the blocking conditions in `WORKFLOW.md`.
 
 | Check | Threshold |
 |-------|-----------|

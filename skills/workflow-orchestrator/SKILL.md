@@ -40,21 +40,15 @@ Respond concisely (max 3 lines):
 指令：/[slash-command] 或輸入「[trigger phrase]」
 ```
 
-## Workflow Paths
+## Execution Mode Routing
 
-**Standard** (Med/High risk): `Brainstorm → Spec → Plan → TDD → Review → Archive`  
-**Fast Path** (Low risk only): `Brainstorm → Plan → TDD → Review → Archive`
+Read the canonical mode and lifecycle contract from [`WORKFLOW.md`](../../WORKFLOW.md). Select exactly one of Simple, Standard, or High-Risk and report that selection with the evidence used. Do not redefine entry criteria, package triggers, stage skip rules, or gate semantics in this router.
 
-| Risk | Criteria | Path |
-|------|----------|------|
-| Low | Bug fix, config change, minor refactor | Fast Path (skip Spec) |
-| Medium | New feature, API change, schema change | Standard |
-| High | Security, auth, money, breaking change | Standard (mandatory) |
+- Simple: recommend only the lightweight checkpoints and targeted verification needed by the task.
+- Standard: route through the selected stages and declared plan/lifecycle SSOT; mention the compact Change Package only when a canonical trigger applies.
+- High-Risk: route through the full Workflow and complete Change Package, preserving approvals, independent review, rollback/migration, and operational-evidence requirements.
 
-## Stage Skip Rules
-
-- Low-risk only: Can skip Spec (Brainstorm → Plan directly)
-- **Never skip**: Brainstorm, Plan, TDD, Review
+If a task crosses a higher-risk boundary, stop routing and return to mode classification before suggesting further implementation.
 
 ## Troubleshooting
 

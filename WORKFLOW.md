@@ -5,16 +5,46 @@
 - **Superpowers 精神**：先 brainstorm / 再 plan / 再 TDD / 再 review / 再重構與驗證
 - **OpenSpec 精神（輕量版）**：把需求/決策/計畫留在 repo，形成長期上下文（可稽核）
 
+## Lifecycle SSOT and ownership
+
+This maintainer `WORKFLOW.md` is the canonical lifecycle SSOT for this template repository. Agents, Skills, and Prompts route to it and must not redefine execution modes, stage entry/exit rules, or artifact semantics.
+
+The adopter-facing lifecycle source remains open. Phase 3 requires a maintainer/adopter difference review and separate user approval before selecting or distributing any adopter source; root `WORKFLOW.md` must not be presumed directly installable.
+
+The Phase 4 Manifest schema is not approved. This lifecycle contract does not authorize a schema design, migration, prune, or real-adopter execution.
+
+Every task selects exactly one execution mode: Simple, Standard, or High-Risk. These are the only execution modes; workflow paths, optional PRD use, and tool UX are not additional modes.
+
+### Simple
+
+Use Simple only for localized, reversible work that does not cross auth, security, financial, migration, deployment, destructive, or public-breaking boundaries and has one reliable targeted verification path.
+
+Simple uses lightweight Understand, Implement, Prove, and Deliver checkpoints with targeted verification. It does not require the six-stage lifecycle or a Change Package. An inline plan or an existing project plan is optional when useful.
+
+### Standard
+
+Use Standard for normal feature work, multiple files or components, meaningful design choices, bounded contract/config changes, or moderate regression risk. Declare exactly one plan/lifecycle SSOT and use only the stages needed to meet their exit criteria.
+
+A compact Change Package is required when Standard work is cross-session, cross-component, contract-change, independent-review, migration/audit-sensitive, or escalation-prone. Otherwise the one declared plan/lifecycle SSOT is sufficient. Independent review is required when the risk calls for it.
+
+### High-Risk
+
+Use High-Risk for security, auth, permission, financial, migration, public breaking changes, irreversible data work, deployment or production operations, or major architecture decisions.
+
+High-Risk requires the full Workflow, a complete Change Package, explicit approvals, independent review, rollback/migration evidence, and operational evidence appropriate to the change. The named High-Risk gates below are rule-based and must pass in order.
+
+If Simple or Standard work crosses a higher-risk boundary, stop and reclassify or escalate before further implementation. Missing reliable verification prevents Simple classification.
+
 ---
 
-## 1) 六階段標準流程
+## 1) High-Risk full lifecycle and selected Standard stages
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │ 1.Brainstorm│ -> │   2.Spec    │ -> │   3.Plan    │
 │  釐清需求   │    │  規格文件   │    │  任務拆解   │
 │  風險判定   │    │  安全需求   │    │  測試策略   │
-│ 標準/快速路 │    │  驗收標準   │    │  影響分析   │
+│ 執行模式    │    │  驗收標準   │    │  影響分析   │
 └─────────────┘    └─────────────┘    └─────────────┘
                                             │
         ┌───────────────────────────────────┘
@@ -31,7 +61,7 @@
 
 | 階段 | 指令 | 說明 |
 |------|------|------|
-| 1 | `/brainstorm` | 風險分類、先問至少五題釐清需求、建立 change package |
+| 1 | `/brainstorm` | 風險分類、先問至少五題釐清需求；只在 selected mode 要求時建立 Change Package |
 | 2 | `/spec` | 產出規格文件 |
 | 3 | `/create-plan` | 產出可執行計畫（含測試策略、影響分析） |
 | 4 | `/tdd` | TDD 實作（Red-Green-Refactor） |
@@ -45,7 +75,7 @@
 | 階段 | 自動載入 Skills | 推薦 Agent | CLI 觸發語句（範例） | 產出物 |
 |------|----------------|-----------|---------------------|--------|
 | 0. 流程狀態 | `workflow-orchestrator` | `pm-agent` | `我現在在哪個階段？所有專案進度？` | 現況偵測 + 下一步建議 + 跨 session 狀態追蹤 |
-| 1. Brainstorm | `brainstorming` | `brainstorm-agent` | `我要 brainstorm 新功能` | `01-brainstorm.md` `02-decision-log.md` |
+| 1. Brainstorm | `brainstorming` | `brainstorm-agent` | `我要 brainstorm 新功能` | inline summary，或 mode-required `01-brainstorm.md` / `02-decision-log.md` |
 | 1.5. PRD（選用）| `prd` | `pm-agent` | `幫我起草 PRD` | `00-prd.md`（策略型專案）|
 | 2. Spec | `specification`, `prd` | `spec-agent` | `幫我寫規格文件` | `03-spec.md` |
 | 2. Spec（技術架構）| — | `architect-agent` | `幫我設計系統架構` | ADR, 設計文件 |
@@ -63,19 +93,87 @@
 - 平常由 constitution + core agents **隱性生效**
 - 若要顯式重載這層品質底盤，可手動引用：`/execution-guardrails`
 
-**品質閘門（agentic-eval）— 階段交接點自動驗證：**
+## Named High-Risk Gates
 
-在特定階段完成主要 skill 後，相關 agent 會呼叫 `agentic-eval` skill 進行品質驗證，防止有缺陷的產出物流入下一階段：
+`agentic-eval` is risk-adaptive self-evaluation, not independent review. It cannot override test, build, or other deterministic failures and never replaces the independent review required for High-Risk work.
 
-| 觸發時機 | 執行 Agent | 達成目標 | Tier | 風險閾值 |
-|---------|-----------|---------|------|---------|
-| Spec 完成 → handoff 前 | `spec-agent`（自評）| 確保 AC 可測性與可追溯性；FAIL 則**阻擋 handoff**，防止不完整規格進入計畫 | 1 | 所有 |
-| Plan 開始前（收到 spec 後）| `plan-agent`（交叉評估）| 從規劃者視角驗證 spec 可執行性，標記「無法寫出具體步驟」的需求 gap | 1 | Med / High |
-| Plan 完成後 | `architect-agent`（外部仲裁）| 架構合規 + 規格覆蓋仲裁；≥2 維度 FAIL 啟動 Tier 2 子代理對抗批評 | 1 / 2 | Med / High |
-| Code Review 送出前 | `coder-agent`（自評）| 確認 Financial Precision + Green Build；**Financial Precision FAIL = 強制停止** | 1 | 所有 |
-| Review 完成後 | `architect-agent`（Meta 審查）| 確認 Review 是否完整，高風險變更的最後品質關卡 | 1 | High only |
+### Architecture Decision Exit
 
-> 詳細 rubric 見 [`skills/agentic-eval/references/stage-rubrics.md`](./skills/agentic-eval/references/stage-rubrics.md)
+Apply before an irreversible or high-cost architecture, security, permission, data, or public-contract decision enters downstream commitment.
+
+**Blocking conditions:**
+
+- unresolved safety or authorization boundary;
+- fabricated, unverified, or materially unsupported source or assumption;
+- irreversible decision without a viable rollback, migration, or compensation path;
+- unresolved material contract conflict.
+
+**Warning-only findings:**
+
+- maintainability preferences that do not affect correctness, security, reversibility, or contract behavior;
+- optional documentation or naming improvements that do not affect correctness, security, reversibility, or contract behavior.
+
+### Pre-Implementation Readiness
+
+Apply before every High-Risk implementation.
+
+**Blocking conditions:**
+
+- unresolved required AC, scope, decision, or prerequisite;
+- missing protected-action approval;
+- missing or non-executable applicable migration, rollback, or recovery plan;
+- no reliable RED/GREEN or other verifiable path;
+- unclear ownership or affected-system boundary.
+
+**Warning-only findings:**
+
+- optional documentation, presentation, or wording improvements that do not affect safe or verifiable implementation.
+
+### Pre-Delivery Verification
+
+Apply before every High-Risk commit, push, PR, or merge.
+
+**Blocking conditions:**
+
+- known red test or build, lint, static check, or required gate;
+- material requirement or AC without evidence;
+- security, authorization, financial, data-integrity, or migration invariant failure;
+- scope leakage, unreviewed generated drift, or invalid working-tree state;
+- missing required independent review or unresolved Critical or High finding.
+
+**Warning-only findings:**
+
+- style, presentation, or low-impact clarity issues that do not affect correctness or auditability.
+
+### Migration / Deployment Readiness
+
+Apply only when migration, deployment, production operation, or irreversible data execution is in scope and separately authorized.
+
+**Blocking conditions:**
+
+- missing explicit, current-task, action-specific execution approval;
+- unbounded scope, target, batch, or affected population;
+- missing rollback, restore, compensation, or safe-stop path;
+- missing rehearsal, recovery validation, or required operational signal;
+- unclear ownership, backup, reversibility, or failure handling.
+
+**Warning-only findings:**
+
+- non-critical presentation, report-formatting, or optional-observability improvements.
+
+When this gate is not applicable, record exactly: `N/A — no migration or deployment execution is authorized in this Phase.`
+
+### Cross-gate semantics
+
+- Deterministic failure is always blocking.
+- Warning-only findings must be recorded but cannot be promoted to blocking unless new evidence matches an approved blocking condition.
+- Resolve every blocking finding before entering the next gate.
+- N/A requires an auditable reason.
+- High-Risk work always retains independent review after self-evaluation.
+- These gates use rule-based conditions and introduce no aggregate score or numeric threshold. General-purpose `agentic-eval` scoring does not apply to the named High-Risk gates.
+- New gates, blocking dimensions, or aggregate thresholds require separate approval.
+
+> Detailed non-lifecycle evaluation patterns and supporting rubrics live in [`skills/agentic-eval/SKILL.md`](./skills/agentic-eval/SKILL.md) and [`skills/agentic-eval/references/stage-rubrics.md`](./skills/agentic-eval/references/stage-rubrics.md).
 
 **輔助 Skills（任何階段，依需求引用）：**
 
@@ -115,43 +213,24 @@
 
 ---
 
-## 2) 三種路徑：策略路 / 標準路 / 快速路
+## 2) Representative mode selection
 
-### C. 策略路（跨部門 / 多利害關係人專案）
-> **Brainstorm → PRD → Spec → Plan → Implement(TDD) → Review → Archive**
+| Scenario | Selected mode | Required lifecycle behavior |
+|---|---|---|
+| Localized documentation correction with a reliable targeted check | Simple | Lightweight A/B/C/D; no mandatory six-stage flow or Change Package. |
+| Multi-file feature with one bounded plan and no package trigger | Standard | One declared plan/lifecycle SSOT and selected stages with explicit verification. |
+| Cross-session contract change requiring independent review | Standard | Compact Change Package because the Standard package trigger applies. |
+| Auth, financial, migration, breaking API, production, or major architecture work | High-Risk | Full Workflow and Change Package with explicit approvals, independent review, rollback/migration, and operational evidence. |
 
-適用情境：
-- 跨部門溝通（管理層、業務、IT 共同確認範圍與優先序）
-- 多利害關係人需要業務對齊（KPI、商業目標、成本效益）
-- 公司內部大型系統採購或客製化開發
-
-**PRD**（`changes/<slug>/00-prd.md`）由 `pm-agent` 起草，`architect-agent` 審閱技術可行性後才進 Spec 階段。
-
-### A. 標準路（建議：中高風險 / 棕地 / 跨模組）
-> **Brainstorm → Spec → Plan → Implement(TDD) → Review → Archive**
-
-適用情境：
-- 需求不清楚、反覆變更
-- 多檔案、多模組、跨系統
-- 涉及安全/權限/資料流/外部整合/CI/CD/供應鏈
-- 任何棕地（已上線或已有使用者/依賴者）
-
-### B. 快速路（允許：低風險的小修）
-> **Plan → Implement → Review**
-
-適用情境：
-- 文案/註解/小修
-- 明確的低風險 bug（影響面可一眼看完）
-- 不改動介面契約、不改資料流、不動 workflow/權限
-
-**快速路仍需：**
-- PR 內寫清楚驗證方式（手動也可）
-- 風險與回滾說明（可很短）
+Optional PRD use is a lifecycle stage choice, not a fourth execution mode. For cross-department or multi-stakeholder work, `pm-agent` may draft `changes/<slug>/00-prd.md` and `architect-agent` may review technical feasibility before Spec when the selected mode and plan require it.
 
 ---
 
-## 3) 每次變更都要留下「Change Package」
-我們把每次需求/變更封裝成一個資料夾（可版控、可查詢、可稽核）：
+## 3) Change Package requirements
+
+A Change Package is a lifecycle evidence container, decision trace, and implementation/verification record. Simple does not require one. Standard requires a compact package only when a listed trigger applies. High-Risk requires the complete package.
+
+When required, place the versioned package under:
 
 `changes/<YYYY-MM-DD>-<slug>/`
 
@@ -165,25 +244,31 @@
 - `06-impact-analysis.md`（棕地 / 高風險）
 - `99-archive.md`（驗收 + 歸檔）
 
+Every work item declares exactly one task/status SSOT. With an external tracker, the package stores only the tracker pointer, decisions, and evidence; without one, `04-plan.md` may explicitly declare itself the task/status SSOT.
+
 > **核心原則：** 需求變動時，更新 spec；決策變動時，追加 decision log（不要覆寫歷史）。
 
 ---
 
 ## 4) Definition of Ready（DoR）：什麼才准進開發？
-至少滿足：
-- 目標與非目標明確（`01-brainstorm.md`）
-- 至少一個驗證方式（`03-spec.md` 或 `04-plan.md`）
-- 風險等級已判定（Low/Med/High）
-- 棕地：已包含影響分析（在 `04-plan.md` 中）
+
+所有 mode 都必須先明確目標／非目標、選擇唯一 execution mode，並定義至少一個可靠驗證方式。
+
+- **Simple**: inline 記錄目標、重大假設與 targeted verification 即可；不要求 lifecycle files。
+- **Standard / High-Risk**: mode-required artifacts 必須存在且達到 selected stage exit criteria。Standard 只在 trigger 成立時要求 compact Change Package；High-Risk 要求 complete Change Package。
+- Brownfield 影響分析、rollback／migration 或 operational evidence 依 mode 與實際風險提供，不得用缺少文件作為降級理由。
 
 ---
 
 ## 5) Definition of Done（DoD）：什麼才算做完？
-至少滿足：
-- 有測試（或寫明為何不寫 + 手動驗證步驟）
-- PR 有：Change Package 路徑、驗證方式、風險與回滾
-- Review 通過（`05-review.md`）
-- 改動涉及「危險區」時有 CODEOWNERS 審核：
+
+所有 mode 都必須完成批准 scope、保留適用驗證證據，並準確回報 delivery state；任何 deterministic failure 都是 blocking。
+
+- **Simple**: does not require a PR or Change Package；targeted verification 通過且 inline completion evidence 足夠。
+- **Standard**: 完成 selected stage exits；觸發 compact package 或 independent review 時，必須附相應 evidence。
+- **High-Risk**: 完成 full Workflow、complete Change Package、named gates、explicit approvals 與 independent review，並提供 rollback／migration／operational evidence。
+- 只有已獲 current-task authorization 的 PR 才需記錄 package／plan pointer、驗證方式、風險與回滾。
+- 改動涉及「危險區」時需適用的獨立審核：
   - `.github/workflows/**`
   - 權限/驗證/授權
   - 資料輸入輸出（API、檔案、DB）
@@ -198,7 +283,7 @@
 
 ---
 
-## 7) 建議你們的最小節奏（適合 5 人小隊）
+## 7) Standard / High-Risk 團隊節奏範例（適合 5 人小隊）
 - 新需求：先開 Issue（或一張 task）
 - 先 `/brainstorm`（產出 01/02/03 草稿）
 - `/spec`（完善 03-spec.md）

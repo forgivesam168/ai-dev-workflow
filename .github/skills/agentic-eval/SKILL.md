@@ -47,11 +47,11 @@ agentic-eval 是將此精神**結構化**的工具集。任何決策、任何輸
 
 ---
 
-## Pre-Decision Mode（決策前懷疑模式）
+## General-Purpose Pre-Decision Mode（決策前懷疑模式）
 
-Use **before committing to a high-risk decision**: architecture choices, irreversible operations (DB schema, API contracts, security design), or any decision flagged as High Risk by brainstorm-agent.
+Use this optional scoring pattern to challenge a decision outside the named High-Risk lifecycle gates. For High-Risk architecture, security, permission, data, or public-contract commitment, use the rule-based **Architecture Decision Exit** gate instead.
 
-> **強制觸發條件**: High Risk 決策 / 架構選擇 / 不可逆操作 → **必須執行** Pre-Decision Mode，不得直接實作。
+> Numeric self-scoring in this section is a general-purpose refinement aid. It is not approval evidence and does not apply to any named High-Risk gate.
 
 ### Five-Step Protocol
 
@@ -85,10 +85,10 @@ Gap to close: [specific action needed]
 
 ## When to Use
 
-**Pre-Decision（高風險決策前）**:
-- Architecture choices, DB schema changes, API contract design, security design
-- Any decision flagged as High Risk by brainstorm-agent
-- Irreversible operations where rollback is costly or impossible
+**General Pre-Decision（一般決策前）**:
+- General decision challenges that are not governed by a named High-Risk gate
+- Early option exploration before a decision reaches downstream commitment
+- Draft reasoning where a numeric self-score is useful only as advisory refinement
 
 **Post-Output（輸出完成後）**:
 - Output is **high-stakes or externally visible** (code shipped to prod, published reports)
@@ -102,36 +102,68 @@ Gap to close: [specific action needed]
 - Standard code quality/security review → use `code-review` or `code-security-review`
 - Refactoring existing code → use `refactor`
 - Simple formatting or lint issues
+- A named High-Risk gate decision that requires the rule-based `WORKFLOW.md` conditions rather than scoring
+
+---
+
+## Named High-Risk Gates
+
+`agentic-eval` is risk-adaptive self-evaluation, not independent review. It cannot override test, build, or deterministic failure and never replaces required independent code/security review.
+The named High-Risk gates do not use scores or numeric thresholds; they evaluate only the approved rule-based conditions.
+
+- Simple: not required.
+- Standard: risk-triggered when an approved condition calls for self-evaluation.
+- High-Risk: run only the explicitly named gates below at their canonical lifecycle points, then retain independent review.
+
+| Gate | Canonical purpose |
+|---|---|
+| Architecture Decision Exit | Challenge irreversible or high-cost architecture, security, permission, data, or public-contract commitment. |
+| Pre-Implementation Readiness | Verify approved AC, scope, prerequisites, authorization, recovery, testability, and ownership before High-Risk implementation. |
+| Pre-Delivery Verification | Verify deterministic checks, AC evidence, invariants, scope, generated parity, worktree state, and independent-review status before protected delivery. |
+| Migration / Deployment Readiness | Verify separately authorized operational scope, rollback/restore/compensation, rehearsal, signals, ownership, and reversibility. |
+
+The full blocking and warning-only conditions are canonical in `WORKFLOW.md`. For these named High-Risk gates:
+
+- deterministic failure is always blocking;
+- warning-only findings must be recorded but cannot be promoted to blocking without new evidence matching an approved blocking condition;
+- blocking findings must be resolved before the next gate;
+- N/A requires an auditable reason; when no operational execution is in scope, record `N/A — no migration or deployment execution is authorized in this Phase.`;
+- no aggregate score or numeric threshold applies;
+- general-purpose scoring, weighted rubrics, iteration scores, and score thresholds do not apply to the named High-Risk gates.
+
+Any future gate, blocking dimension, or aggregate threshold requires separate approval.
 
 ---
 
 ## Integration with 6-Stage AI Development Workflow
 
-This skill can be used at any stage where adversarial challenge adds value.
-Evaluation strictness is **risk-adaptive** — tied to the brainstorm-agent's Low/Med/High classification.
+This skill can be used at any stage where adversarial challenge adds value, subject to the selected execution mode.
+Evaluation strictness is **risk-adaptive** and follows the canonical Simple / Standard / High-Risk contract in `WORKFLOW.md`.
 It complements the repo's shared `execution-guardrails` layer: guardrails shape behavior **before and during** work, while `agentic-eval` provides on-demand adversarial challenge.
 
-The table below shows **common usage patterns** (advisory, not mandatory):
+The table below shows **general-purpose usage patterns** for Standard work (advisory, not mandatory). It does not define or replace a named High-Risk gate:
 
 | Stage Transition | Common Use | Tier | Risk Level |
 |-----------------|------------|------|------------|
-| Before Spec → handoff | spec-agent self-challenge | 1 | All |
-| Spec → Plan | plan-agent cross-validation | 1 | Med / High |
-| After Plan complete | architect-agent external critique | 2 (Optional) | Med / High |
-| Before code-reviewer | coder-agent self-eval | 1 | All |
-| Review completeness check | architect-agent meta-review | 1 (Optional) | High only |
+| Before Spec → handoff | spec-agent self-challenge | 1 | Standard when risk-triggered |
+| Spec → Plan | plan-agent cross-validation | 1 | Standard when risk-triggered |
+| After Plan complete | architect-agent external critique | 2 (Optional) | Standard when risk-triggered |
+| Before code-reviewer | coder-agent self-eval | 1 | Standard when risk-triggered |
+| Review completeness check | architect-agent meta-review | 1 (Optional) | Standard when risk-triggered |
 
-### Architect-Agent Trigger Conditions
+### General-Purpose Architect-Agent Trigger Conditions
 
-When invoked by `architect-agent` for cross-stage quality arbitration:
+When invoked by `architect-agent` for Standard cross-stage quality arbitration outside the named High-Risk gates:
 
 | Invocation Point | Rubric | Tier | Risk Threshold |
 |-----------------|--------|------|----------------|
-| After `spec-agent` | `#spec` | 1 | High risk only |
-| After `plan-agent` | `#plan` | 1; Tier 2 if ≥2 FAIL | Med / High |
-| After `code-reviewer` | `#review` meta-rubric | 1 | High risk only |
+| After `spec-agent` | `#spec` | 1 | Standard when risk-triggered |
+| After `plan-agent` | `#plan` | 1; Tier 2 if ≥2 FAIL | Standard when risk-triggered |
+| After `code-reviewer` | `#review` meta-rubric | 1 | Standard when risk-triggered |
 
 **FAIL path**: All PASS → `REVIEW ACCEPTED`. 1 FAIL → targeted re-review. ≥2 FAIL or Financial Precision FAIL → route to coder then full re-review. Max 2 iterations; unresolved → escalate to human.
+
+Even when Tier 2 invokes an external critic, that critic supplies supporting evidence inside the `agentic-eval` self-evaluation workflow. It does not satisfy or replace the independent review required by a named High-Risk gate.
 
 ### Subagent Status Protocol
 

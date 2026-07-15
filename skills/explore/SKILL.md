@@ -55,7 +55,7 @@ Before transitioning out of explore mode, produce a brief summary:
 ## Explore Summary
 - **Scope**: [what was investigated]
 - **Key Findings**: [2–5 bullet points]
-- **Recommended Next Step**: [brainstorm / fast-path plan / other]
+- **Recommended Next Step**: [brainstorm / Simple or Standard plan / other, as selected under WORKFLOW.md]
 - **Risk Signal**: [Low / Med / High — brief rationale]
 ```
 
@@ -78,7 +78,7 @@ This summary becomes input to the brainstorm or plan step.
 - [ ] `rg "## Findings\|## Key Findings" <output-file>` 有匹配（Findings 段落已存在）
 - [ ] Findings 含至少 2 個具體觀察（非「程式碼看起來正常」等模糊描述）
 - [ ] Risk Signal 已填寫（Low / Med / High + 一句理由）
-- [ ] Recommended Next Step 已明確（brainstorm / fast-path plan / 其他具體行動）
+- [ ] Recommended Next Step 已依 `WORKFLOW.md` 的 Simple / Standard / High-Risk 模式明確記錄（brainstorm / plan / 其他具體行動）
 - [ ] Explore 範圍（Scope）已明確描述（調查了哪些模組/路徑/決策點）
 - [ ] 未建立或修改任何非 Explore 產出物的程式碼檔案（Explore = read-only）
 - [ ] 產出摘要可直接貼入 brainstorm-agent 或 plan-agent 的輸入脈絡

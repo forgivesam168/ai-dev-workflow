@@ -25,22 +25,24 @@ Use this skill when:
 ## Prerequisites
 
 **Required**:
-- `03-spec.md` with clear requirements and acceptance criteria
+- Selected Simple / Standard / High-Risk execution mode, confirmed requirements, and the declared plan/lifecycle SSOT
+- The mode-required Spec (`03-spec.md`) with clear requirements and acceptance criteria only when the selected mode or lifecycle stage requires it
 
 **Recommended**:
 - `01-brainstorm.md` for context and chosen approach
 - `02-decision-log.md` for architectural decisions
 
-## Workflow Path Selection
+## Execution Mode Input
 
-Determine the path **before** planning:
+Read the already selected execution mode from the task's lifecycle SSOT before planning. `WORKFLOW.md` owns all entry, artifact, and escalation semantics.
 
-| Path | When | Required Inputs |
+| Mode | Planning input |
 |------|------|----------------|
-| **Standard** (Med/High risk) | Spec exists (`03-spec.md`), multi-file change, brownfield | `01-brainstorm.md`, `02-decision-log.md`, `03-spec.md` |
-| **Fast** (Low risk only) | Isolated change, no existing users, easily reverted | `01-brainstorm.md` (or inline requirements) |
+| **Simple** | Confirmed inline requirements or an existing project plan; a Change Package and Spec are not mandatory. |
+| **Standard** | The declared plan/lifecycle SSOT; use `03-spec.md` when the selected stages or contract require it. |
+| **High-Risk** | Complete Change Package with approved requirements, decisions, AC, rollback/migration, verification, and operational evidence. |
 
-**Missing artifacts behavior**: If `03-spec.md` is absent on a Standard path, **stop** and ask the user to run the spec stage first. Do NOT infer spec from conversation alone.
+**Missing artifacts behavior**: If a mode-required artifact is absent, stop and identify the exact missing prerequisite. Do not infer a required Spec from conversation alone.
 
 ## Spec Cross-Validation
 
@@ -350,7 +352,7 @@ Before accepting any Task, apply this check:
 
 ## Plan Handoff Gate
 
-Run `/agentic-eval` before approving for TDD implementation stage:
+Run `/agentic-eval` before TDD handoff only when the selected Standard mode is risk-triggered or the High-Risk **Pre-Implementation Readiness** gate requests supporting self-evaluation. It cannot replace independent review or override deterministic failure:
 
 | Check | Threshold |
 |-------|-----------|
@@ -417,7 +419,7 @@ If `03-spec.md` is already complete, you can skip straight to task breakdown:
 3. **Generate plan**: Use the Phase template above, but reference spec sections
 4. **Output**: `changes/<slug>/04-plan.md` linked to spec
 
-> This is the "plan from spec" fast path — spec is already your source of truth.
+> This is the direct plan-from-spec route — the spec is already your source of truth. It is not a separate execution mode.
 
 ## Troubleshooting
 

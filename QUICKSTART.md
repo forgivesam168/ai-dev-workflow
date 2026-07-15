@@ -22,7 +22,7 @@ codex
 /brainstorm 或「我要開始 brainstorming」
 ```
 
-### Step 3: 依序完成六階段
+### Step 3: 依 selected execution mode 完成必要階段
 
 ```
 1. Brainstorm → 2. Spec → 3. Plan → 4. TDD → 5. Review → 6. Archive
@@ -47,7 +47,7 @@ codex
 
 ## 📋 快速參考
 
-### 六階段指令對照
+### Lifecycle stage 指令對照（High-Risk 全部使用；Standard 依 selected stages）
 
 | 階段 | CLI 輸入（自然語言） | VS Code 輸入（斜線指令） | 推薦 Agent |
 |------|---------------------|--------------------------|-----------|
@@ -115,9 +115,9 @@ codex
 
 `/execution-guardrails`
 
-**品質閘門（agentic-eval）— 階段交接前的自動品質驗證：**
+**品質閘門（agentic-eval）— 風險自適應的 self-evaluation：**
 
-各 agent 在完成主技能後，會自動執行 `agentic-eval` 做一道品質驗證，**阻止有缺陷的產出物流入下一階段**。使用者不需要手動觸發——agent 會自己做，並告知結果。
+`agentic-eval` 是 self-evaluation，不是 independent review，也不能覆蓋 test、build 或其他 deterministic failure。Simple 不要求；Standard 只在風險條件觸發時使用；High-Risk 只使用 `WORKFLOW.md` 的 named rule-based gates，並保留 independent review。
 
 | 觸發時機 | 執行 Agent | 驗證內容 | FAIL 時的行為 |
 |---------|-----------|---------|-------------|
@@ -158,7 +158,7 @@ codex
    → 系統載入 specification skill
    → 推薦切換到 spec-agent
    → 產出 03-spec.md
-   → ✅ [品質閘門] spec-agent 自動執行 AC 可測性自評
+   → ✅ [風險觸發時] spec-agent 執行 AC 可測性自評
       若 Testability FAIL → 自動修正後再 handoff
 
 3. 產出 03-spec.md 後，輸入: "規劃實作計畫"
@@ -174,7 +174,7 @@ codex
    → 系統載入 tdd-workflow skill
    → 推薦切換到 coder-agent
    → 完成實作
-   → ✅ [品質閘門] coder-agent 自動執行 Pre-Review 自評
+   → ✅ [風險觸發時] coder-agent 執行 Pre-Review 自評
       🔴 Financial Precision FAIL → 強制停止，不得進入 Review
       其他 FAIL → 修正後繼續
 
@@ -199,16 +199,16 @@ codex
 → CLI: /agent → 選擇 plan-agent
 ```
 
-### 範例 3: 低風險快速修復（Fast Path）
+### 範例 3: 低風險局部修復（Simple）
 
 ```
 1. 輸入: "我要修一個小 bug"
    → 系統詢問風險等級
-   → 確認為低風險
-   → 建議快速路（跳過 Spec）
+   → 確認範圍局部、可逆，且有可靠的 targeted verification
+   → 選擇 Simple；不強制六階段流程或 Change Package
    
-2. 直接輸入: "規劃修復計畫"
-   → 產生 04-plan.md
+2. 先定義可驗證成功條件
+   → 需要時使用 inline plan 或既有 project plan
    
 3. 輸入: "開始 TDD"
    → 寫測試 → 實作 → 重構
@@ -216,8 +216,8 @@ codex
 4. 輸入: "review"
    → 審核通過
    
-5. 輸入: "archive"
-   → 完成
+5. 準確回報 targeted verification 與交付狀態
+   → Simple 不強制 Archive
 ```
 
 ---
@@ -305,7 +305,7 @@ pwsh -File .\scripts\bootstrap.ps1 -Update -EnableMemory
    - 常見問題 FAQ
 
 2. **[WORKFLOW.md](./WORKFLOW.md)** - 工作流程詳細說明
-   - 標準路 vs 快速路
+   - Simple / Standard / High-Risk execution modes
    - Change Package 結構
    - 驗收與歸檔
 

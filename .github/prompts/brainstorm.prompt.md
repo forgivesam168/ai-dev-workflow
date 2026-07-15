@@ -1,5 +1,5 @@
 ---
-description: 'Start a work item: triage risk, run structured brainstorming, and create the change package skeleton.'
+description: 'Start a work item: triage risk, select the canonical execution mode, run structured brainstorming, and create only the lifecycle artifacts required by WORKFLOW.md.'
 ---
 
 # Brainstorm Command
@@ -9,9 +9,9 @@ description: 'Start a work item: triage risk, run structured brainstorming, and 
 
 Use `/brainstorm` at the start of any new work item to:
 1. Triage and classify risk (Low/Med/High)
-2. Decide workflow path (Standard vs Fast)
+2. Select exactly one execution mode from `WORKFLOW.md` (Simple, Standard, or High-Risk)
 3. Clarify requirements and compare options
-4. Create the change package skeleton
+4. Produce only the lifecycle artifacts required by the selected mode
 
 ## When to Use
 - Requirements are unclear, high-risk, or multiple approaches exist
@@ -24,9 +24,7 @@ Use `/brainstorm` at the start of any new work item to:
 - Clarify goals and non-goals
 - Classify risk: **Low** / **Med** / **High**
 - Determine if this is brownfield (existing system)
-- Recommend path:
-  - **Standard**: `/brainstorm` → `/plan` → `/tdd` → `/review`
-  - **Fast** (low-risk only): `/plan` → `/tdd` → `/review`
+- Apply the mode entry and escalation rules from `WORKFLOW.md`; do not create another path label.
 
 ### Step 2: Structured Brainstorming
 1) **Clarifying Questions** — ask at least 5 targeted questions in each new brainstorming round before options or recommendations, unless the user explicitly allows assumptions
@@ -35,9 +33,11 @@ Use `/brainstorm` at the start of any new work item to:
 4) **Recommendation** (chosen approach)
 5) **Decision Log** (copy/paste-ready)
 
-## Output: Change Package Skeleton
+## Output: Required Lifecycle Artifacts
 
-Create `changes/<YYYY-MM-DD>-<slug>/` with:
+Simple does not require a Change Package; keep the confirmed summary inline or in an existing project plan when useful.
+
+When `WORKFLOW.md` requires a compact or full Change Package, create `changes/<YYYY-MM-DD>-<slug>/` with:
 - `01-brainstorm.md` — requirements clarification + options analysis
 - `02-decision-log.md` — key decisions (append-only)
 - `03-spec.md` — draft specification + acceptance criteria
@@ -50,6 +50,6 @@ Create `changes/<YYYY-MM-DD>-<slug>/` with:
 
 ## Next Step
 After brainstorm completion:
-- **Standard Path (Med/High risk)**: Run `/spec` to generate formal specification
-- **Fast Path (Low risk)**: Skip to `/plan` for immediate task breakdown
+- **High-Risk or selected Standard stages**: Run `/spec` when the selected lifecycle requires a formal specification
+- **Simple or selected Standard stages**: Continue to `/plan` only when a plan is useful or required
 - Or use `/workflow` for guided progression

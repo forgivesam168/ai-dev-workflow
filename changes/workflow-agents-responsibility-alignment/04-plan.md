@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Phase 0D local implementation verified; PR pending
+- **Status**: Phase 1 local implementation verified; PR pending
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 0D — Archive Authorization Containment
+- **Current active phase**: Phase 1 — AGENTS / WORKFLOW / Risk-Mode Contract
 
 ## Phase Status Summary
 
@@ -15,8 +15,8 @@
 | 0A — Adopter constitution containment | Merged | Required | Required |
 | 0B — Bash update safety | Merged | Required | Required |
 | 0C — Manifest parse safety containment | Merged | Required | Required |
-| 0D — Archive authorization containment | Local implementation verified; PR pending | Required | Required |
-| 1 — AGENTS / WORKFLOW / risk contract | Pending | Required | Required |
+| 0D — Archive authorization containment | Merged | Required | Required |
+| 1 — AGENTS / WORKFLOW / risk contract | Local implementation verified; PR pending | Required | Required |
 | 2 — Agent / Skill / Prompt / Instruction alignment | Pending | Required | Required |
 | 3 — Change Package / Review / Archive semantics | Pending | Required | Required |
 | 4 — Manifest / provenance / stale-derived migration | Pending | Required | Required |
@@ -367,6 +367,17 @@ Revert only the authorization wording/routing changes; do not change Archive art
 
 Separate user approval, implementation, verification, review, and PR required.
 
+### Observed Evidence
+
+- PR #7
+- Final head: `79e093323515e869107a7ff7d9785d128934c8bc`
+- Squash merge SHA: `18b3ed5a876f4bf72a9564abe2fe7139a7cbd498`
+- Remote Verify Change Package: success
+- Remote verify-sync Ubuntu: success
+- Remote verify-sync Windows: success
+- Reviews: none
+- Review threads: none
+
 ## Phase 1 — AGENTS / WORKFLOW / Risk-Mode Contract
 
 ### Objective
@@ -384,6 +395,13 @@ Establish D-01, D-03, and D-09 as one coherent responsibility contract.
 
 - Phase 0 containment complete or consciously sequenced without conflict.
 - User approval for the exact fallback rule set and named High-Risk gate proposal.
+
+### Prerequisite Evidence
+
+- Phase 0A through Phase 0D are merged. Phase 0D remote evidence is recorded above.
+- Phase 1, the exact nine-rule Project AGENTS fallback contract, and the four rule-based named High-Risk gates were explicitly approved in the current task instruction and recorded as Amendment A-04 in `02-decision-log.md`.
+- Phase 3 adopter-facing lifecycle source selection and Phase 4 Manifest schema remain unapproved and outside this Phase.
+- Migration / Deployment Readiness: `N/A — no migration or deployment execution is authorized in this Phase.`
 
 ### Exact Scope
 
@@ -442,6 +460,24 @@ Revert the Phase 1 canonical/mirror changes as a unit; do not roll back only one
 ### Approval and PR Boundary
 
 Separate user approval and separate PR required.
+
+### Observed Evidence
+
+- Luna agent: built-in `worker`; requested GPT-5.6 with reasoning `medium`; observed model/effort: unknown because the runtime did not expose metadata.
+- TDD RED → GREEN slices: fallback `0/9 → 9/9`; execution modes `9/16 → 16/16`; named gates `16/24 → 24/24`; canonical/derived parity `24/25 → 25/25`; conditional package semantics `25/28 → 28/28`; Simple artifact consistency `28/29 → 29/29`.
+- Correction round 1: `28/32 → 32/32`; removed the remaining `fast-path` label and made PM routing reference canonical `WORKFLOW.md` while allowing Simple without a Change Package.
+- Correction round 2: `23/34 → 34/34`; consolidated both Project AGENTS files to one nine-rule fallback block and preserved concrete project-specific defaults outside that block.
+- Final targeted Pester 5.6.1: 34 passed, 0 failed, 0 skipped, 0 not run, 0 failed containers.
+- Final full Pester 5.6.1 (`scripts` + `tools`): 101 passed, 0 failed, 0 skipped, 0 not run, 0 inconclusive, 0 failed containers.
+- Python bootstrap regression: 89 passed. One pre-existing `pytest-asyncio` future-default deprecation warning remained warning-only and did not affect results.
+- `check-sync.ps1`: pass; all managed `.github/**` mirrors match generated output.
+- `audit-catalog.ps1`: pass; 9 agents, 10 prompts, 35 total skills, 34 adopter skills, 1 maintainer-only `gate-check`.
+- `git diff --check`: pass.
+- Full repository gate: `GATE PASSED`; pytest 8.3.5 and Pester 5.6.1 prerequisites passed; Python/Pester/sync/catalog/diff checks passed; worktree status was unchanged by the gate.
+- Final scope audit: 31 changed/untracked paths, all limited to Sol-owned approval/status evidence, Phase 1 canonical product/test files, or generator-owned `.github/**` mirrors; no Phase 2 structural rewrite, Phase 3 lifecycle-source selection, Phase 4 Manifest schema, D-10 adapter, migration, prune, adopter execution, deployment, or production change.
+- Sol independent audit after Luna handoff: 0 Critical, 0 High, 0 unresolved Medium, 0 Low product findings. Three blocking Medium contract gaps were found across two correction rounds and resolved by the same Luna.
+- Rule-based High-Risk gates: Architecture Decision Exit — pass; Pre-Implementation Readiness — pass; Pre-Delivery Verification — pass; Migration / Deployment Readiness — `N/A — no migration or deployment execution is authorized in this Phase.`
+- Coverage: N/A — Phase 1 changes policy/document contracts and uses deterministic Pester content/parity tests rather than executable production branches with a meaningful line-coverage metric.
 
 ## Phase 2 — Agent / Skill / Prompt / Instruction Alignment
 
