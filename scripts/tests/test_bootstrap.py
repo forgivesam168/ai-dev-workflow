@@ -53,12 +53,57 @@ def _find_phase0b_bash() -> str:
     pytest.skip("No usable Bash runtime found for Phase 0B tests")
 
 
+def _phase0b_bash_environment(bash_executable: str) -> Dict[str, str]:
+    env = os.environ.copy()
+    env.pop("BASH_ENV", None)
+
+    if os.name != "nt":
+        return env
+
+    git_root = None
+    bash_path = Path(bash_executable).resolve()
+    for parent in bash_path.parents:
+        if any((parent / relative).is_dir() for relative in ("usr/bin", "mingw64/bin", "cmd")):
+            git_root = parent
+            break
+
+    if git_root is None:
+        return env
+
+    prepend_entries = []
+    runtime_entries = set()
+    for relative in ("usr/bin", "mingw64/bin", "cmd"):
+        candidate = git_root / relative
+        if not candidate.is_dir():
+            continue
+        candidate_str = str(candidate)
+        prepend_entries.append(candidate_str)
+        runtime_entries.add(os.path.normcase(os.path.normpath(candidate_str)))
+
+    if not prepend_entries:
+        return env
+
+    existing_path = env.get("PATH", "")
+    existing_entries = existing_path.split(os.pathsep) if existing_path else []
+    filtered_existing = []
+    for entry in existing_entries:
+        normalized = os.path.normcase(os.path.normpath(entry)) if entry else entry
+        if normalized in runtime_entries:
+            continue
+        filtered_existing.append(entry)
+
+    env["PATH"] = os.pathsep.join(prepend_entries + filtered_existing)
+    return env
+
+
 def _run_phase0b_bash(script: Path, cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    bash_executable = _find_phase0b_bash()
     return subprocess.run(
-        [_find_phase0b_bash(), "--login", script.as_posix(), *args],
+        [bash_executable, "--noprofile", "--norc", script.as_posix(), *args],
         cwd=cwd,
         capture_output=True,
         check=False,
+        env=_phase0b_bash_environment(bash_executable),
         text=True,
         encoding="utf-8",
         errors="replace",
