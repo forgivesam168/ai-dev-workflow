@@ -1,10 +1,12 @@
 import hashlib
+import json
 import os
 import shutil
 import subprocess
+import sys
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 import pytest
 
@@ -13,6 +15,7 @@ from scripts import bootstrap
 
 PHASE0B_REPO_ROOT = Path(bootstrap.__file__).resolve().parent.parent
 PHASE0B_SCRIPT = PHASE0B_REPO_ROOT / "scripts" / "bootstrap.sh"
+PHASE0C_PYTHON_SCRIPT = PHASE0B_REPO_ROOT / "scripts" / "bootstrap.py"
 
 
 def _find_phase0b_bash() -> str:
@@ -145,6 +148,55 @@ def _assert_phase0b_no_write(
     assert not (target_root / ".ai-workflow-install.json").exists()
 
 
+def _run_phase0c_python(
+    target_root: Path, *args: str
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(PHASE0C_PYTHON_SCRIPT), *args],
+        cwd=target_root,
+        capture_output=True,
+        check=False,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+
+
+def _phase0c_output(result: subprocess.CompletedProcess[str]) -> str:
+    return result.stdout + result.stderr
+
+
+def _create_phase0c_target(
+    target_root: Path, manifest_bytes: Optional[bytes]
+) -> Tuple[bytes, bytes]:
+    sentinel = b"project-owned policy\x00\n"
+    secondary = b"project-owned skill\r\n"
+    (target_root / ".github").mkdir(parents=True)
+    (target_root / "skills" / "custom").mkdir(parents=True)
+    (target_root / ".github" / "copilot-instructions.md").write_bytes(sentinel)
+    (target_root / "skills" / "custom" / "SKILL.md").write_bytes(secondary)
+    if manifest_bytes is not None:
+        (target_root / bootstrap.MANIFEST_FILENAME).write_bytes(manifest_bytes)
+    return sentinel, secondary
+
+
+def _assert_phase0c_no_write(
+    target_root: Path,
+    before_files: Dict[str, str],
+    before_directories: Tuple[str, ...],
+    sentinel: bytes,
+    secondary: bytes,
+) -> None:
+    after_files, after_directories = _snapshot_tree(target_root)
+    assert after_files == before_files
+    assert after_directories == before_directories
+    assert (target_root / ".github" / "copilot-instructions.md").read_bytes() == sentinel
+    assert (target_root / "skills" / "custom" / "SKILL.md").read_bytes() == secondary
+    assert not list(target_root.glob(".github.backup-*"))
+    assert not list(target_root.glob(".ai-workflow-portable.backup-*"))
+    assert not (target_root / ".git").exists()
+
+
 def _create_phase0b_existing_adopter(target_root: Path) -> None:
     (target_root / ".github" / "agents").mkdir(parents=True)
     (target_root / ".github" / "agents" / "coder.agent.md").write_text(
@@ -186,6 +238,161 @@ def _create_phase0a_constitution_fixture(
     )
     target_root.mkdir()
     return template_root, target_root, maintainer_content, adopter_content
+
+
+@pytest.mark.parametrize(
+    ("manifest", "expected_state", "expected_version"),
+    [
+        (None, "missing", None),
+        ({"schema_version": 1, "components": [{"name": "agents/a.md"}]}, "valid", 1),
+        ({"schema_version": 2, "components": [{"name": "skills/a/"}]}, "valid", 2),
+        (b"{not-json", "corrupt", None),
+        ({"schema_version": 3, "components": []}, "unsupported", 3),
+        ({"schema_version": 2, "components": {}}, "corrupt", 2),
+        ({"schema_version": 2, "components": [{"name": "  "}]}, "corrupt", 2),
+        (
+            {
+                "schema_version": 2,
+                "components": [{"name": "agents/a.md"}, {"name": "agents/a.md"}],
+            },
+            "corrupt",
+            2,
+        ),
+    ],
+    ids=[
+        "missing",
+        "valid-v1",
+        "valid-v2",
+        "corrupt-json",
+        "unsupported-v3",
+        "components-not-list",
+        "invalid-component-name",
+        "duplicate-component-name",
+    ],
+)
+def test_phase0c_loader_returns_explicit_manifest_state(
+    tmp_path: Path,
+    manifest: Optional[Union[dict, bytes]],
+    expected_state: str,
+    expected_version: Optional[int],
+) -> None:
+    if isinstance(manifest, dict):
+        manifest_bytes = json.dumps(manifest).encode("utf-8")
+    else:
+        manifest_bytes = manifest
+    if manifest_bytes is not None:
+        (tmp_path / bootstrap.MANIFEST_FILENAME).write_bytes(manifest_bytes)
+
+    result = bootstrap.load_install_manifest(tmp_path)
+
+    assert result.state == expected_state
+    assert result.schema_version == expected_version
+    if expected_state == "valid":
+        assert result.entries
+        assert next(iter(result.entries.values()))["name"]
+    else:
+        assert result.entries == {}
+    if expected_state in {"corrupt", "unsupported"}:
+        assert result.detail
+
+
+def test_phase0c_python_corrupt_update_hard_stops_without_write(tmp_path: Path) -> None:
+    target_root = tmp_path / "corrupt-update"
+    target_root.mkdir()
+    manifest_bytes = b'{"schema_version": 2, "components": ['
+    sentinel, secondary = _create_phase0c_target(target_root, manifest_bytes)
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0c_python(target_root, "--update")
+    output = _phase0c_output(result)
+
+    assert result.returncode != 0
+    assert str(target_root / bootstrap.MANIFEST_FILENAME) in output
+    assert "before any changes" in output
+    assert "trusted backup" in output
+    assert (target_root / bootstrap.MANIFEST_FILENAME).read_bytes() == manifest_bytes
+    _assert_phase0c_no_write(
+        target_root, before_files, before_directories, sentinel, secondary
+    )
+
+
+def test_phase0c_python_unsupported_update_hard_stops_without_write(
+    tmp_path: Path,
+) -> None:
+    target_root = tmp_path / "unsupported-update"
+    target_root.mkdir()
+    manifest_bytes = json.dumps({"schema_version": 3, "components": []}).encode()
+    sentinel, secondary = _create_phase0c_target(target_root, manifest_bytes)
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0c_python(target_root, "--update")
+    output = _phase0c_output(result)
+
+    assert result.returncode != 0
+    assert "Observed schema version: 3" in output
+    assert "Supported schema versions: 1, 2" in output
+    assert "before any changes" in output
+    assert (target_root / bootstrap.MANIFEST_FILENAME).read_bytes() == manifest_bytes
+    _assert_phase0c_no_write(
+        target_root, before_files, before_directories, sentinel, secondary
+    )
+
+
+def test_phase0c_python_missing_update_is_report_only_without_write(
+    tmp_path: Path,
+) -> None:
+    target_root = tmp_path / "missing-update"
+    target_root.mkdir()
+    sentinel, secondary = _create_phase0c_target(target_root, None)
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0c_python(target_root, "--update")
+    output = _phase0c_output(result)
+
+    assert result.returncode == 0
+    assert "legacy project" in output.lower()
+    assert "report-only" in output
+    assert "No files changed" in output
+    assert not (target_root / bootstrap.MANIFEST_FILENAME).exists()
+    _assert_phase0c_no_write(
+        target_root, before_files, before_directories, sentinel, secondary
+    )
+
+
+def test_phase0c_python_force_cannot_bypass_corrupt_update_gate(
+    tmp_path: Path,
+) -> None:
+    target_root = tmp_path / "corrupt-force"
+    target_root.mkdir()
+    manifest_bytes = b"not-json"
+    sentinel, secondary = _create_phase0c_target(target_root, manifest_bytes)
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0c_python(target_root, "--update", "--force")
+
+    assert result.returncode != 0
+    assert (target_root / bootstrap.MANIFEST_FILENAME).read_bytes() == manifest_bytes
+    _assert_phase0c_no_write(
+        target_root, before_files, before_directories, sentinel, secondary
+    )
+
+
+def test_phase0c_python_backup_cannot_bypass_unsupported_update_gate(
+    tmp_path: Path,
+) -> None:
+    target_root = tmp_path / "unsupported-backup"
+    target_root.mkdir()
+    manifest_bytes = json.dumps({"schema_version": 3, "components": []}).encode()
+    sentinel, secondary = _create_phase0c_target(target_root, manifest_bytes)
+    before_files, before_directories = _snapshot_tree(target_root)
+
+    result = _run_phase0c_python(target_root, "--update", "--backup")
+
+    assert result.returncode != 0
+    assert (target_root / bootstrap.MANIFEST_FILENAME).read_bytes() == manifest_bytes
+    _assert_phase0c_no_write(
+        target_root, before_files, before_directories, sentinel, secondary
+    )
 
 
 def test_phase0a_new_adopter_uses_adopter_constitution_without_maintainer_policy(
