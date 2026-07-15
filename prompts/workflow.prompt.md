@@ -119,19 +119,15 @@ Check markers:
 - `05-review.md` → Has "## Summary" section
 - `99-archive.md` → Has "## Outcome" section
 
-## Fast Path vs Standard Path
+## Execution Mode Routing
 
-If risk is **Low** in `01-brainstorm.md`:
-```
-Fast Path: Brainstorm → Plan → Implement → Review → Archive
-          (skip Spec stage)
-```
+Read the canonical contract in `WORKFLOW.md`, then report exactly one selected mode: Simple, Standard, or High-Risk. This prompt only routes; it does not redefine mode entry criteria, artifact triggers, stage exits, or named gates.
 
-If risk is **Med/High**:
-```
-Standard Path: Brainstorm → Spec → Plan → Implement → Review → Archive
-              (full workflow)
-```
+- Simple: suggest only the lightweight checkpoints and targeted verification the task needs.
+- Standard: follow the selected stages and declared plan/lifecycle SSOT; mention a compact Change Package only when a canonical trigger applies.
+- High-Risk: require the full Workflow and complete Change Package before routing implementation or delivery.
+
+If the observed work crosses a higher-risk boundary, stop and return to classification before suggesting further implementation.
 
 ## Example Usage
 
@@ -146,7 +142,7 @@ Agent:
 Would you like to start with `/brainstorm`? It will begin with discovery questions unless you explicitly allow assumptions. (yes/no)
 Options:
 - "yes" → Run /brainstorm
-- "fast" → Skip to /create-plan (low-risk only)
+- "simple" → Re-evaluate against the Simple entry contract before selecting only the needed checkpoints
 ```
 
 ### Scenario 2: Mid-Workflow
@@ -209,8 +205,8 @@ User can specify:
 - Always show current status before suggesting action
 - Never auto-execute without user confirmation
 - Provide context (what's done, what's next, why)
-- Respect fast path if marked low-risk
-- Warn if skipping stages in standard path
+- Preserve the selected Simple / Standard / High-Risk mode from the declared lifecycle SSOT
+- Warn and stop when required stages or gates would be skipped
 
 ## Integration with Other Commands
 

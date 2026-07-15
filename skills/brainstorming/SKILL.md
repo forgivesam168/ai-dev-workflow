@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: 'Start a work item: triage risk, run structured brainstorming to clarify requirements, compare solution options, and produce a decision log + change package skeleton.'
+description: 'Start a work item: triage risk, select the canonical execution mode, clarify requirements, compare solution options, and produce the lifecycle artifacts required by WORKFLOW.md.'
 license: MIT
 ---
 
@@ -37,9 +37,7 @@ Use this skill at the **start of any request/change** when:
 - Clarify goals/non-goals and acceptance criteria
 - Classify risk: **Low** / **Med** / **High**
 - Determine if this is brownfield (existing system)
-- Decide workflow path:
-  - **Standard**: brainstorm → plan → tdd → review
-  - **Fast** (low-risk only): plan → tdd → review
+- Select exactly one execution mode from `WORKFLOW.md`: **Simple**, **Standard**, or **High-Risk**. Use its entry, escalation, artifact, and verification contract without defining another path here.
 
 ### Phase 1 — Clarify
 - In each new brainstorming round, ask at least 5 targeted questions before options/recommendation unless the user explicitly says assumptions are acceptable
@@ -53,9 +51,10 @@ Use this skill at the **start of any request/change** when:
 - Recommend one option and justify
 - Produce a **Decision Log** entry (append-only)
 
-### Phase 4 — Change Package Skeleton
-- Use shell to create `changes/<YYYY-MM-DD>-<slug>/` directory first
-- Then write stub files (do NOT use `edit` on non-existent files):
+### Phase 4 — Required Lifecycle Artifacts
+- Simple does not require a Change Package; retain the confirmed summary inline or in an existing project plan when useful.
+- For Standard when a canonical package trigger applies, or for High-Risk, use shell to create `changes/<YYYY-MM-DD>-<slug>/` first.
+- Then write the required stub files (do NOT use `edit` on non-existent files):
   - `01-brainstorm.md`
   - `02-decision-log.md`
   - `03-spec.md` (draft)
@@ -94,22 +93,22 @@ Trigger these based on the user's answers:
 
 ## Risk Classification
 
-| Level | Criteria | Recommended Path |
+| Level | Criteria | Mode-routing signal |
 |-------|----------|--------------------|
-| **Low** | Single file or isolated component, no existing users, no data flow changes, easily reverted | Fast Path: Plan → TDD → Review |
-| **Med** | Multiple files, touches existing features, some external dependencies | Standard Path: Spec → Plan → TDD → Review → Archive |
-| **High** | Cross-module, security/permissions, data migration, regulatory, or production-critical | Standard Path (mandatory): all 6 stages, CODEOWNERS review |
+| **Low** | Single file or isolated component, no existing users, no data flow changes, easily reverted | Evaluate Simple first; reliable targeted verification is required. |
+| **Med** | Multiple files, touches existing features, some external dependencies | Usually Standard; apply canonical compact-package triggers. |
+| **High** | Cross-module, security/permissions, data migration, regulatory, or production-critical | High-Risk; use the full lifecycle and named gates. |
 
 ## Output Template
 
 - Risk Classification (Low/Med/High)
-- Workflow Path Recommendation (Standard/Fast)
+- Execution Mode (Simple / Standard / High-Risk) with canonical evidence
 - Questions Asked (at least 5 unless the user explicitly allowed assumptions)
 - Assumptions & Constraints
 - Options (2–3)
 - Recommendation
 - Decision Log
-- Change Package Skeleton (file stubs)
+- Required Lifecycle Artifacts (inline/existing plan for Simple; package stubs when required)
 
 ### Brainstorm Summary Format
 
@@ -120,7 +119,7 @@ Use this structure in `01-brainstorm.md`:
 
 **Problem**: [one sentence]
 **Risk Level**: Low / Med / High
-**Workflow Path**: Fast / Standard
+**Execution Mode**: Simple / Standard / High-Risk
 **Chosen Approach**: [option name and one-line reason]
 **Discovery Questions Covered**: [at least five categories, or note that the user explicitly allowed assumptions]
 **Open Questions**: [anything still unresolved]
@@ -128,7 +127,7 @@ Use this structure in `01-brainstorm.md`:
 **Non-goals**: [explicitly out of scope]
 ```
 
-## Output Mapping (Change Package)
+## Output Mapping (when a Change Package is required)
 Write results into:
 - `changes/<YYYY-MM-DD>-<slug>/01-brainstorm.md`
 - `changes/<YYYY-MM-DD>-<slug>/02-decision-log.md`
@@ -145,17 +144,17 @@ If shell is unavailable, output file contents in response for manual creation.
 |---------|---------|
 | "我只是先試試，不是真的要實作" | ⛔ 在設計批准前，任何實作程式碼均為違規——無論使用者要求多迫切 |
 | "需求很清楚了，不需要再問問題" | 腦力激盪的目的是發現「你不知道你不知道的」——即使需求看起來清楚，仍需走完 Must-Ask Questions |
-| "風險很低，可以跳過 brainstorm 直接 plan" | Fast Path 仍需 Risk Classification 和 Change Package Skeleton；跳過分類等於盲目行動 |
+| "風險很低，可以跳過 mode classification 直接 plan" | Simple 仍需可靠的 targeted verification；未依 `WORKFLOW.md` 分類就跳過等於盲目行動 |
 | "使用者已經給了選項，我選一個就好" | 未產出 2–3 個選項比較 = 放棄最重要的決策品質保證；必須列出選項與折衷取捨，即使使用者傾向某選項 |
 
 ## Verification
 
 在輸出 brainstorm 產出物前，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
 
-- [ ] `Test-Path changes/<slug>/01-brainstorm.md` 回傳 True（Change Package 目錄與 brainstorm 文件已實際建立）
-- [ ] Risk Classification 已完成，等級為 Low / Med / High 三者之一，且依 Risk Level 對齊 Workflow Path
+- [ ] 若 mode 要求 Change Package，`Test-Path changes/<slug>/01-brainstorm.md` 回傳 True；Simple 則記錄 `N/A — Change Package is not required for this Simple task.`
+- [ ] Risk Classification 已完成，等級為 Low / Med / High 三者之一，且已依 `WORKFLOW.md` 選擇唯一的 Simple / Standard / High-Risk mode
 - [ ] 至少 5 個 Must-Ask 問題類別已覆蓋，或使用者已明確允許 assumption-driven 模式（不得靜默跳過）
 - [ ] 至少 2 個選項已比較（complexity / risks / rollback strategy），並有明確推薦理由
-- [ ] Decision Log 條目已寫入 `02-decision-log.md`
+- [ ] 若 mode 要求 Change Package，Decision Log 條目已寫入 `02-decision-log.md`；Simple 則將決策理由保留在 inline summary 或 existing plan
 - [ ] Open Questions 欄位已填寫（若有未解問題），不得略去
 - [ ] 所有 Assumptions 均已明確標記（不得以隱性假設替代明確說明）

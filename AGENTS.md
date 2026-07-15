@@ -28,55 +28,28 @@ Not every CLI treats `copilot-instructions.md` as its always-on constitution. Tr
 
 **Tradeoff:** These rules bias toward caution over speed for non-trivial work. For trivial tasks, use judgment without dropping the safety floor.
 
-### 1. Think Before Coding
+### Standalone Fallback Rules
 
-- State assumptions explicitly. Separate facts, assumptions, and unknowns instead of guessing silently.
-- If multiple interpretations exist, surface them. Do not pick one without saying so.
-- If a simpler approach exists, say so. Push back on unnecessary complexity when warranted.
-- If ambiguity materially changes the implementation path, stop and clarify before proceeding.
+Use these rules whenever no user-level Global AGENTS is available. They are the minimum portable safety contract; project-specific rules may add stricter requirements without weakening this baseline.
 
-### 2. Simplicity First
+1. **Evidence and uncertainty**: Base material conclusions on repository evidence, tool output, or other verifiable evidence. Distinguish facts, assumptions, inferences, and unknowns. Never fabricate status, test results, sources, or completion evidence.
+2. **Material assumptions**: Before modification, disclose assumptions that affect scope or contract, security, data, migration, or verification. Stop and request clarification when different answers would materially change the implementation path.
+3. **Project context and SSOT**: First read the context, architecture, and task/status SSOT named by Project AGENTS. Resolve conflicts among conversation or plan, spec, code, and project vocabulary using the project's precedence rules; stop when the conflict cannot be resolved.
+4. **Surgical scope control**: Change only the minimum content required within the currently approved scope. Do not perform drive-by refactors, unrelated formatting, speculative abstractions, unrequested features, or cross-phase implementation.
+5. **Secrets and sensitive data**: Do not unnecessarily read, display, commit, or write secrets, credentials, tokens, PII, or sensitive data. If sensitive content is found, stop the exposure path, redact the report, and keep it out of artifacts, logs, commits, and remote content.
+6. **Protected-action authorization**: Commit, push, merge, tag, release, branch deletion, remote Issue or PR closure, deployment, production operations, destructive actions, and other remote mutations require explicit, current-task, action-specific authorization. One approval cannot imply another action's approval; tool availability or Agent identity is not authorization.
+7. **Verification and deterministic blockers**: Define verifiable success before implementation. Before completion, run applicable targeted tests, required full checks, static checks, and project gates. A known test or build, lint, security, data-integrity, or deterministic gate failure is blocking and cannot be overridden by prose review, self-evaluation, or inference.
+8. **Risk escalation and rollback**: Stop and escalate the execution mode when work crosses auth, security, financial, migration, public-contract, destructive, deployment, production, irreversible, or difficult-to-verify boundaries. Non-simple reversible work requires risk-proportionate rollback or restore, compensation, or safe-stop guidance.
+9. **Honest completion**: Claim completion only when the approved scope is complete, required verification has evidence, and delivery state is accurate. Distinguish unverified, unmerged, partial, Deferred, blocked, N/A, and user-decision-dependent work from Complete.
 
-- Implement the smallest solution that satisfies the current requirement.
-- Do not add speculative abstractions, flexibility, configuration, or future-proofing.
-- Do not add features beyond what was asked.
-- Prefer the version a senior engineer would call obviously simpler.
+## Project-Specific Operating Defaults
 
-### 3. Surgical Changes
+These concrete defaults extend the fallback contract for this template repository; they are not a second fallback rule set.
 
-- Every changed line must trace directly to the user's request or to dead code created by that change.
-- Do not perform drive-by refactors, formatting churn, or adjacent comment rewrites.
-- Match existing style and boundaries unless the request explicitly changes them.
-- Remove only the imports, variables, or functions that your own change makes unused. Mention pre-existing dead code instead of deleting it unasked.
-
-### 4. Goal-Driven Verification
-
-- Convert requests into verifiable outcomes: tests, assertions, reproducible checks, or explicit manual validation.
-- For bug fixes, prefer reproducing the issue first, then fixing it, then proving the fix.
-- For multi-step work, state a short plan where each step has a verification method.
-- Avoid weak completion language such as "make it work" without a measurable check.
-
-### 5. Context Loading Order
-
-- If `.ai-workflow-memory/PROJECT_CONTEXT.md` exists, load it before making technical decisions.
-- Else if `docs/CONTEXT.md` exists, load it before reasoning from session memory alone.
-- Detect vocabulary conflicts between conversation, spec/plan, and project glossary before implementation.
-- Do not let Layer 4 conversation context override Layer 1 project context silently.
-
-### 6. Safety Floor
-
-- Never commit secrets or credentials.
-- Validate external input and verify input boundaries on every change.
-- For money, never use `float` or `double`; use decimal types, integer minor units, or strings at API boundaries.
-- When transactions can be retried, require idempotency support such as `Idempotency-Key`.
-- Adapt the checklist to the project domain, but precision and security are never optional.
-
-### 7. Communication Contract
-
-- Use Traditional Chinese for explanations, analysis, reasoning, planning, and commit messages.
-- Use English for source code, code comments, and technical identifiers unless the file itself already uses another convention.
-- Be direct and explicit about uncertainty.
-- When enforcing a repo-specific rule, cite the governing file so downstream agents can trace the source.
+- **Context loading**: If `.ai-workflow-memory/PROJECT_CONTEXT.md` exists, load it before technical decisions; otherwise load `docs/CONTEXT.md` when present. Do not let conversation context silently override project context.
+- **Implementation discipline**: Prefer the smallest clear solution, match existing style and boundaries, and remove only artifacts made obsolete by the current change. For bug fixes, reproduce first when practical; for multi-step work, state a short plan with verification.
+- **Input and domain safety**: Validate external input at system boundaries. For money, never use `float` or `double`; use decimal types, integer minor units, or strings at API boundaries. Retriable transactions require idempotency support such as `Idempotency-Key`.
+- **Communication**: Use Traditional Chinese for explanations, analysis, reasoning, planning, and commit messages. Use English for source code, code comments, and technical identifiers unless the file already uses another convention. Cite the governing file when enforcing a repository-specific rule.
 
 ## Pointer-Style Guidance Architecture
 
@@ -142,29 +115,31 @@ Use this layering model:
 1. **Agent** — who does the work
 2. **Primary Skill** — the main methodology for that stage
 3. **Guardrails** — shared execution constraints (assumptions explicit, simplicity first, surgical changes, verifiable success criteria)
-4. **Quality Gate** — `agentic-eval` / `gate-check` before handoff
+4. **Quality Gate** — risk-adaptive `agentic-eval`, deterministic project gates, and independent review as required by `WORKFLOW.md`
 
 Operational rule:
 - **Always-on essence** lives in `copilot-instructions.md` + core agent body text
 - **Manual fallback** lives in `/execution-guardrails`
-- **Quality scoring** lives in `agentic-eval` rubrics
+- **Self-evaluation patterns** live in `agentic-eval`; named High-Risk gate semantics live in `WORKFLOW.md`
 
-### agentic-eval 品質閘門（次要整合層）
+### agentic-eval and named High-Risk gates
 
-在各 agent 完成**主要 skill** 之後，`agentic-eval` skill 作為次要整合層介入，在階段交接點提供品質驗證，確保產出物符合下游 agent 的期望品質。
+`agentic-eval` is risk-adaptive self-evaluation, not independent review. It cannot override test, build, or deterministic gate failure and never replaces required independent code/security review.
 
-| Agent | 主要 Skill 完成後 → agentic-eval | 目的與效益 | Tier | 風險閾值 |
-|-------|----------------------------------|-----------|------|---------|
-| `spec-agent` | `specification` → 03-spec.md | AC 可測性 + 邊界覆蓋自評；**Testability / Traceability FAIL 則阻擋 handoff**，防止不完整規格流入計畫階段 | 1 | 所有風險 |
-| `plan-agent` | `implementation-planning` → 04-plan.md | 從規劃者視角交叉驗證 spec 可行性，找出「無法寫出具體步驟」的需求並標記 gap | 1 | Med / High |
-| `coder-agent` | `tdd-workflow` → 實作完成 | 交 code-reviewer 前確認 Financial Precision + Green Build；**Financial Precision FAIL = 強制停止**，不得進入 Review | 1 | 所有風險 |
-| `architect-agent` | `brainstorming` → Spec/Plan/Review | 跨階段品質仲裁：從架構視角評估規格完整性、計畫邊界合規、Review 完整性；≥2 維度 FAIL 則委派 Tier 2 子代理對抗性批評 | 1 / 2 | Med / High |
+- Simple: `agentic-eval` is not required.
+- Standard: use it only when a risk condition triggers it.
+- High-Risk: use the four rule-based gates below in the order and with the full blocking conditions defined by `WORKFLOW.md`.
 
-**不適用情境：**
-- `brainstorm-agent`：發散思維階段刻意不評估，保護創意探索空間
-- `code-reviewer`：本身即獨立 Tier 2 閘門，不需再套用 agentic-eval
+| Named gate | Applies before | Blocking summary |
+|---|---|---|
+| Architecture Decision Exit | irreversible or high-cost architecture, security, permission, data, or public-contract commitment | unresolved safety/authorization or contract boundary, unsupported source/assumption, or irreversible decision without rollback/migration/compensation |
+| Pre-Implementation Readiness | every High-Risk implementation | unresolved AC/scope/decision/prerequisite, missing approval or executable recovery path, no verifiable RED/GREEN path, or unclear ownership |
+| Pre-Delivery Verification | every High-Risk commit, push, PR, or merge | deterministic failure, missing AC evidence, invariant failure, scope/generated/worktree drift, or missing independent review/unresolved Critical or High |
+| Migration / Deployment Readiness | separately authorized migration, deployment, production, or irreversible-data execution | missing action-specific approval, bounded target, recovery path, rehearsal/operational signal, or ownership/reversibility evidence |
 
-> 詳細 rubric 維度與 adversarial prompt template 見 [`skills/agentic-eval/references/stage-rubrics.md`](./skills/agentic-eval/references/stage-rubrics.md)。
+Deterministic failure is always blocking. Warning-only findings must be recorded but cannot be promoted to blocking without new evidence matching an approved blocking condition. Resolve blocking findings before the next gate. N/A requires an auditable reason; for out-of-scope operational execution record `N/A — no migration or deployment execution is authorized in this Phase.` The named gates use no aggregate score or numeric threshold; future gates, blocking dimensions, or aggregate thresholds require separate approval.
+
+> Detailed conditions are canonical in [`WORKFLOW.md`](./WORKFLOW.md); supporting self-evaluation patterns are in [`skills/agentic-eval/SKILL.md`](./skills/agentic-eval/SKILL.md).
 
 ## Prompts (Slash Commands)
 
@@ -241,7 +216,7 @@ Skills provide methodology and toolkits that are automatically loaded into the c
 |-------|-------------|-------------|
 | webapp-testing | Test local web apps using Playwright | test webapp, Playwright |
 | scoutqa-test | Exploratory QA testing (smoke, accessibility, e-commerce flows) | test website, accessibility |
-| agentic-eval | Evaluate and improve AI agent outputs (self-critique, rubrics); Pre-Decision Mode (5-step: CLAIM→EXTRACT→DOUBT→RECONCILE→STOP) | evaluate agent, quality loop, pre-decision |
+| agentic-eval | Evaluate and improve AI agent outputs (self-critique, rubrics); General-Purpose Pre-Decision Mode (5-step: CLAIM→EXTRACT→DOUBT→RECONCILE→STOP) | evaluate agent, quality loop, pre-decision |
 | debug | Systematic debugging for build/test failures, unexpected behavior, drift errors; escalates after 2 failed cycles | debug, fix build, tests failing, investigate failure |
 
 ### Security & Review Skills (1)
@@ -356,6 +331,7 @@ Maintainers of this template repo update via `git pull` — no scripts needed.
 
 ## Workflow (recommended)
 - For guided workflow: `/workflow` (automatic stage detection)
-- For medium/high-risk changes: `/brainstorm` → `/spec` → `/create-plan` → `/tdd` → `/code-review` → `/archive`
-- For low-risk changes: `/brainstorm` → `/create-plan` → `/tdd` → `/code-review` → `/archive` (fast path)
+- For Simple changes: use only the stages needed for lightweight Understand / Implement / Prove / Deliver and targeted verification; no six-stage flow or Change Package is mandatory
+- For Standard changes: use selected stage exits and exactly one plan/lifecycle SSOT; require a compact Change Package only when a canonical trigger applies
+- For High-Risk changes: use the full Workflow and Change Package, named gates, explicit approvals, independent review, and rollback/migration/operational evidence
 - See `WORKFLOW.md` for the full flow and skip rules.
