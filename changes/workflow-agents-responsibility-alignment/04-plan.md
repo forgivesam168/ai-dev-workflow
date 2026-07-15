@@ -2,19 +2,19 @@
 
 ## Plan Status
 
-- **Status**: Phase 0B local implementation verified; commit/PR pending
+- **Status**: Phase 0C local implementation verified; PR pending
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 0B — Bash Update Safety and Deprecation
+- **Current active phase**: Phase 0C — Manifest Parse Safety Containment
 
 ## Phase Status Summary
 
 | Phase | Status | Separate approval | Separate PR |
 |---|---|---|---|
 | 0A — Adopter constitution containment | Merged | Required | Required |
-| 0B — Bash update safety | Local implementation verified; commit/PR pending | Required | Required |
-| 0C — Manifest parse safety containment | Pending | Required | Required |
+| 0B — Bash update safety | Merged | Required | Required |
+| 0C — Manifest parse safety containment | Local implementation verified; PR pending | Required | Required |
 | 0D — Archive authorization containment | Pending | Required | Required |
 | 1 — AGENTS / WORKFLOW / risk contract | Pending | Required | Required |
 | 2 — Agent / Skill / Prompt / Instruction alignment | Pending | Required | Required |
@@ -188,10 +188,17 @@ Separate user approval and separate PR required.
 
 ### Observed Evidence
 
+- PR #5
+- Final head: `29fa8ca7fcf8762ec5f16e9290ca5d9b9fe026b6`
+- Squash merge SHA: `66c88ac895eff12d223c1895a44ab949bba949d2`
 - Targeted Bash contract tests: `python -m pytest scripts/tests/test_bootstrap.py -q -k phase0b` → 13 passed
 - Full Python bootstrap tests: `python -m pytest scripts/tests/test_bootstrap.py -q` → 76 passed
+- Pester: 43 passed
 - Bash syntax: `bash -n scripts/bootstrap.sh` → pass
 - Full gate: `pwsh -NoProfile -File .\skills\gate-check\scripts\run-gate-check.ps1` → pass
+- Remote Verify Change Package: success
+- Remote verify-sync Windows: success
+- Remote verify-sync Ubuntu: success
 
 ## Phase 0C — Manifest Parse Safety Containment
 
@@ -258,6 +265,21 @@ Revert containment changes without changing manifests or adopter content.
 ### Approval and PR Boundary
 
 Separate user approval, implementation, verification, review, and PR required.
+
+### Observed Evidence
+
+- Python targeted: `python -m pytest scripts/tests/test_bootstrap.py -q -k phase0c` → 13 passed
+- Python full: `python -m pytest scripts/tests/test_bootstrap.py -q` → 89 passed
+- Pester targeted (`Phase 0C manifest parse safety`): 13 passed
+- Pester full (`scripts/bootstrap.Tests.ps1`): 46 passed
+- Phase 0B regression: `python -m pytest scripts/tests/test_bootstrap.py -q -k phase0b` → 13 passed
+- Python compile: `python -m py_compile scripts/bootstrap.py` → pass
+- PowerShell parser syntax: `scripts/bootstrap.ps1` → pass
+- Full gate: `pwsh -NoProfile -File .\skills\gate-check\scripts\run-gate-check.ps1` → pass
+- check-sync: pass
+- audit-catalog: pass
+- Worktree invariance: pass
+- Independent read-only review: 0 Critical, 0 High, 0 Medium; one diagnostic-ordering Low resolved and two test-coverage Low findings remain non-blocking.
 
 ## Phase 0D — Archive Authorization Containment
 

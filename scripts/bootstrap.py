@@ -50,6 +50,7 @@ PORTABLE_SKILL_LINKS = [
     Path(".agent/skills"),
 ]
 MANIFEST_FILENAME = ".ai-workflow-install.json"
+SUPPORTED_MANIFEST_SCHEMA_VERSIONS = (1, 2)
 
 
 @dataclass
@@ -79,6 +80,15 @@ class GitInitResult:
     is_new: bool
     git_dir: str
     message: str
+
+
+@dataclass
+class ManifestLoadResult:
+    state: str
+    entries: Dict[str, dict]
+    schema_version: Optional[int]
+    detail: Optional[str]
+    manifest_path: Path
 
 
 def version_to_tuple(version: str) -> Tuple[int, int, int]:
@@ -233,28 +243,121 @@ def get_path_hash(path: Path) -> Optional[str]:
     return f"sha256:{calculate_file_hash(path)}"
 
 
-def load_install_manifest(target_root: Path) -> Dict[str, dict]:
+def load_install_manifest(target_root: Path) -> ManifestLoadResult:
     manifest_path = target_root / MANIFEST_FILENAME
     if not manifest_path.exists():
-        return {}
+        return ManifestLoadResult("missing", {}, None, None, manifest_path)
 
     try:
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
+    except OSError:
+        return ManifestLoadResult(
+            "corrupt",
+            {},
+            None,
+            "Manifest could not be read.",
+            manifest_path,
+        )
+    except json.JSONDecodeError:
+        return ManifestLoadResult(
+            "corrupt",
+            {},
+            None,
+            "Manifest contains invalid JSON syntax.",
+            manifest_path,
+        )
 
-    components = data.get("components", [])
+    if not isinstance(data, dict):
+        return ManifestLoadResult(
+            "corrupt", {}, None, "Manifest top level must be an object.", manifest_path
+        )
+
+    schema_version = data.get("schema_version")
+    if type(schema_version) is not int:
+        return ManifestLoadResult(
+            "corrupt",
+            {},
+            None,
+            "Manifest schema_version must be an integer.",
+            manifest_path,
+        )
+    if schema_version not in SUPPORTED_MANIFEST_SCHEMA_VERSIONS:
+        return ManifestLoadResult(
+            "unsupported",
+            {},
+            schema_version,
+            f"Schema version {schema_version} is not supported.",
+            manifest_path,
+        )
+
+    components = data.get("components")
     if not isinstance(components, list):
-        return {}
+        return ManifestLoadResult(
+            "corrupt",
+            {},
+            schema_version,
+            "Manifest components must be an array.",
+            manifest_path,
+        )
 
     manifest_entries: Dict[str, dict] = {}
     for component in components:
         if not isinstance(component, dict):
-            continue
+            return ManifestLoadResult(
+                "corrupt",
+                {},
+                schema_version,
+                "Every manifest component must be an object.",
+                manifest_path,
+            )
         name = component.get("name")
-        if isinstance(name, str) and name:
-            manifest_entries[name] = component
-    return manifest_entries
+        if not isinstance(name, str) or not name.strip():
+            return ManifestLoadResult(
+                "corrupt",
+                {},
+                schema_version,
+                "Every manifest component must have a non-empty string name.",
+                manifest_path,
+            )
+        if name in manifest_entries:
+            return ManifestLoadResult(
+                "corrupt",
+                {},
+                schema_version,
+                f"Manifest contains duplicate component name: {name}",
+                manifest_path,
+            )
+        manifest_entries[name] = component
+    return ManifestLoadResult(
+        "valid", manifest_entries, schema_version, None, manifest_path
+    )
+
+
+def enforce_update_manifest_safety(result: ManifestLoadResult) -> bool:
+    if result.state == "valid":
+        return True
+    if result.state == "missing":
+        safe_print(
+            f"⚠️  Legacy project manifest is missing: {result.manifest_path}"
+        )
+        print("   Update is report-only because managed-file provenance is unavailable.")
+        print("   No files changed; no ownership was inferred and no manifest was created.")
+        return False
+    if result.state == "unsupported":
+        safe_print(f"❌ Unsupported install manifest: {result.manifest_path}")
+        print(f"   Observed schema version: {result.schema_version}")
+        print(
+            "   Supported schema versions: "
+            + ", ".join(str(version) for version in SUPPORTED_MANIFEST_SCHEMA_VERSIONS)
+        )
+        print("   Update aborted before any changes; the manifest was not downgraded or rebuilt.")
+        raise SystemExit(1)
+
+    safe_print(f"❌ Corrupt install manifest: {result.manifest_path}")
+    print(f"   {result.detail}")
+    print("   Update aborted before any changes; the manifest was not deleted or rebuilt.")
+    print("   Inspect the manifest manually or restore it from a trusted backup.")
+    raise SystemExit(1)
 
 
 def write_install_manifest(
@@ -1017,12 +1120,16 @@ def main() -> None:
     force_mode = args.force
     backup_mode = args.backup or args.update  # Always backup in update mode
 
-    if args.update and not args.force:
-        safe_print("ℹ️  Running --update mode (will preserve project customizations and create backup).")
-
     repo_root = Path(__file__).resolve().parent.parent
     current_path = Path.cwd()
     template_source = repo_root / ".github"
+    manifest_result = load_install_manifest(current_path)
+    if args.update and not enforce_update_manifest_safety(manifest_result):
+        return
+    manifest_entries = manifest_result.entries
+
+    if args.update and not args.force:
+        safe_print("ℹ️  Running --update mode (will preserve project customizations and create backup).")
 
     safe_print("🚀 Bootstrap AI Workflow Installer")
     print()
@@ -1085,8 +1192,6 @@ def main() -> None:
     print()
     print("同步工作流檔案...")
     print()
-
-    manifest_entries = load_install_manifest(current_path)
 
     try:
         sync_result = sync_workflow_files(

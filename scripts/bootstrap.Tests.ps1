@@ -5,6 +5,215 @@ BeforeAll {
     . "$PSScriptRoot\bootstrap.ps1"
 }
 
+Describe "Phase 0C manifest parse safety" {
+    BeforeAll {
+        function Get-Phase0CTreeSnapshot {
+            param([string]$Root)
+
+            $files = @()
+            $directories = @()
+            foreach ($item in @(Get-ChildItem -LiteralPath $Root -Force -Recurse | Sort-Object FullName)) {
+                $relative = [IO.Path]::GetRelativePath($Root, $item.FullName).Replace('\', '/')
+                if ($item.PSIsContainer) {
+                    $directories += "$relative/"
+                } else {
+                    $files += "$relative|$(Get-FileHash256 -Path $item.FullName)"
+                }
+            }
+            [PSCustomObject]@{ Files = $files; Directories = $directories }
+        }
+
+        function New-Phase0CTarget {
+            param(
+                [string]$Target,
+                [AllowNull()]
+                [byte[]]$ManifestBytes
+            )
+
+            $sentinel = [byte[]](0x70,0x72,0x6f,0x6a,0x65,0x63,0x74,0x00,0x0a)
+            $secondary = [Text.Encoding]::UTF8.GetBytes("project-owned skill`r`n")
+            New-Item -ItemType Directory -Path (Join-Path $Target '.github') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $Target 'skills/custom') -Force | Out-Null
+            [IO.File]::WriteAllBytes((Join-Path $Target '.github/copilot-instructions.md'), $sentinel)
+            [IO.File]::WriteAllBytes((Join-Path $Target 'skills/custom/SKILL.md'), $secondary)
+            if ($null -ne $ManifestBytes) {
+                [IO.File]::WriteAllBytes((Join-Path $Target '.ai-workflow-install.json'), $ManifestBytes)
+            }
+            [PSCustomObject]@{ Sentinel = $sentinel; Secondary = $secondary }
+        }
+
+        function Assert-Phase0CNoWrite {
+            param(
+                [string]$Target,
+                [PSCustomObject]$Before,
+                [byte[]]$Sentinel,
+                [byte[]]$Secondary
+            )
+
+            $after = Get-Phase0CTreeSnapshot -Root $Target
+            ($after.Files -join "`n") | Should -Be ($Before.Files -join "`n")
+            ($after.Directories -join "`n") | Should -Be ($Before.Directories -join "`n")
+            [IO.File]::ReadAllBytes((Join-Path $Target '.github/copilot-instructions.md')) | Should -Be $Sentinel
+            [IO.File]::ReadAllBytes((Join-Path $Target 'skills/custom/SKILL.md')) | Should -Be $Secondary
+            @(Get-ChildItem -LiteralPath $Target -Force | Where-Object Name -Like '.github.backup-*').Count | Should -Be 0
+            @(Get-ChildItem -LiteralPath $Target -Force | Where-Object Name -Like '.ai-workflow-portable.backup-*').Count | Should -Be 0
+            Test-Path (Join-Path $Target '.git') | Should -BeFalse
+        }
+
+        function Invoke-Phase0CBootstrap {
+            param(
+                [string]$Target,
+                [string[]]$Arguments
+            )
+
+            $pwsh = (Get-Process -Id $PID).Path
+            $output = & $pwsh -NoProfile -File (Join-Path $PSScriptRoot 'bootstrap.ps1') -TargetPath $Target @Arguments 2>&1 | Out-String
+            [PSCustomObject]@{ ExitCode = $LASTEXITCODE; Output = $output }
+        }
+
+        function ConvertTo-Phase0CManifestBytes {
+            param([hashtable]$Manifest)
+            [Text.Encoding]::UTF8.GetBytes(($Manifest | ConvertTo-Json -Depth 5 -Compress))
+        }
+    }
+
+    It "returns missing for an absent manifest" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        $result = Get-InstallManifest -TargetPath $target
+        $result.State | Should -Be 'missing'
+        $result.Entries.Count | Should -Be 0
+        $result.SchemaVersion | Should -BeNullOrEmpty
+    }
+
+    It "returns valid for schema v<Version>" -ForEach @(
+        @{ Version = 1 }
+        @{ Version = 2 }
+    ) {
+            param($Version)
+            $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+            New-Item -ItemType Directory -Path $target | Out-Null
+            $bytes = ConvertTo-Phase0CManifestBytes @{ schema_version = $Version; components = @(@{ name = 'agents/a.md' }) }
+            [IO.File]::WriteAllBytes((Join-Path $target '.ai-workflow-install.json'), $bytes)
+            $result = Get-InstallManifest -TargetPath $target
+            $result.State | Should -Be 'valid'
+            $result.SchemaVersion | Should -Be $Version
+            $result.Entries.ContainsKey('agents/a.md') | Should -BeTrue
+    }
+
+    It "returns corrupt for invalid JSON" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $target '.ai-workflow-install.json'), [Text.Encoding]::UTF8.GetBytes('{broken'))
+        $result = Get-InstallManifest -TargetPath $target
+        $result.State | Should -Be 'corrupt'
+        $result.Detail | Should -Not -BeNullOrEmpty
+    }
+
+    It "returns unsupported for schema v3" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        $bytes = ConvertTo-Phase0CManifestBytes @{ schema_version = 3; components = @() }
+        [IO.File]::WriteAllBytes((Join-Path $target '.ai-workflow-install.json'), $bytes)
+        $result = Get-InstallManifest -TargetPath $target
+        $result.State | Should -Be 'unsupported'
+        $result.SchemaVersion | Should -Be 3
+        $result.Detail | Should -Not -BeNullOrEmpty
+    }
+
+    It "returns corrupt when components is not an array" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        $bytes = ConvertTo-Phase0CManifestBytes @{ schema_version = 2; components = @{ name = 'agents/a.md' } }
+        [IO.File]::WriteAllBytes((Join-Path $target '.ai-workflow-install.json'), $bytes)
+        (Get-InstallManifest -TargetPath $target).State | Should -Be 'corrupt'
+    }
+
+    It "returns corrupt for an invalid component name" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        $bytes = ConvertTo-Phase0CManifestBytes @{ schema_version = 2; components = @(@{ name = '  ' }) }
+        [IO.File]::WriteAllBytes((Join-Path $target '.ai-workflow-install.json'), $bytes)
+        (Get-InstallManifest -TargetPath $target).State | Should -Be 'corrupt'
+    }
+
+    It "returns corrupt for duplicate component names" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        $bytes = ConvertTo-Phase0CManifestBytes @{ schema_version = 2; components = @(@{ name = 'agents/a.md' }, @{ name = 'agents/a.md' }) }
+        [IO.File]::WriteAllBytes((Join-Path $target '.ai-workflow-install.json'), $bytes)
+        (Get-InstallManifest -TargetPath $target).State | Should -Be 'corrupt'
+    }
+
+    It "hard stops corrupt update before target writes" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        $manifestBytes = [Text.Encoding]::UTF8.GetBytes('{"schema_version":2,"components":[')
+        $fixture = New-Phase0CTarget -Target $target -ManifestBytes $manifestBytes
+        $before = Get-Phase0CTreeSnapshot -Root $target
+        $result = Invoke-Phase0CBootstrap -Target $target -Arguments @('-Update')
+        $result.ExitCode | Should -Not -Be 0
+        $result.Output | Should -Match ([regex]::Escape((Join-Path $target '.ai-workflow-install.json')))
+        $result.Output | Should -Match 'before any changes'
+        $result.Output | Should -Match 'trusted backup'
+        [IO.File]::ReadAllBytes((Join-Path $target '.ai-workflow-install.json')) | Should -Be $manifestBytes
+        Assert-Phase0CNoWrite -Target $target -Before $before -Sentinel $fixture.Sentinel -Secondary $fixture.Secondary
+    }
+
+    It "hard stops unsupported update with observed and supported versions" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        $manifestBytes = ConvertTo-Phase0CManifestBytes @{ schema_version = 3; components = @() }
+        $fixture = New-Phase0CTarget -Target $target -ManifestBytes $manifestBytes
+        $before = Get-Phase0CTreeSnapshot -Root $target
+        $result = Invoke-Phase0CBootstrap -Target $target -Arguments @('-Update')
+        $result.ExitCode | Should -Not -Be 0
+        $result.Output | Should -Match 'Observed schema version: 3'
+        $result.Output | Should -Match 'Supported schema versions: 1, 2'
+        $result.Output | Should -Match 'before any changes'
+        [IO.File]::ReadAllBytes((Join-Path $target '.ai-workflow-install.json')) | Should -Be $manifestBytes
+        Assert-Phase0CNoWrite -Target $target -Before $before -Sentinel $fixture.Sentinel -Secondary $fixture.Secondary
+    }
+
+    It "reports missing update without target writes or a new manifest" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        $fixture = New-Phase0CTarget -Target $target -ManifestBytes $null
+        $before = Get-Phase0CTreeSnapshot -Root $target
+        $result = Invoke-Phase0CBootstrap -Target $target -Arguments @('-Update')
+        $result.ExitCode | Should -Be 0
+        $result.Output | Should -Match 'legacy project'
+        $result.Output | Should -Match 'report-only'
+        $result.Output | Should -Match 'No files changed'
+        Test-Path (Join-Path $target '.ai-workflow-install.json') | Should -BeFalse
+        Assert-Phase0CNoWrite -Target $target -Before $before -Sentinel $fixture.Sentinel -Secondary $fixture.Secondary
+    }
+
+    It "does not let Force bypass a corrupt update rejection" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        $manifestBytes = [Text.Encoding]::UTF8.GetBytes('not-json')
+        $fixture = New-Phase0CTarget -Target $target -ManifestBytes $manifestBytes
+        $before = Get-Phase0CTreeSnapshot -Root $target
+        $result = Invoke-Phase0CBootstrap -Target $target -Arguments @('-Update', '-Force')
+        $result.ExitCode | Should -Not -Be 0
+        [IO.File]::ReadAllBytes((Join-Path $target '.ai-workflow-install.json')) | Should -Be $manifestBytes
+        Assert-Phase0CNoWrite -Target $target -Before $before -Sentinel $fixture.Sentinel -Secondary $fixture.Secondary
+    }
+
+    It "does not let Backup bypass an unsupported update rejection" {
+        $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $target | Out-Null
+        $manifestBytes = ConvertTo-Phase0CManifestBytes @{ schema_version = 3; components = @() }
+        $fixture = New-Phase0CTarget -Target $target -ManifestBytes $manifestBytes
+        $before = Get-Phase0CTreeSnapshot -Root $target
+        $result = Invoke-Phase0CBootstrap -Target $target -Arguments @('-Update', '-Backup')
+        $result.ExitCode | Should -Not -Be 0
+        [IO.File]::ReadAllBytes((Join-Path $target '.ai-workflow-install.json')) | Should -Be $manifestBytes
+        Assert-Phase0CNoWrite -Target $target -Before $before -Sentinel $fixture.Sentinel -Secondary $fixture.Secondary
+    }
+}
+
 Describe "Phase 0A adopter constitution containment" {
     BeforeEach {
         $script:Phase0ATemplateRoot = Join-Path $TestDrive ([guid]::NewGuid().ToString())

@@ -48,6 +48,7 @@ $script:PortableSkillLinks = @(
     '.claude/skills',
     '.agent/skills'
 )
+$script:SupportedManifestSchemaVersions = @(1, 2)
 $script:LegacyRuntimeExcludes = @(
     'workflows',
     'CODEOWNERS',
@@ -1028,21 +1029,113 @@ function Get-InstallManifest {
     $entries = @{}
 
     if (-not (Test-Path $manifestPath)) {
-        return $entries
+        return [PSCustomObject]@{
+            State         = 'missing'
+            Entries       = $entries
+            SchemaVersion = $null
+            Detail        = $null
+            ManifestPath  = $manifestPath
+        }
     }
 
     try {
         $manifest = Get-Content -Raw $manifestPath | ConvertFrom-Json -AsHashtable
-        foreach ($component in @($manifest.components)) {
-            if ($component.ContainsKey('name') -and $component.name) {
-                $entries[$component.name] = $component
-            }
-        }
     } catch {
-        return @{}
+        return [PSCustomObject]@{
+            State         = 'corrupt'
+            Entries       = $entries
+            SchemaVersion = $null
+            Detail        = 'Manifest could not be read or parsed as JSON.'
+            ManifestPath  = $manifestPath
+        }
     }
 
-    return $entries
+    if ($manifest -isnot [System.Collections.IDictionary]) {
+        return [PSCustomObject]@{
+            State         = 'corrupt'
+            Entries       = $entries
+            SchemaVersion = $null
+            Detail        = 'Manifest top level must be an object.'
+            ManifestPath  = $manifestPath
+        }
+    }
+
+    $schemaVersion = if ($manifest.Contains('schema_version')) { $manifest['schema_version'] } else { $null }
+    $integerTypes = @([byte], [sbyte], [int16], [uint16], [int32], [uint32], [int64], [uint64])
+    if ($null -eq $schemaVersion -or $integerTypes -notcontains $schemaVersion.GetType()) {
+        return [PSCustomObject]@{
+            State         = 'corrupt'
+            Entries       = $entries
+            SchemaVersion = $null
+            Detail        = 'Manifest schema_version must be an integer.'
+            ManifestPath  = $manifestPath
+        }
+    }
+
+    if ($script:SupportedManifestSchemaVersions -notcontains $schemaVersion) {
+        return [PSCustomObject]@{
+            State         = 'unsupported'
+            Entries       = $entries
+            SchemaVersion = $schemaVersion
+            Detail        = "Schema version $schemaVersion is not supported."
+            ManifestPath  = $manifestPath
+        }
+    }
+
+    $components = $null
+    if ($manifest.Contains('components')) {
+        $components = $manifest['components']
+    }
+    if ($components -isnot [System.Array]) {
+        return [PSCustomObject]@{
+            State         = 'corrupt'
+            Entries       = $entries
+            SchemaVersion = $schemaVersion
+            Detail        = 'Manifest components must be an array.'
+            ManifestPath  = $manifestPath
+        }
+    }
+
+    $componentNames = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($component in $components) {
+        if ($component -isnot [System.Collections.IDictionary]) {
+            return [PSCustomObject]@{
+                State         = 'corrupt'
+                Entries       = @{}
+                SchemaVersion = $schemaVersion
+                Detail        = 'Every manifest component must be an object.'
+                ManifestPath  = $manifestPath
+            }
+        }
+        $name = if ($component.Contains('name')) { $component['name'] } else { $null }
+        if ($name -isnot [string] -or [string]::IsNullOrWhiteSpace($name)) {
+            return [PSCustomObject]@{
+                State         = 'corrupt'
+                Entries       = @{}
+                SchemaVersion = $schemaVersion
+                Detail        = 'Every manifest component must have a non-empty string name.'
+                ManifestPath  = $manifestPath
+            }
+        }
+        if (-not $componentNames.Add($name)) {
+            return [PSCustomObject]@{
+                State         = 'corrupt'
+                Entries       = @{}
+                SchemaVersion = $schemaVersion
+                Detail        = "Manifest contains duplicate component name: $name"
+                ManifestPath  = $manifestPath
+            }
+        }
+        $entries[$name] = $component
+    }
+
+    return [PSCustomObject]@{
+        State         = 'valid'
+        Entries       = $entries
+        SchemaVersion = $schemaVersion
+        Detail        = $null
+        ManifestPath  = $manifestPath
+    }
 }
 
 function Set-ManifestEntry {
@@ -1784,6 +1877,32 @@ function Initialize-AgentsGuide {
 # ============================================================================
 
 function Main {
+    $targetProjectPath = if ($TargetPath) { $TargetPath } else { (Get-Location).Path }
+    $manifestResult = Get-InstallManifest -TargetPath $targetProjectPath
+    if ($Update) {
+        if ($manifestResult.State -eq 'missing') {
+            Write-Warning "Legacy project manifest is missing: $($manifestResult.ManifestPath)"
+            Write-Warning 'Update is report-only because managed-file provenance is unavailable.'
+            Write-Warning 'No files changed; no ownership was inferred and no manifest was created.'
+            return
+        }
+        if ($manifestResult.State -eq 'unsupported') {
+            Write-Error "Unsupported install manifest: $($manifestResult.ManifestPath)" -ErrorAction Continue
+            Write-Error "Observed schema version: $($manifestResult.SchemaVersion)" -ErrorAction Continue
+            Write-Error "Supported schema versions: $($script:SupportedManifestSchemaVersions -join ', ')" -ErrorAction Continue
+            Write-Error 'Update aborted before any changes; the manifest was not downgraded or rebuilt.' -ErrorAction Continue
+            exit 1
+        }
+        if ($manifestResult.State -eq 'corrupt') {
+            Write-Error "Corrupt install manifest: $($manifestResult.ManifestPath)" -ErrorAction Continue
+            Write-Error $manifestResult.Detail -ErrorAction Continue
+            Write-Error 'Update aborted before any changes; the manifest was not deleted or rebuilt.' -ErrorAction Continue
+            Write-Error 'Inspect the manifest manually or restore it from a trusted backup.' -ErrorAction Continue
+            exit 1
+        }
+    }
+    $manifestEntries = $manifestResult.Entries
+
     Write-Host "🚀 Bootstrap AI Workflow Installer" -ForegroundColor Cyan
     Write-Host ""
     
@@ -1868,7 +1987,6 @@ function Main {
     # ========================================================================
     
     # 決定目標路徑
-    $targetProjectPath = if ($TargetPath) { $TargetPath } else { (Get-Location).Path }
     $templateSourcePath = Join-Path $script:RepoRoot ".github"
     
     # 檢查是否需要使用遠端模式
@@ -1973,8 +2091,6 @@ function Main {
     Write-Host "同步工作流檔案..." -ForegroundColor Cyan
     Write-Host ""
     
-    $manifestEntries = Get-InstallManifest -TargetPath $targetProjectPath
-
     try {
         # 執行檔案同步
         $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $targetProjectPath -ManifestEntries $manifestEntries -ConstitutionSourceRoot $script:RepoRoot -Force:$forceMode -Backup:$backupMode
