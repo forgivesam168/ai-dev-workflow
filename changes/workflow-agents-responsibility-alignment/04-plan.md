@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Phase 1 local implementation verified; PR pending
+- **Status**: Phase 2 local implementation verified; PR pending
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 1 — AGENTS / WORKFLOW / Risk-Mode Contract
+- **Current active phase**: Phase 2 — Agent / Skill / Prompt / Instruction Alignment
 
 ## Phase Status Summary
 
@@ -16,8 +16,8 @@
 | 0B — Bash update safety | Merged | Required | Required |
 | 0C — Manifest parse safety containment | Merged | Required | Required |
 | 0D — Archive authorization containment | Merged | Required | Required |
-| 1 — AGENTS / WORKFLOW / risk contract | Local implementation verified; PR pending | Required | Required |
-| 2 — Agent / Skill / Prompt / Instruction alignment | Pending | Required | Required |
+| 1 — AGENTS / WORKFLOW / risk contract | Merged | Required | Required |
+| 2 — Agent / Skill / Prompt / Instruction alignment | Local implementation verified; PR pending | Required | Required |
 | 3 — Change Package / Review / Archive semantics | Pending | Required | Required |
 | 4 — Manifest / provenance / stale-derived migration | Pending | Required | Required |
 | 5 — Cross-CLI evidence and adapter proposal | Pending | Required | Evidence PR before implementation PR |
@@ -403,6 +403,116 @@ Establish D-01, D-03, and D-09 as one coherent responsibility contract.
 - Phase 3 adopter-facing lifecycle source selection and Phase 4 Manifest schema remain unapproved and outside this Phase.
 - Migration / Deployment Readiness: `N/A — no migration or deployment execution is authorized in this Phase.`
 
+### Confirmed Responsibility Mapping
+
+The following mapping is the single reviewed Phase 2 inventory. Agent edits must preserve the retained identity/lens/scope/handoff and replace embedded methodology with resolvable canonical Skill pointers; this is not authorization for a blanket Agent rewrite.
+
+| Agent | Retain in Agent | Methodology/rubric removed from Agent | Canonical Skill owner(s) | Direct Prompt / Instruction impact |
+|---|---|---|---|---|
+| `architect.agent.md` | Cross-stage architect identity; architecture/security lens; consult scope; return-to-caller handoff; necessary tools | Composition procedure, design checklist, evaluation trigger details | `brainstorming`; `agentic-eval` | `instructions/playbooks/architect.md` becomes a compatibility pointer only |
+| `brainstorm.agent.md` | Requirements-explorer identity; ambiguity/risk lens; pre-code scope; mode-aware handoff | Question-count procedure, option/premortem checklist, risk/output methodology | `brainstorming` | `brainstorm.prompt.md` becomes an entry/router Prompt |
+| `code-reviewer.agent.md` | Independent reviewer identity; correctness/security/financial/TDD lens; review-only scope; correction handoff | Review priorities, severity rubric, detailed checklist | `code-security-review` | `code-review.prompt.md`, `code-review.instructions.md`, and `playbooks/security-reviewer.md` route to the Skill instead of owning the method |
+| `coder.agent.md` | Implementer identity; TDD/financial-precision lens; approved-scope writer boundary; review handoff; necessary tools | Vertical-slice procedure, phase sequence, self-eval/document-update procedure | `tdd-workflow` | `tdd.prompt.md` and `playbooks/tdd-guide.md` become routers/pointers |
+| `dba.agent.md` | Database architect identity; schema/migration/performance lens; DB-only consult scope; return-to-caller handoff | Schema/migration mandates, deliverable checklist, verification procedure | `backend-patterns` for database design/review tactics; `specification` for schema contracts; `implementation-planning` for migration/rollback planning | `sql.instructions.md` remains the unchanged `**/*.sql` scoped delta; `playbooks/database-reviewer.md` becomes a compatibility pointer |
+| `frontend-designer.agent.md` | UI/UX identity; accessibility/component lens; design-only scope; return-to-caller handoff | Design procedure, breakpoint/checklist and deliverable method | `frontend-patterns`; `specification` for consult integration | No stage Prompt; no generic Instruction added |
+| `plan.agent.md` | Planner identity; dependency/spec-gap lens; plan-only scope; coder handoff | Mode/artifact rules, vertical-slice procedure, output/self-eval gates | `implementation-planning` | `create-plan.prompt.md` and `playbooks/planner.md` become router/pointer surfaces |
+| `pm.agent.md` | Project-router identity; state/SSOT lens; read/route-only scope; advisory dynamic handoff | Stage table, detection procedure, artifact/mode descriptions | `workflow-orchestrator`; `prd` | `workflow.prompt.md` becomes an entry/router Prompt |
+| `spec.agent.md` | Specification identity; testability/traceability lens; spec-only consult scope; planner handoff | Clarification/spec procedure, quality rubric, input/output gate | `specification` | `spec.prompt.md` becomes an entry/router Prompt |
+
+Cross-cutting reviewed mapping:
+
+- `archive.prompt.md` routes to `work-archiving`; the Skill remains the method and protected-action boundary owner. Phase 0D behavior remains unchanged.
+- `commit-gen.prompt.md` routes to `git-commit` and explicitly grants no staging or commit authority.
+- `python.instructions.md` becomes a `**/*.py` language-scoped delta pointing to `python-patterns`; persona, tool-selection, research workflow, templates, Git policy, and generic execution procedure are removed.
+- `code-review.instructions.md` becomes a source-file-scoped delta pointing to `code-security-review`; its generic review procedure, rubric, checklist, and global policy are removed.
+- The five files under `instructions/playbooks/` become compatibility pointers only; they do not remain competing methodology owners. Direct Skill references to those legacy playbooks are removed where they would create circular ownership.
+- `create-readme.prompt.md`, `learn.prompt.md`, and all other reviewed Instructions remain unchanged because they contain only task-specific entry/output UX or an already explicit file/language/framework/domain scope and do not own the mapped stage methodology.
+- All changed `.github/**` files are generator-owned mirrors produced by `tools/sync-dotgithub.ps1`, never independent policy edits.
+
+### Exact Luna Product Allowlist
+
+Canonical Agents:
+
+- `agents/architect.agent.md`
+- `agents/brainstorm.agent.md`
+- `agents/code-reviewer.agent.md`
+- `agents/coder.agent.md`
+- `agents/dba.agent.md`
+- `agents/frontend-designer.agent.md`
+- `agents/plan.agent.md`
+- `agents/pm.agent.md`
+- `agents/spec.agent.md`
+
+Canonical Skills and gate integration:
+
+- `skills/backend-patterns/SKILL.md`
+- `skills/frontend-patterns/SKILL.md`
+- `skills/code-security-review/SKILL.md`
+- `skills/implementation-planning/SKILL.md`
+- `skills/gate-check/SKILL.md`
+- `skills/gate-check/scripts/run-gate-check.ps1`
+
+Canonical Prompts:
+
+- `prompts/archive.prompt.md`
+- `prompts/brainstorm.prompt.md`
+- `prompts/code-review.prompt.md`
+- `prompts/commit-gen.prompt.md`
+- `prompts/create-plan.prompt.md`
+- `prompts/spec.prompt.md`
+- `prompts/tdd.prompt.md`
+- `prompts/workflow.prompt.md`
+
+Canonical Instructions:
+
+- `instructions/code-review.instructions.md`
+- `instructions/python.instructions.md`
+- `instructions/playbooks/architect.md`
+- `instructions/playbooks/database-reviewer.md`
+- `instructions/playbooks/planner.md`
+- `instructions/playbooks/security-reviewer.md`
+- `instructions/playbooks/tdd-guide.md`
+
+Checker and regression tests:
+
+- `tools/check-agent-structure.ps1`
+- `tools/check-agent-structure.Tests.ps1`
+- `tools/workflow-risk-mode.Tests.ps1`
+- `tools/archive-authorization.Tests.ps1`
+
+Generator-owned mirrors, writable only through the normal sync flow:
+
+- `.github/agents/architect.agent.md`
+- `.github/agents/brainstorm.agent.md`
+- `.github/agents/code-reviewer.agent.md`
+- `.github/agents/coder.agent.md`
+- `.github/agents/dba.agent.md`
+- `.github/agents/frontend-designer.agent.md`
+- `.github/agents/plan.agent.md`
+- `.github/agents/pm.agent.md`
+- `.github/agents/spec.agent.md`
+- `.github/skills/backend-patterns/SKILL.md`
+- `.github/skills/frontend-patterns/SKILL.md`
+- `.github/skills/code-security-review/SKILL.md`
+- `.github/skills/implementation-planning/SKILL.md`
+- `.github/prompts/archive.prompt.md`
+- `.github/prompts/brainstorm.prompt.md`
+- `.github/prompts/code-review.prompt.md`
+- `.github/prompts/commit-gen.prompt.md`
+- `.github/prompts/create-plan.prompt.md`
+- `.github/prompts/spec.prompt.md`
+- `.github/prompts/tdd.prompt.md`
+- `.github/prompts/workflow.prompt.md`
+- `.github/instructions/code-review.instructions.md`
+- `.github/instructions/python.instructions.md`
+- `.github/instructions/playbooks/architect.md`
+- `.github/instructions/playbooks/database-reviewer.md`
+- `.github/instructions/playbooks/planner.md`
+- `.github/instructions/playbooks/security-reviewer.md`
+- `.github/instructions/playbooks/tdd-guide.md`
+
+If this exact allowlist is insufficient, Luna must stop and report the missing path and contract reason. No scope expansion is implicit.
+
 ### Exact Scope
 
 - Separate maintainer and adopter AGENTS responsibilities.
@@ -478,6 +588,14 @@ Separate user approval and separate PR required.
 - Sol independent audit after Luna handoff: 0 Critical, 0 High, 0 unresolved Medium, 0 Low product findings. Three blocking Medium contract gaps were found across two correction rounds and resolved by the same Luna.
 - Rule-based High-Risk gates: Architecture Decision Exit — pass; Pre-Implementation Readiness — pass; Pre-Delivery Verification — pass; Migration / Deployment Readiness — `N/A — no migration or deployment execution is authorized in this Phase.`
 - Coverage: N/A — Phase 1 changes policy/document contracts and uses deterministic Pester content/parity tests rather than executable production branches with a meaningful line-coverage metric.
+- PR #8
+- Final head: `9efa4511f081dcfb1c959fd18fbc92956e184646`
+- Squash merge SHA: `8fe0abc71745b713985846fe9c42b67f78d3405f`
+- Remote Verify Change Package: completed / success
+- Remote verify-sync Ubuntu: completed / success
+- Remote verify-sync Windows: completed / success
+- Reviews: none
+- Review threads: none
 
 ## Phase 2 — Agent / Skill / Prompt / Instruction Alignment
 
@@ -494,6 +612,14 @@ Enforce the persona/behavior/router/scoped-instruction boundary without changing
 
 - Phase 1 Workflow and gate contract accepted.
 - Structural Agent contract approved.
+
+### Prerequisite Evidence
+
+- Phase 1 is merged through PR #8 at squash merge SHA `8fe0abc71745b713985846fe9c42b67f78d3405f`; its final head and successful remote checks are recorded above.
+- The current task explicitly approves Phase 2 product implementation, the D-04 Agent/Skill/Prompt/Instruction ownership contract, deterministic structural-checker semantics, soft line-count reporting, and a single Phase/single PR boundary; Amendment A-05 records that approval.
+- Phase 1 lifecycle/mode/gate/authorization semantics remain immutable in this Phase.
+- Phase 3 adopter-facing lifecycle source, Phase 4 Manifest schema, D-10 adapters, migration, prune, adopter execution, deployment, and production operation remain unapproved and outside scope.
+- Migration / Deployment Readiness: `N/A — no migration or deployment execution is authorized in this Phase.`
 
 ### Exact Scope
 
@@ -550,7 +676,26 @@ Revert each paired Agent/Skill move together; never leave a pointer without its 
 
 ### Approval and PR Boundary
 
-Separate user approval and separate PR required; large Agent groups may require multiple non-overlapping PRs.
+Phase 2 has separate user approval and must be delivered as one Phase and one PR. If the reviewed mapping cannot be completed safely within that boundary, stop and report a proposed split without starting partial remote delivery.
+
+### Observed Evidence
+
+- Luna agent: built-in `worker`; requested GPT-5.6 with reasoning `medium`; observed model/effort: unknown because the runtime did not expose metadata.
+- TDD RED → GREEN: structural checker `0/8 → 8/8`; current canonical Agents initially produced 45 hard failures and 8 warnings, then reached 0 hard failures; Agent/Skill mapping `8/9 → 13/13`; Prompt/Instruction/playbook ownership `13/19 → 19/19`; expected multi-Skill owner regression `19/20 → 20/20`; final combined Phase 0D/1/2 focused suite `66/66`.
+- Luna implementation retained per-Agent persona/lens/scope/handoff, moved reusable database and UI consultation tactics to `backend-patterns` and `frontend-patterns`, converted affected Prompts/Instructions/playbooks to routers or scoped compatibility pointers, added the structural checker and tests, and regenerated `.github/**` mirrors through the repository sync flow.
+- Sol independent audit: 0 Critical, 0 High, 0 Medium. Warning-only/Low evidence: `pm.agent.md` and `spec.agent.md` each contain 29 non-empty lines against the soft target of 25; Python regression emitted one pre-existing `pytest-asyncio` future-default deprecation warning. Neither warning matches an approved blocking condition.
+- Correction rounds requested by Sol: 0 of 2. Luna made two bounded self-corrections before handoff: explicit expected-owner validation for multi-Skill Agents and removal of Prompt-side adopter lifecycle-source preselection.
+- Direct structural checker: 0 hard failures; 2 `LINE_COUNT` warnings; exit 0.
+- Final targeted Pester 5.6.1: 66 passed, 0 failed.
+- Final full Pester 5.6.1 (`scripts` + `tools`): 122 passed, 0 failed, 0 skipped, 0 not run, 0 inconclusive, 0 failed containers.
+- Python bootstrap regression: 89 passed, 0 failed. The pre-existing `pytest-asyncio` warning is recorded above.
+- `check-sync.ps1`: pass; all managed `.github/**` mirrors match generated output.
+- `audit-catalog.ps1`: pass; 9 agents, 10 prompts, 35 total skills, 34 adopter skills, 1 maintainer-only `gate-check`.
+- Static pointer scan: 31 changed canonical Markdown files, 38 relative links, 0 broken links. No affected Prompt selects an adopter-facing lifecycle source.
+- Full repository gate: `GATE PASSED WITH NOTES`, exit 0; environment, sync, catalog, structural checker, Python, Pester, `git diff --check`, and worktree invariance passed. Notes are the two approved soft line-count warnings.
+- Final scope audit: exactly 64 changed/untracked paths, all in the reviewed allowlist; 0 unexpected and 0 missing. No lifecycle-semantic, Phase 3 source-selection, Phase 4 schema, D-10 adapter, migration, prune, real-adopter, deployment, or production change.
+- Rule-based High-Risk gates: Architecture Decision Exit — pass; Pre-Implementation Readiness — pass; Pre-Delivery Verification — pass; Migration / Deployment Readiness — `N/A — no migration or deployment execution is authorized in this Phase.`
+- Coverage: N/A — Phase 2 changes Markdown responsibility contracts and deterministic PowerShell checkers; focused structural/parity/regression evidence is the meaningful verification boundary rather than a line-coverage metric.
 
 ## Phase 3 — Change Package / Review / Archive Semantics
 

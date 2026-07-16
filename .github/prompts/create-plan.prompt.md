@@ -1,136 +1,21 @@
 ---
-description: Restate requirements, assess risks, and create step-by-step implementation plan. WAIT for user CONFIRM before touching any code.
+description: 'Route approved requirements into a verifiable implementation plan without redefining Workflow policy.'
 ---
 
 # Create Plan Command
 
-> **💡 Recommended Agent**: This command works best with `plan-agent` (Strategic Planner). Use `/agent` in CLI or select from agent dropdown in VS Code.
->
-> **⚠️ Note for CLI users**: Use `/create-plan` to avoid conflict with CLI's built-in `/plan` command.
+## Entry
 
-> Tip: If the problem is ambiguous or high-risk, run `/brainstorm` first to compare options and create a decision log.
+Use `/create-plan` with the approved requirements, decisions, acceptance criteria, exclusions, affected-system context, and task/status SSOT.
 
-This command invokes the **planner** agent to create a comprehensive implementation plan before writing any code.
+## Route
 
-## What This Command Does
+Follow [implementation-planning](../skills/implementation-planning/SKILL.md) for planning methodology and plan quality. Use the canonical Workflow contract declared by Project AGENTS as the sole owner of lifecycle mode, required artifacts, stage exits, and High-Risk gates; this Prompt does not select an adopter-facing lifecycle source.
 
-1. **Restate Requirements** - Clarify what needs to be built
-2. **Identify Risks** - Surface potential issues and blockers
-3. **Create Step Plan** - Break down implementation into phases
-4. **Wait for Confirmation** - MUST receive user approval before proceeding
+## Output
 
-## When to Use
+Return the mode-appropriate executable plan, including bounded change areas, verification evidence, dependencies, risks, and rollback or safe-stop details when applicable.
 
-Use `/plan` when:
-- Starting a new feature
-- Making significant architectural changes
-- Working on complex refactoring
-- Multiple files/components will be affected
-- Requirements are unclear or ambiguous
+## Handoff
 
-## How It Works
-
-The planner agent will:
-
-1. **Analyze the request** and restate requirements in clear terms
-2. **Break down into phases** with specific, actionable steps
-3. **Identify dependencies** between components
-4. **Assess risks** and potential blockers
-5. **Estimate complexity** (High/Medium/Low)
-6. **Present the plan** and WAIT for your explicit confirmation
-
-## Example Usage
-
-```
-User: /plan I need to add real-time notifications when markets resolve
-
-Agent (planner):
-# Implementation Plan: Real-Time Market Resolution Notifications
-
-## Requirements Restatement
-- Send notifications to users when markets they're watching resolve
-- Support multiple notification channels (in-app, email, webhook)
-- Ensure notifications are delivered reliably
-- Include market outcome and user's position result
-
-## Implementation Phases
-
-### Phase 1: Database Schema
-- Add notifications table with columns: id, user_id, market_id, type, status, created_at
-- Add user_notification_preferences table for channel preferences
-- Create indexes on user_id and market_id for performance
-
-### Phase 2: Notification Service
-- Create notification service in lib/notifications.ts
-- Implement notification queue using BullMQ/Redis
-- Add retry logic for failed deliveries
-- Create notification templates
-
-### Phase 3: Integration Points
-- Hook into market resolution logic (when status changes to "resolved")
-- Query all users with positions in market
-- Enqueue notifications for each user
-
-### Phase 4: Frontend Components
-- Create NotificationBell component in header
-- Add NotificationList modal
-- Implement real-time updates via Supabase subscriptions
-- Add notification preferences page
-
-## Dependencies
-- Redis (for queue)
-- Email service (SendGrid/Resend)
-- Supabase real-time subscriptions
-
-## Risks
-- HIGH: Email deliverability (SPF/DKIM required)
-- MEDIUM: Performance with 1000+ users per market
-- MEDIUM: Notification spam if markets resolve frequently
-- LOW: Real-time subscription overhead
-
-## Estimated Complexity: MEDIUM
-- Backend: 4-6 hours
-- Frontend: 3-4 hours
-- Testing: 2-3 hours
-- Total: 9-13 hours
-
-**WAITING FOR CONFIRMATION**: Proceed with this plan? (yes/no/modify)
-```
-
-## Important Notes
-
-**CRITICAL**: The planner agent will **NOT** write any code until you explicitly confirm the plan with "yes" or "proceed" or similar affirmative response.
-
-If you want changes, respond with:
-- "modify: [your changes]"
-- "different approach: [alternative]"
-- "skip phase 2 and do phase 3 first"
-
-## Integration with Other Commands
-
-After planning:
-- Use `/tdd` to implement with test-driven development
-- Use `/build-and-fix` if build errors occur
-- Use `/code-review` to review completed implementation
-
-## Related Agents
-
-This command invokes the `planner` agent located at:
-`instructions/playbooks/planner.md` (repo SSOT；若安裝到本機，可對應 `~/.claude/agents/planner.md`)
-
-
-## Change Package Integration
-Prefer generating plan artifacts into:
-
-- `changes/<...>/04-plan.md`
-- `changes/<...>/05-test-plan.md`
-- If brownfield/high-risk: `changes/<...>/06-impact-analysis.md`
-
-If the required inputs (intake/spec) are missing, produce the best-effort plan but also list a **minimal missing artifacts checklist**.
-
-## Next Step
-After plan approval:
-- Run `/tdd` to start test-driven implementation
-- Or use `/workflow` for guided progression
-
-⚠️ **IMPORTANT**: Do not start implementation without user approval of the plan!
+Return unresolved spec or decision gaps to their owner. Otherwise hand the approved plan to the authorized implementer selected by the Workflow.

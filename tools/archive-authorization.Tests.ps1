@@ -57,22 +57,25 @@ BeforeAll {
 
 Describe 'Phase 0D archive authorization' {
     It 'declares local archive documentation as the only Archive-authorized scope' {
-        foreach ($text in $script:ArchiveTexts) {
-            $text | Should -Match '(?i)Archive (?:request|invocation).{0,100}(?:only|authorizes only).{0,100}local archive documentation'
-            $text | Should -Match '(?i)(?:create|update).{0,80}archive (?:document|summary)'
-            $text | Should -Match '(?i)(?:read-only|readonly).{0,80}(?:commit|PR|Issue).{0,80}evidence'
-        }
+        $script:SkillText | Should -Match '(?i)Archive (?:request|invocation).{0,100}(?:only|authorizes only).{0,100}local archive documentation'
+        $script:SkillText | Should -Match '(?i)(?:create|update).{0,80}archive (?:document|summary)'
+        $script:SkillText | Should -Match '(?i)(?:read-only|readonly).{0,80}(?:commit|PR|Issue).{0,80}evidence'
+
+        $script:PromptText | Should -Match '(?i)only for requested local archive documentation'
+        $script:PromptText | Should -Match '(?i)this Prompt authorizes only.{0,120}local archive-documentation writes'
+        $script:PromptText | Should -Match '(?i)\]\(\.\./skills/work-archiving/SKILL\.md\)'
+        $script:PromptText | Should -Not -Match '(?m)^## (?:Process|Rules|Prerequisites|Output Format)\s*$'
     }
 
     It 'requires explicit current-task action-specific approval for protected actions' {
         foreach ($text in $script:ArchiveTexts) {
             $text | Should -Match '(?i)explicit.{0,80}current-task.{0,80}action-specific.{0,100}(?:approval|authorization)'
-            $text | Should -Match '(?i)one approval.{0,100}(?:does not|cannot).{0,100}another'
-            $text | Should -Match '(?i)approval for commit.{0,80}(?:does not|cannot).{0,80}push'
-            $text | Should -Match '(?i)approval for push.{0,80}(?:does not|cannot).{0,80}tag'
-            $text | Should -Match '(?i)approval for merge.{0,80}(?:does not|cannot).{0,80}branch deletion'
-            $text | Should -Match '(?i)approval for documentation.{0,80}(?:does not|cannot).{0,80}remote closure'
         }
+        $script:SkillText | Should -Match '(?i)one approval.{0,100}(?:does not|cannot).{0,100}another'
+        $script:SkillText | Should -Match '(?i)approval for commit.{0,80}(?:does not|cannot).{0,80}push'
+        $script:SkillText | Should -Match '(?i)approval for push.{0,80}(?:does not|cannot).{0,80}tag'
+        $script:SkillText | Should -Match '(?i)approval for merge.{0,80}(?:does not|cannot).{0,80}branch deletion'
+        $script:SkillText | Should -Match '(?i)approval for documentation.{0,80}(?:does not|cannot).{0,80}remote closure'
     }
 
     It 'lists every protected action separately' {
@@ -87,20 +90,18 @@ Describe 'Phase 0D archive authorization' {
             'remote PR closure'
         )
 
-        foreach ($text in $script:ArchiveTexts) {
-            foreach ($action in $requiredActions) {
-                $text | Should -Match "(?i)$([regex]::Escape($action))"
-            }
+        foreach ($action in $requiredActions) {
+            $script:SkillText | Should -Match "(?i)$([regex]::Escape($action))"
         }
     }
 
     It 'defines safe stop, reporting, and handoff behavior when approval is missing' {
-        foreach ($text in $script:ArchiveTexts) {
-            $text | Should -Match '(?i)(?:without|missing|lack).{0,100}(?:approval|authorization)'
-            $text | Should -Match '(?i)do not execute'
-            $text | Should -Match '(?i)report.{0,100}(?:specific|exact|required).{0,100}(?:action|approval)'
-            $text | Should -Match '(?i)(?:safe|local).{0,100}(?:handoff|stop)'
-        }
+        $script:SkillText | Should -Match '(?i)(?:without|missing|lack).{0,100}(?:approval|authorization)'
+        $script:SkillText | Should -Match '(?i)do not execute'
+        $script:SkillText | Should -Match '(?i)report.{0,100}(?:specific|exact|required).{0,100}(?:action|approval)'
+        $script:SkillText | Should -Match '(?i)(?:safe|local).{0,100}(?:handoff|stop)'
+
+        $script:PromptText | Should -Match '(?is)required evidence or action-specific approval is absent.{0,240}safe authorized local scope.{0,240}(?:stop|return control)'
     }
 
     It 'does not contain executable protected Git or gh command examples' {
@@ -144,7 +145,7 @@ Describe 'Phase 0D archive authorization' {
     It 'preserves Stage 6, after-merge timing, filename, ADR criteria, and data guards' {
         $allText = $script:ArchiveTexts -join "`n"
         $allText | Should -Match '(?i)Stage 6\s*\(Archive\)'
-        $allText | Should -Match '(?i)after PR is merged'
+        $allText | Should -Match '(?i)after (?:the )?PR is merged'
         $allText | Should -Match '99-archive\.md'
         $allText | Should -Match '(?i)Hard to reverse'
         $allText | Should -Match '(?i)Future confusion'
@@ -156,12 +157,11 @@ Describe 'Phase 0D archive authorization' {
     }
 
     It 'preserves the requested local documentation writes without treating them as Git authorization' {
-        foreach ($text in $script:ArchiveTexts) {
-            $text | Should -Match '(?i)(?:create|update).{0,100}(?:archive document|archive summary)'
-            $text | Should -Match '(?i)work log'
-            $text | Should -Match '(?i)CHANGELOG'
-            $text | Should -Match '(?i)documentation.{0,100}(?:does not|cannot).{0,100}(?:authorize|grant).{0,100}(?:commit|push|remote)'
-        }
+        $script:SkillText | Should -Match '(?i)(?:create|update).{0,100}(?:archive document|archive summary)'
+        $script:SkillText | Should -Match '(?i)work log'
+        $script:SkillText | Should -Match '(?i)CHANGELOG'
+        $script:SkillText | Should -Match '(?i)documentation.{0,100}(?:does not|cannot).{0,100}(?:authorize|grant).{0,100}(?:commit|push|remote)'
+        $script:PromptText | Should -Match '(?i)does not authorize Git or remote mutation'
     }
 
     It 'keeps canonical and derived Archive Skill and Prompt files byte-for-byte equal' {

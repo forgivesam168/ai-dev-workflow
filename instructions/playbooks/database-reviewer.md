@@ -1,32 +1,5 @@
-# Database Reviewer Checklist (Financial Systems)
+# Compatibility Pointer
 
-Use this when reviewing schema/SQL/migrations.
+This legacy path is retained for compatibility only and owns no database methodology, checklist, rubric, migration policy, or authorization rule.
 
-## Security
-- [ ] **Least privilege**: app user has minimum permissions.
-- [ ] **Row-level restrictions** where required (e.g., tenant/customer scoping).
-- [ ] **No dynamic SQL injection** paths; parameterize queries.
-- [ ] **PII**: encrypt at rest where policy requires; mask in logs/exports.
-
-## Schema design
-- [ ] Proper **primary keys** and **unique constraints**.
-- [ ] Foreign keys with correct `ON DELETE/UPDATE` behavior.
-- [ ] Normalize where it matters; avoid inconsistent denormalization.
-
-## Performance
-- [ ] Indexes match query patterns (WHERE/JOIN/ORDER BY).
-- [ ] Avoid N+1 patterns; check common reporting queries.
-- [ ] Large tables: consider partitioning/archiving strategy.
-
-## Migrations
-- [ ] Migrations are **reversible** or have a clear rollback plan.
-- [ ] Online-safe changes (avoid long locks): add nullable column → backfill → add constraint.
-- [ ] Data backfill scripts are idempotent and resumable.
-
-## Auditing / compliance
-- [ ] Critical tables have audit fields (created/updated/by) where required.
-- [ ] Retention & purge policy is documented.
-- [ ] Change is referenced in the relevant `changes/**/03-spec.md` and `06-impact-analysis.md`.
-
-## Verification
-- [ ] Provide the exact validation steps (e.g., explain plan, benchmark, row counts).
+Use [backend-patterns](../../skills/backend-patterns/SKILL.md) for database design and review tactics, [specification](../../skills/specification/SKILL.md) for schema contracts, and [implementation-planning](../../skills/implementation-planning/SKILL.md) for migration and rollback planning.

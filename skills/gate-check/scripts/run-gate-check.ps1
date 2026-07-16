@@ -125,6 +125,27 @@ try {
 # & npx eslint src/    # ESLint example
 # if ($LASTEXITCODE -ne 0) { $failed = $true }
 
+# --- REQUIRED: Agent structure contract ---------------------------------
+Write-Host ''
+Write-Host '--- [REQUIRED] Agent structure contract ---'
+try {
+    $structureResult = & pwsh -NoProfile -File (Join-Path $rootDir 'tools\check-agent-structure.ps1') 2>&1
+    $structureExit = $LASTEXITCODE
+    $structureResult | ForEach-Object { Write-Host "    $_" }
+    if ($structureExit -ne 0) {
+        Write-Host "  ❌ FAIL — check-agent-structure.ps1 reported hard findings" -ForegroundColor Red
+        $failed = $true
+    } elseif (($structureResult -join "`n") -match '(?m)^CHECK PASSED WITH WARNINGS$') {
+        $notes.Add('Agent structure checker reported soft line-count warnings.')
+        Write-Host '  ⚠️  PASS WITH NOTES — Agent structure warnings recorded' -ForegroundColor Yellow
+    } else {
+        Write-Host '  ✅ PASS — Agent structure contract satisfied' -ForegroundColor Green
+    }
+} catch {
+    Write-Host "  ❌ FAIL — check-agent-structure.ps1 error: $_" -ForegroundColor Red
+    $failed = $true
+}
+
 # ─── REQUIRED: Python tests ─────────────────────────────────────────────────
 Write-Host ''
 Write-Host '--- [REQUIRED] Python bootstrap tests ---'

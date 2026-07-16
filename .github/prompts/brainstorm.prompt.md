@@ -1,55 +1,21 @@
 ---
-description: 'Start a work item: triage risk, select the canonical execution mode, run structured brainstorming, and create only the lifecycle artifacts required by WORKFLOW.md.'
+description: 'Start requirements exploration and route it through the canonical brainstorming method and Workflow contract.'
 ---
 
 # Brainstorm Command
 
-> **💡 Recommended Agent**: This command works best with `brainstorm-agent` for requirements discovery. Use `/agent` in CLI or select from agent dropdown in VS Code.
-> If the skill does not auto-load, run `/brainstorming` manually.
+## Entry
 
-Use `/brainstorm` at the start of any new work item to:
-1. Triage and classify risk (Low/Med/High)
-2. Select exactly one execution mode from `WORKFLOW.md` (Simple, Standard, or High-Risk)
-3. Clarify requirements and compare options
-4. Produce only the lifecycle artifacts required by the selected mode
+Use `/brainstorm` with the goal, non-goals, known constraints, project context, and any already approved decisions. Surface missing context that would materially change scope or risk.
 
-## When to Use
-- Requirements are unclear, high-risk, or multiple approaches exist
-- Starting a new feature or significant change
-- Before `/plan` or `/tdd`
+## Route
 
-## Process
+Follow [brainstorming](../skills/brainstorming/SKILL.md) for the reusable discovery and option-analysis method. Use the canonical Workflow contract declared by Project AGENTS as the sole lifecycle and execution-mode owner; this Prompt does not select an adopter-facing lifecycle source or redefine mode criteria, artifact triggers, stage exits, or gates.
 
-### Step 1: Intake & Risk Classification
-- Clarify goals and non-goals
-- Classify risk: **Low** / **Med** / **High**
-- Determine if this is brownfield (existing system)
-- Apply the mode entry and escalation rules from `WORKFLOW.md`; do not create another path label.
+## Output
 
-### Step 2: Structured Brainstorming
-1) **Clarifying Questions** — ask at least 5 targeted questions in each new brainstorming round before options or recommendations, unless the user explicitly allows assumptions
-2) **Assumptions & Constraints** — separate confirmed facts from assumptions
-3) **Options (2–3)** with pros/cons and risk notes
-4) **Recommendation** (chosen approach)
-5) **Decision Log** (copy/paste-ready)
+Return a concise requirements summary, material assumptions and unknowns, compared options, the recommended decision, and only the lifecycle artifacts required by the selected Workflow route.
 
-## Output: Required Lifecycle Artifacts
+## Handoff
 
-Simple does not require a Change Package; keep the confirmed summary inline or in an existing project plan when useful.
-
-When `WORKFLOW.md` requires a compact or full Change Package, create `changes/<YYYY-MM-DD>-<slug>/` with:
-- `01-brainstorm.md` — requirements clarification + options analysis
-- `02-decision-log.md` — key decisions (append-only)
-- `03-spec.md` — draft specification + acceptance criteria
-
-## Rules
-- In each new brainstorming round, ask at least 5 targeted questions before presenting options or recommendations, unless the user explicitly allows assumptions
-- Keep acceptance criteria explicit and testable
-- Do not include secrets or sensitive customer/transaction data
-- For brownfield: note affected modules and regression points
-
-## Next Step
-After brainstorm completion:
-- **High-Risk or selected Standard stages**: Run `/spec` when the selected lifecycle requires a formal specification
-- **Simple or selected Standard stages**: Continue to `/plan` only when a plan is useful or required
-- Or use `/workflow` for guided progression
+Return unresolved material choices to the user. Otherwise hand the approved result to the next stage selected by the canonical Workflow contract.

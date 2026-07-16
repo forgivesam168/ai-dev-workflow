@@ -1,84 +1,21 @@
 ---
-description: 'Comprehensive Code Review + Security Review (parallel). Check for security vulnerabilities, code quality, and financial compliance.'
+description: 'Route an independent code and security review through the canonical review Skill.'
 ---
 
 # Code Review Command
 
-> **💡 Recommended Agent**: This command works best with `code-reviewer` (Quality & Security Auditor). Use `/agent` in CLI or select from agent dropdown in VS Code.
->
-> **⚠️ Note for CLI users**: Use `/code-review` to avoid conflict with CLI's built-in `/review` command.
+## Entry
 
-Use this command after implementation to perform Code Review and Security Review in parallel.
+Use `/code-review` with the exact diff or file scope, governing requirements, acceptance criteria, exclusions, and available test or gate evidence.
 
-## Scope
-Reviews uncommitted changes: `git diff --name-only HEAD`
+## Route
 
-## Review Checklist
+Follow [code-security-review](../skills/code-security-review/SKILL.md) for review methodology, severity, security and financial lenses, verification expectations, and report structure.
 
-### 🔴 Security Issues (CRITICAL - Block Commit)
-- Hardcoded credentials, API keys, tokens
-- SQL injection vulnerabilities
-- XSS vulnerabilities
-- Missing input validation
-- Insecure dependencies
-- Path traversal risks
-- Authentication/Authorization gaps
-- Sensitive data exposure
+## Output
 
-### 🟠 Financial Compliance (CRITICAL)
-- Float/double used for money (must use decimal/integer minor units)
-- Missing idempotency for transactions
-- Race conditions in financial operations
-- Missing audit trail
-- Timezone handling issues
+Return locatable findings grouped by severity, positive evidence only when useful, verification gaps, and a clear approval or correction recommendation.
 
-### 🟡 Code Quality (HIGH)
-- Functions > 50 lines
-- Files > 800 lines
-- Nesting depth > 4 levels
-- Missing error handling
-- console.log / print statements left in code
-- TODO/FIXME comments unaddressed
-- Missing documentation for public APIs
+## Handoff
 
-### 🔵 Best Practices (MEDIUM)
-- Mutation patterns (prefer immutable)
-- Missing tests for new code
-- Accessibility issues (a11y)
-- Code duplication
-
-## Output Format
-
-Generate `changes/<...>/05-review.md` with:
-
-```markdown
-# Review Report
-
-## Summary
-- Total issues: X
-- Critical: X | High: X | Medium: X | Low: X
-- Recommendation: ✅ Approve / ⚠️ Approve with comments / ❌ Request changes
-
-## Issues
-
-### [CRITICAL] {Issue Title}
-- **File**: `path/to/file.ts:42`
-- **Issue**: Description
-- **Fix**: Suggested resolution
-
-### [HIGH] {Issue Title}
-...
-```
-
-## Rules
-- **NEVER approve code with CRITICAL security vulnerabilities**
-- All CRITICAL and HIGH issues must be resolved before merge
-- Financial precision issues are always CRITICAL
-
-## Next Step
-After review completion and fixes applied:
-- If **CRITICAL issues found**: Fix immediately, do not proceed
-- If **approved**: Run `/archive` to finalize change package
-- Or use `/workflow` for guided progression
-
-⚠️ **BLOCK MERGE** if any CRITICAL security or financial compliance issues remain
+Send implementation corrections back to the authorized writer. When no blocking finding remains, return the review evidence to the caller for the next authorized Workflow action.

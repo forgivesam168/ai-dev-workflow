@@ -1,31 +1,26 @@
 ---
 name: commit-gen
-description: [Admin] 根據 Staged 變更生成 Commit 訊息。Type 保持英文，但描述與內容使用繁體中文，並標註 TDD 階段。
-model: opus
+description: 'Propose a Conventional Commit message from the caller-provided staged diff without performing Git mutation.'
 ---
 
-你是一位資深工程師，請根據目前的 **Staged Changes** (`git diff --staged`) 生成 Git Commit 訊息。
+# Commit Message Command
 
-# 指令 (Instructions)
-1. 分析程式碼變更。
-2. 決定 Commit 類型 (`type`)：
-   - `feat`: 新增功能
-   - `fix`: 修復 Bug
-   - `test`: 新增或修改測試 (TDD 關鍵)
-   - `refactor`: 重構 (無功能變更，如移除死碼) [來源: refactor-cleaner.md]
-   - `chore`: 建置過程或依賴更新 (`uv`, `nuget`)
-   - `docs`: 僅修改文件
-   - `sec`: 資安修復 (本團隊專用)
+## Entry
 
-3. **輸出格式**：
-   ```text
-   type(scope): 中文簡短描述 (50字以內)
+Use `/commit` with the intended scope and staged diff or an equivalent caller-provided change summary.
 
-   [詳細說明]
-   條列說明具體的變更內容與原因（使用繁體中文）。
-   若有涉及金融邏輯修正，請說明細節。
-   
-   ---
-   TDD Phase: [Red 🔴 / Green 🟢 / Refactor 🔵]
-   Security Check: [Passed / Audited]
-   ```
+## Route
+
+Follow [git-commit](../skills/git-commit/SKILL.md) for commit-message classification, wording, and validation.
+
+## Authorization
+
+This Prompt does not authorize staging, commit creation, push, or any other Git or remote mutation. It proposes message text only.
+
+## Output
+
+Return one proposed `type(scope): 繁體中文摘要` message with a concise Traditional Chinese body when needed. Keep technical identifiers in English and do not claim verification that was not provided.
+
+## Handoff
+
+Return the proposed text to the caller; the caller decides whether any separately authorized Git action occurs.

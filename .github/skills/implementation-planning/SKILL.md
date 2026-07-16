@@ -466,7 +466,6 @@ Refactor:
 - [Specification Skill](../specification/SKILL.md) - Previous stage
 - [TDD Workflow Skill](../tdd-workflow/SKILL.md) - Next stage
 - [WORKFLOW.md](../../WORKFLOW.md) - Overall workflow
-- [TDD Guide](../../instructions/playbooks/tdd-guide.md) - TDD methodology
 
 ---
 
