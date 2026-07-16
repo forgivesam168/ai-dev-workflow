@@ -2,13 +2,13 @@ BeforeAll {
     $script:AuditPath = Join-Path $PSScriptRoot 'audit-catalog.ps1'
     $script:RequiredChangeFiles = @(
         '00-intake.md', '01-brainstorm.md', '02-decision-log.md', '03-spec.md',
-        '04-plan.md', '05-test-plan.md', '06-impact-analysis.md', '99-archive.md'
+        '04-plan.md', '05-test-plan.md', '06-impact-analysis.md', '07-review.md', '99-archive.md'
     )
 
     function New-CatalogFixture {
         param([string]$Root)
 
-        foreach ($directory in @('agents', 'prompts', 'skills', '.github/skills', 'instructions')) {
+        foreach ($directory in @('agents', 'prompts', 'skills', '.github/skills', 'instructions', 'changes/_template')) {
             New-Item -ItemType Directory -Path (Join-Path $Root $directory) -Force | Out-Null
         }
         1..9 | ForEach-Object { Set-Content (Join-Path $Root "agents/agent-$_.agent.md") 'agent' }
@@ -23,8 +23,11 @@ BeforeAll {
         New-Item -ItemType Directory -Path (Join-Path $Root 'skills/gate-check') | Out-Null
         Set-Content (Join-Path $Root 'skills/gate-check/SKILL.md') 'maintainer'
         $contract = $script:RequiredChangeFiles -join "`n"
-        Set-Content (Join-Path $Root 'WORKFLOW.md') $contract
-        Set-Content (Join-Path $Root 'instructions/changes.instructions.md') $contract
+        Set-Content (Join-Path $Root 'WORKFLOW.md') "$contract`nCompact`nFull`n05-review.md`n99-closeout.md`npointer-only"
+        Set-Content (Join-Path $Root 'instructions/changes.instructions.md') "$contract`nCompact`nFull`n05-review.md`n99-closeout.md`npointer-only"
+        foreach ($name in $script:RequiredChangeFiles) {
+            Set-Content (Join-Path $Root "changes/_template/$name") "# $name"
+        }
     }
 
     function Invoke-CatalogAudit {
@@ -75,5 +78,21 @@ Describe 'catalog 35 total / 34 adopter / 1 maintainer-only contract' {
 
         $result.ExitCode | Should -Be 1
         $result.Output | Should -Match 'FAIL DIAGNOSTIC: Skill deployment contract: Maintainer-only deployed'
+    }
+
+    It 'fails when the canonical Review template is missing' {
+        Remove-Item -LiteralPath (Join-Path $fixture 'changes/_template/07-review.md')
+        $result = Invoke-CatalogAudit -Root $fixture
+
+        $result.ExitCode | Should -Be 1
+        $result.Output | Should -Match 'FAIL DIAGNOSTIC: Change-pkg template set: Missing canonical templates: 07-review.md'
+    }
+
+    It 'fails when an unapproved alias body is added to the canonical template set' {
+        Set-Content (Join-Path $fixture 'changes/_template/99-closeout.md') '# competing closeout'
+        $result = Invoke-CatalogAudit -Root $fixture
+
+        $result.ExitCode | Should -Be 1
+        $result.Output | Should -Match 'FAIL DIAGNOSTIC: Change-pkg template set: Unexpected templates: 99-closeout.md'
     }
 }

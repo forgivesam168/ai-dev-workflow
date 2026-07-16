@@ -40,7 +40,20 @@ $script:PortableRuntimePaths = @(
     'AGENTS.md',
     'CLAUDE.md',
     'GEMINI.md',
+    'WORKFLOW.md',
+    'changes/_template',
     '.ai-workflow-install.json'
+)
+$script:LifecycleTemplateFiles = @(
+    '00-intake.md',
+    '01-brainstorm.md',
+    '02-decision-log.md',
+    '03-spec.md',
+    '04-plan.md',
+    '05-test-plan.md',
+    '06-impact-analysis.md',
+    '07-review.md',
+    '99-archive.md'
 )
 $script:PortableBackupPaths = @($script:PortableRuntimePaths | Where-Object { $_ -ne '.github' })
 $script:PortableSkillLinks = @(
@@ -1339,6 +1352,110 @@ function Install-AdopterConstitution {
     return $result
 }
 
+function Install-LifecycleAsset {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath,
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+        [Parameter(Mandatory = $true)]
+        [string]$RelativePath,
+        [Parameter(Mandatory = $true)]
+        [string]$SourceLabel,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$ManifestEntries
+    )
+
+    if (-not (Test-Path -LiteralPath $SourcePath -PathType Leaf)) {
+        throw "Source path not found: $SourcePath"
+    }
+
+    $result = New-SyncResult
+    $normalized = Normalize-RelativePath $RelativePath
+    $destination = Join-Path $TargetPath $normalized
+    $previous = if ($ManifestEntries.ContainsKey($normalized)) { $ManifestEntries[$normalized] } else { $null }
+
+    if (-not (Test-Path -LiteralPath $destination -PathType Leaf)) {
+        Set-ManagedBytes `
+            -Path $destination `
+            -RelativePath $normalized `
+            -Bytes ([IO.File]::ReadAllBytes($SourcePath)) `
+            -Result $result `
+            -ManifestEntries $ManifestEntries `
+            -Ownership 'template-managed' `
+            -SourceLabel $SourceLabel
+        return $result
+    }
+
+    $previousManagedHash = if ($previous) {
+        if ($previous.managed_hash) { $previous.managed_hash } else { $previous.source_hash }
+    } else { $null }
+    $validPrevious = $previous -and `
+        $previous.ownership -eq 'template-managed' -and `
+        $previous.source -eq $SourceLabel -and `
+        -not [string]::IsNullOrWhiteSpace([string]$previousManagedHash)
+    $currentHash = Get-PathHash -Path $destination
+
+    if ($validPrevious -and $currentHash -eq $previousManagedHash) {
+        Set-ManagedBytes `
+            -Path $destination `
+            -RelativePath $normalized `
+            -Bytes ([IO.File]::ReadAllBytes($SourcePath)) `
+            -Result $result `
+            -ManifestEntries $ManifestEntries `
+            -Ownership 'template-managed' `
+            -SourceLabel $SourceLabel
+        return $result
+    }
+
+    if ($validPrevious) {
+        Add-SyncRecord -Result $result -Status 'skipped' -Path $normalized -Suffix '[preserved customization]'
+        Set-ManifestEntry `
+            -ManifestEntries $ManifestEntries `
+            -RelativePath $normalized `
+            -Ownership 'template-managed' `
+            -SourceLabel $SourceLabel `
+            -Kind 'file' `
+            -ManagedHash $previousManagedHash `
+            -ObservedHash $currentHash `
+            -Status 'preserved-customization'
+        return $result
+    }
+
+    Add-SyncRecord -Result $result -Status 'skipped' -Path $normalized -Suffix '[preserved existing; manual decision required]'
+    return $result
+}
+
+function Install-LifecycleAssets {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourceRoot,
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$ManifestEntries
+    )
+
+    $result = Install-LifecycleAsset `
+        -SourcePath (Join-Path $SourceRoot 'docs/WORKFLOW.template.md') `
+        -TargetPath $TargetPath `
+        -RelativePath 'WORKFLOW.md' `
+        -SourceLabel 'template:docs/WORKFLOW.template.md' `
+        -ManifestEntries $ManifestEntries
+    foreach ($name in $script:LifecycleTemplateFiles) {
+        $relative = "changes/_template/$name"
+        $result = Merge-SyncResults `
+            $result `
+            (Install-LifecycleAsset `
+                -SourcePath (Join-Path $SourceRoot $relative) `
+                -TargetPath $TargetPath `
+                -RelativePath $relative `
+                -SourceLabel "template:$relative" `
+                -ManifestEntries $ManifestEntries)
+    }
+    return $result
+}
+
 function Sync-DirectoryWithPolicy {
     param(
         [Parameter(Mandatory = $true)]
@@ -1692,6 +1809,10 @@ function Install-PortableRuntime {
         Add-SyncRecord -Result $result -Status 'added' -Path $guide.RelativePath
         Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $guide.RelativePath -Ownership 'project-owned' -SourceLabel "template:docs/$([IO.Path]::GetFileName($guide.Template))" -Kind 'file' -ManagedHash (Get-BytesHash -Bytes $guideBytes) -ObservedHash (Get-PathHash -Path $guidePath) -Status 'project-owned'
     }
+
+    $result = Merge-SyncResults `
+        $result `
+        (Install-LifecycleAssets -SourceRoot $SourceRoot -TargetPath $TargetPath -ManifestEntries $ManifestEntries)
 
     $sharedSkills = Join-Path $TargetPath 'skills'
     foreach ($relativeLink in $script:PortableSkillLinks) {

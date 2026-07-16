@@ -41,6 +41,8 @@ PORTABLE_RUNTIME_PATHS = [
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
+    "WORKFLOW.md",
+    "changes/_template",
     ".ai-workflow-install.json",
 ]
 PORTABLE_BACKUP_PATHS = [path for path in PORTABLE_RUNTIME_PATHS if path != ".github"]
@@ -51,6 +53,17 @@ PORTABLE_SKILL_LINKS = [
 ]
 MANIFEST_FILENAME = ".ai-workflow-install.json"
 SUPPORTED_MANIFEST_SCHEMA_VERSIONS = (1, 2)
+LIFECYCLE_TEMPLATE_FILES = (
+    "00-intake.md",
+    "01-brainstorm.md",
+    "02-decision-log.md",
+    "03-spec.md",
+    "04-plan.md",
+    "05-test-plan.md",
+    "06-impact-analysis.md",
+    "07-review.md",
+    "99-archive.md",
+)
 
 
 @dataclass
@@ -563,6 +576,110 @@ def install_adopter_constitution(
     return result
 
 
+def install_lifecycle_asset(
+    source_file: Path,
+    target_root: Path,
+    relative_path: Path,
+    source_label: str,
+    manifest_entries: Dict[str, dict],
+) -> SyncResult:
+    """Install one lifecycle asset without inferring or overriding ownership."""
+    if not source_file.is_file():
+        raise FileNotFoundError(f"Source path not found: {source_file}")
+
+    result = SyncResult([], [], [], [])
+    normalized = normalize_relative_path(relative_path)
+    target_file = target_root / relative_path
+    desired_bytes = source_file.read_bytes()
+    previous = manifest_entries.get(normalized)
+
+    if not target_file.is_file():
+        sync_managed_bytes(
+            target_file,
+            relative_path,
+            desired_bytes,
+            result,
+            manifest_entries,
+            ownership="template-managed",
+            source_label=source_label,
+        )
+        return result
+
+    valid_previous = (
+        isinstance(previous, dict)
+        and previous.get("ownership") == "template-managed"
+        and previous.get("source") == source_label
+        and bool(previous.get("managed_hash") or previous.get("source_hash"))
+    )
+    previous_managed_hash = (
+        previous.get("managed_hash") or previous.get("source_hash")
+        if valid_previous
+        else None
+    )
+    current_hash = get_path_hash(target_file)
+
+    if valid_previous and current_hash == previous_managed_hash:
+        sync_managed_bytes(
+            target_file,
+            relative_path,
+            desired_bytes,
+            result,
+            manifest_entries,
+            ownership="template-managed",
+            source_label=source_label,
+        )
+        return result
+
+    if valid_previous:
+        record_managed_path(result, relative_path, "skipped", "[preserved customization]")
+        update_manifest_entry(
+            manifest_entries,
+            relative_path,
+            ownership="template-managed",
+            source_label=source_label,
+            kind="file",
+            managed_hash=previous_managed_hash,
+            observed_hash=current_hash,
+            status="preserved-customization",
+        )
+        return result
+
+    record_managed_path(
+        result,
+        relative_path,
+        "skipped",
+        "[preserved existing; manual decision required]",
+    )
+    return result
+
+
+def install_lifecycle_assets(
+    source_root: Path,
+    target_root: Path,
+    manifest_entries: Dict[str, dict],
+) -> SyncResult:
+    result = install_lifecycle_asset(
+        source_root / "docs" / "WORKFLOW.template.md",
+        target_root,
+        Path("WORKFLOW.md"),
+        "template:docs/WORKFLOW.template.md",
+        manifest_entries,
+    )
+    for name in LIFECYCLE_TEMPLATE_FILES:
+        relative_path = Path("changes/_template") / name
+        result = merge_sync_results(
+            result,
+            install_lifecycle_asset(
+                source_root / relative_path,
+                target_root,
+                relative_path,
+                f"template:{normalize_relative_path(relative_path)}",
+                manifest_entries,
+            ),
+        )
+    return result
+
+
 def sync_tree_with_policy(
     source: Path,
     target_root: Path,
@@ -844,6 +961,11 @@ def install_portable_runtime(
             observed_hash=get_path_hash(target_file),
             status="project-owned",
         )
+
+    result = merge_sync_results(
+        result,
+        install_lifecycle_assets(source_root, target_root, manifest_entries),
+    )
 
     shared_skills = target_root / "skills"
     for relative_link in PORTABLE_SKILL_LINKS:

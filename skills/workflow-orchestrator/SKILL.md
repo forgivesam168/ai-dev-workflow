@@ -16,19 +16,21 @@ license: See LICENSE.txt in repository root
 
 ## Stage Detection
 
-Check `changes/<YYYY-MM-DD>-<slug>/` for these files:
+Read the selected execution mode, package trigger, and declared plan/lifecycle or task/status SSOT before routing. For repository packages, run the deterministic semantic verifier (`tools/verify-change-package.ps1` when present). A filename is evidence to inspect, never proof that a stage is complete.
 
-| File Present | Stage | Next Step | Agent |
-|-------------|-------|-----------|-------|
-| None | Not started | Brainstorm | `brainstorm-agent` |
-| `01-brainstorm.md` | Brainstorm ✅ | Spec | `spec-agent` |
-| `03-spec.md` | Spec ✅ | Plan | `plan-agent` |
-| `04-plan.md` | Plan ✅ | TDD | `coder-agent` |
-| Code changes (git diff) | TDD ✅ | Review | `code-reviewer-agent` |
-| `05-review.md` | Review ✅ | Archive | (default agent) |
-| `99-archive.md` | Complete 🎉 | New feature | `brainstorm-agent` |
+| Observed semantic state | Current stage | Route |
+|---|---|---|
+| Simple, no package | Lightweight workflow | Use the next incomplete Understand / Implement / Prove / Deliver checkpoint |
+| Standard, no package trigger | Declared plan/lifecycle SSOT | Use its next incomplete checkpoint; do not create package padding |
+| Package declaration missing or invalid | Intake | Resolve mode, trigger, Compact/Full, and the single task/status SSOT |
+| Required decision or plan evidence incomplete | Brainstorm / Spec / Plan as selected | Return to the first incomplete selected role |
+| Implementation evidence incomplete | Implement | Use `coder-agent` and the applicable verification path |
+| Independent Review required but absent or incomplete | Review | Use `code-reviewer-agent`; new packages write `07-review.md` |
+| Review is `BLOCKED`, or a deterministic gate is red | Blocked | Return to implementation or the owning earlier stage; do not advance |
+| Review is `PASS` / `PASS_WITH_NOTES` and package Closeout is incomplete | Closeout | Complete pre-merge `99-archive.md` in the original implementation PR |
+| Pre-merge Closeout is ready | Delivery pending | Report actual PR/Issue/Release evidence separately; do not infer merge or Complete |
 
-No `changes/` folder → stage = Not Started → start with `brainstorm-agent`.
+Legacy `05-review.md` remains a recognized Review role and `99-closeout.md` a recognized Closeout alias. If canonical and alias files coexist, only the documented pointer-only alias is non-competing; two independent bodies are blocking.
 
 ## Output Format
 
@@ -52,8 +54,10 @@ If a task crosses a higher-risk boundary, stop routing and return to mode classi
 
 ## Troubleshooting
 
-**No `changes/` folder** → Not started. Begin with `/brainstorm`.  
-**Multiple `changes/` folders** → Work on most recent date. Archive completed ones.  
+**No `changes/` folder** → Classify the mode. Simple and untriggered Standard may correctly have no package.
+
+**Multiple `changes/` folders** → Use the current task/status SSOT or explicit user scope; do not select by filename date alone.
+
 **Which agent for this stage?** → See each agent's `## Handoff` block for Entry Signals and Next Step.
 
 ---

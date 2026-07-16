@@ -6,11 +6,11 @@ description: 'Route an approved local archive-documentation request to the canon
 
 ## Entry
 
-Use `/archive` only for requested local archive documentation after the PR is merged and the applicable delivery evidence already exists. Preserve the existing archive filename and lifecycle timing defined by the canonical method.
+Use `/archive` only for requested local Closeout/Archive documentation under the selected mode. Simple and Standard without a package do not require a repository Archive. A voluntarily created package follows its declared Compact or Full contract. Triggered Standard and High-Risk create canonical `99-archive.md` pre-merge in the original implementation PR after applicable Review and deterministic gates are ready.
 
 ## Route
 
-Follow [work-archiving](../skills/work-archiving/SKILL.md) for the archive method, evidence rules, output structure, and protected-action boundary. Use the canonical Workflow contract declared by Project AGENTS only to confirm that the selected lifecycle has reached its archive handoff; this Prompt does not select an adopter-facing lifecycle source.
+Follow [work-archiving](../skills/work-archiving/SKILL.md) for the closeout method, semantic role/content checks, evidence rules, output structure, and protected-action boundary. Use the canonical Workflow contract declared by Project AGENTS to confirm the mode, package trigger, and handoff; this Prompt does not redefine lifecycle policy.
 
 ## Authorization
 
@@ -18,7 +18,7 @@ This Prompt authorizes only the explicitly requested local archive-documentation
 
 ## Output
 
-Return the local documentation changed, the existing evidence recorded, and any unverified or deferred item. Do not invent completion or merge evidence.
+Return the local documentation changed, the existing evidence recorded, and every unverified, unmerged, blocked, or deferred item. PR/Issue/Release evidence is authoritative for actual merge state; before it exists, record merge evidence as unavailable/unknown and do not invent it. Do not create a post-merge Git write merely to add merge evidence.
 
 ## Handoff
 

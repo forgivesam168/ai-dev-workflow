@@ -5,35 +5,54 @@
 - **Superpowers 精神**：先 brainstorm / 再 plan / 再 TDD / 再 review / 再重構與驗證
 - **OpenSpec 精神（輕量版）**：把需求/決策/計畫留在 repo，形成長期上下文（可稽核）
 
+<!-- lifecycle-contract:LIFECYCLE_SSOT -->
 ## Lifecycle SSOT and ownership
 
 This maintainer `WORKFLOW.md` is the canonical lifecycle SSOT for this template repository. Agents, Skills, and Prompts route to it and must not redefine execution modes, stage entry/exit rules, or artifact semantics.
 
-The adopter-facing lifecycle source remains open. Phase 3 requires a maintainer/adopter difference review and separate user approval before selecting or distributing any adopter source; root `WORKFLOW.md` must not be presumed directly installable.
+The approved adopter-facing distribution source is `docs/WORKFLOW.template.md`. It is a portable projection of this contract, not a second policy owner; bootstrap installs that projection at adopter root `WORKFLOW.md` with `template-managed` ownership and never copies this maintainer file directly.
 
 The Phase 4 Manifest schema is not approved. This lifecycle contract does not authorize a schema design, migration, prune, or real-adopter execution.
 
 Every task selects exactly one execution mode: Simple, Standard, or High-Risk. These are the only execution modes; workflow paths, optional PRD use, and tool UX are not additional modes.
 
+<!-- lifecycle-contract:MODE_SIMPLE -->
 ### Simple
 
 Use Simple only for localized, reversible work that does not cross auth, security, financial, migration, deployment, destructive, or public-breaking boundaries and has one reliable targeted verification path.
 
 Simple uses lightweight Understand, Implement, Prove, and Deliver checkpoints with targeted verification. It does not require the six-stage lifecycle or a Change Package. An inline plan or an existing project plan is optional when useful.
 
+<!-- lifecycle-contract:MODE_STANDARD -->
 ### Standard
 
 Use Standard for normal feature work, multiple files or components, meaningful design choices, bounded contract/config changes, or moderate regression risk. Declare exactly one plan/lifecycle SSOT and use only the stages needed to meet their exit criteria.
 
 A compact Change Package is required when Standard work is cross-session, cross-component, contract-change, independent-review, migration/audit-sensitive, or escalation-prone. Otherwise the one declared plan/lifecycle SSOT is sufficient. Independent review is required when the risk calls for it.
 
+<!-- lifecycle-contract:MODE_HIGH_RISK -->
 ### High-Risk
 
 Use High-Risk for security, auth, permission, financial, migration, public breaking changes, irreversible data work, deployment or production operations, or major architecture decisions.
 
 High-Risk requires the full Workflow, a complete Change Package, explicit approvals, independent review, rollback/migration evidence, and operational evidence appropriate to the change. The named High-Risk gates below are rule-based and must pass in order.
 
+<!-- lifecycle-contract:MODE_ESCALATION -->
 If Simple or Standard work crosses a higher-risk boundary, stop and reclassify or escalate before further implementation. Missing reliable verification prevents Simple classification.
+
+<!-- lifecycle-contract:STAGE_ENTRY_EXIT -->
+## Portable stage entry and exit contract
+
+Selected stages use content and evidence, never filename existence alone, to prove exit:
+
+| Stage | Entry | Exit |
+|---|---|---|
+| Brainstorm | Goal or material ambiguity needs exploration. | Confirmed requirements, options, risk, and unresolved choices are explicit. |
+| Spec | Approved requirements need a behavioral contract. | Scope, observable acceptance criteria, exclusions, and dependencies are testable. |
+| Plan | The approved contract needs executable sequencing. | Bounded steps, verification, dependencies, and rollback or safe-stop are executable. |
+| Implement | Scope, authorization, and a reliable RED/GREEN path are ready. | Approved implementation and applicable targeted/full verification evidence are recorded. |
+| Review | Implementation and verification evidence are ready for independent review. | The Review semantic role records findings, evidence, and a non-fabricated decision. |
+| Closeout / Archive | Required Review and deterministic gates have completed. | Mode-required pre-merge closeout accurately records scope, evidence, review, delivery state, and remaining work. |
 
 ---
 
@@ -97,6 +116,7 @@ If Simple or Standard work crosses a higher-risk boundary, stop and reclassify o
 
 `agentic-eval` is risk-adaptive self-evaluation, not independent review. It cannot override test, build, or other deterministic failures and never replaces the independent review required for High-Risk work.
 
+<!-- lifecycle-contract:GATE_ARCHITECTURE_DECISION_EXIT -->
 ### Architecture Decision Exit
 
 Apply before an irreversible or high-cost architecture, security, permission, data, or public-contract decision enters downstream commitment.
@@ -113,6 +133,7 @@ Apply before an irreversible or high-cost architecture, security, permission, da
 - maintainability preferences that do not affect correctness, security, reversibility, or contract behavior;
 - optional documentation or naming improvements that do not affect correctness, security, reversibility, or contract behavior.
 
+<!-- lifecycle-contract:GATE_PRE_IMPLEMENTATION_READINESS -->
 ### Pre-Implementation Readiness
 
 Apply before every High-Risk implementation.
@@ -129,6 +150,7 @@ Apply before every High-Risk implementation.
 
 - optional documentation, presentation, or wording improvements that do not affect safe or verifiable implementation.
 
+<!-- lifecycle-contract:GATE_PRE_DELIVERY_VERIFICATION -->
 ### Pre-Delivery Verification
 
 Apply before every High-Risk commit, push, PR, or merge.
@@ -145,6 +167,7 @@ Apply before every High-Risk commit, push, PR, or merge.
 
 - style, presentation, or low-impact clarity issues that do not affect correctness or auditability.
 
+<!-- lifecycle-contract:GATE_MIGRATION_DEPLOYMENT_READINESS -->
 ### Migration / Deployment Readiness
 
 Apply only when migration, deployment, production operation, or irreversible data execution is in scope and separately authorized.
@@ -163,6 +186,7 @@ Apply only when migration, deployment, production operation, or irreversible dat
 
 When this gate is not applicable, record exactly: `N/A — no migration or deployment execution is authorized in this Phase.`
 
+<!-- lifecycle-contract:CROSS_GATE_SEMANTICS -->
 ### Cross-gate semantics
 
 - Deterministic failure is always blocking.
@@ -228,23 +252,46 @@ Optional PRD use is a lifecycle stage choice, not a fourth execution mode. For c
 
 ## 3) Change Package requirements
 
-A Change Package is a lifecycle evidence container, decision trace, and implementation/verification record. Simple does not require one. Standard requires a compact package only when a listed trigger applies. High-Risk requires the complete package.
+A Change Package is a lifecycle evidence container, decision trace, and implementation/verification record. Simple does not require one. Standard requires a compact package only when a listed trigger applies. A voluntarily created package follows its declared Compact or Full contract. High-Risk requires the complete package.
 
 When required, place the versioned package under:
 
 `changes/<YYYY-MM-DD>-<slug>/`
 
-檔案結構（詳見 `instructions/changes.instructions.md` 為準）：
-- `00-intake.md`（初始評估）
-- `01-brainstorm.md`（需求釐清 + 選項分析）
-- `02-decision-log.md`（關鍵決策與理由，**append-only**）
-- `03-spec.md`（規格、安全需求、驗收標準）
-- `04-plan.md`（可執行步驟 + 測試策略 + 影響分析）
-- `05-test-plan.md`（測試計畫）
-- `06-impact-analysis.md`（棕地 / 高風險）
-- `99-archive.md`（驗收 + 歸檔）
+<!-- lifecycle-contract:PACKAGE_COMPACT -->
+### Compact package — triggered Standard
 
-Every work item declares exactly one task/status SSOT. With an external tracker, the package stores only the tracker pointer, decisions, and evidence; without one, `04-plan.md` may explicitly declare itself the task/status SSOT.
+A compact package contains Intake, decision evidence, plan/lifecycle evidence, exactly one task/status SSOT declaration, Review only when independent review is required, and pre-merge Closeout in `99-archive.md`. Brainstorm, Spec, a separate Test Plan, and Impact Analysis are selected-stage or risk artifacts; they are never empty file-count padding.
+
+<!-- lifecycle-contract:PACKAGE_FULL -->
+### Full package — High-Risk
+
+High-Risk uses the full `00-intake.md`, `01-brainstorm.md`, `02-decision-log.md`, `03-spec.md`, `04-plan.md`, `05-test-plan.md`, and `06-impact-analysis.md` evidence set, plus the Review and Closeout / Archive semantic roles. Every required artifact must contain its role evidence; an empty file never satisfies the contract.
+
+<!-- lifecycle-contract:TASK_STATUS_SSOT -->
+### One task/status SSOT
+
+Every lifecycle declaration appears exactly once in `00-intake.md`, including one task/status SSOT, external tracker, execution mode, package trigger/reason, and Compact or Full contract. Without an external tracker, the SSOT is an accessible package-relative or repository-relative file such as `04-plan.md`. With one, both pointer fields identify the same URL, `owner/repo#number`, or current-repository Issue/PR. A duplicate declaration, inaccessible pointer, unidentifiable tracker, or competing owner anywhere in the package is blocking.
+
+<!-- lifecycle-contract:REVIEW_ROLE -->
+### Review semantic role
+
+New packages use canonical `07-review.md`; historical `05-review.md` remains a recognized legacy alias. Review requires substantive reviewed scope/reviewer evidence, explicit Critical/High/Medium/Low status, readable targeted and required-gate status, unavailable-check evidence, and `Decision: PASS | PASS_WITH_NOTES | BLOCKED` with rationale. `None` is the explicit zero-finding value; `WARNING` is recorded but nonblocking; `BLOCKED` is a deterministic blocker. An unresolved Critical or High finding or required deterministic failure requires `BLOCKED`. Two independent Review bodies are competing evidence and blocking; an alias may coexist only as the documented pointer-only form.
+
+<!-- lifecycle-contract:CLOSEOUT_ROLE -->
+### Closeout / Archive semantic role
+
+New packages use canonical `99-archive.md`; `99-closeout.md` is a compatibility alias. Closeout requires a selected Outcome, approved scope, readable deterministic and Review status, `pre-merge` or `unmerged` delivery state, unavailable remote-delivery evidence, remaining/deferred work, authorization boundary, and exactly one rollback/recovery value containing substantive evidence or `N/A — reason`. `WARNING` is recorded but nonblocking; `BLOCKED` requires Outcome `BLOCKED`. Unchanged templates and option lists are incomplete. Two independent closeout bodies are competing evidence and blocking; an alias may coexist only as the documented pointer-only form.
+
+<!-- lifecycle-contract:HYBRID_CLOSEOUT -->
+### Hybrid closeout
+
+Simple does not require Archive or Closeout. Standard without a package does not require Archive or Closeout. A voluntarily created package follows its declared contract. Triggered Standard completes pre-merge Closeout in the original implementation PR; High-Risk also requires pre-merge Closeout. A blocked Review or required deterministic gate makes closeout `BLOCKED`. Authoritative merge-result evidence remains external before merge; pre-merge closeout must not claim an actual merged state, merge SHA, or `mergedAt` anywhere in the artifact. Expected head SHA, final head, and commit SHA evidence are allowed, and no post-merge commit or push is created merely to add merge-result evidence.
+
+<!-- lifecycle-contract:PROTECTED_ACTIONS -->
+### Authorization boundary
+
+Archive authorizes only requested local documentation. It never authorizes commit, push, tag, merge, branch deletion, remote Issue or PR closure, release, deployment, production, or another remote mutation. Each operational action requires separate explicit, current-task, action-specific approval.
 
 > **核心原則：** 需求變動時，更新 spec；決策變動時，追加 decision log（不要覆寫歷史）。
 
@@ -260,7 +307,10 @@ Every work item declares exactly one task/status SSOT. With an external tracker,
 
 ---
 
+<!-- lifecycle-contract:HONEST_COMPLETION -->
 ## 5) Definition of Done（DoD）：什麼才算做完？
+
+Honest completion requires completed approved scope, applicable verification evidence, and an accurate delivery state. Unverified, unmerged, partial, Deferred, blocked, N/A, and user-decision-dependent work remain distinct and must not be reported as Complete.
 
 所有 mode 都必須完成批准 scope、保留適用驗證證據，並準確回報 delivery state；任何 deterministic failure 都是 blocking。
 
@@ -288,8 +338,8 @@ Every work item declares exactly one task/status SSOT. With an external tracker,
 - 先 `/brainstorm`（產出 01/02/03 草稿）
 - `/spec`（完善 03-spec.md）
 - `/create-plan`（產出 04-plan.md）
-- 進入 TDD 實作 → `/code-review` → Merge
-- 合併後 `/archive`（5 分鐘完成）
+- 進入 TDD 實作 → `/code-review`
+- 若 mode 要求 package，在原 implementation PR 內完成 pre-merge `99-archive.md` Closeout，再進行另行授權的 merge
 
 ---
 

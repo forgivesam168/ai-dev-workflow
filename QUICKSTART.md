@@ -28,10 +28,13 @@ codex
 1. Brainstorm → 2. Spec → 3. Plan → 4. TDD → 5. Review → 6. Archive
 ```
 
-> 💡 **三種路徑**：  
-> 🔴 策略路（PRD）：Brainstorm → **PRD** → Spec → Plan → TDD → Review（跨部門/多利害關係人，使用 `pm-agent` 起草 PRD）  
-> 🟡 標準路：Brainstorm → Spec → Plan → TDD → Review（預設，中高風險）  
-> 🟢 快速路：Plan → Implement → Review（低風險小修，跳過 Brainstorm + Spec）
+> 💡 **三種 execution modes**：
+>
+> 🟢 **Simple**：局部、可逆且有可靠 targeted verification；不要求 repository package、Review artifact 或 Archive。
+>
+> 🟡 **Standard**：一個 plan/lifecycle SSOT；canonical trigger 成立時要求 compact package，自願建立的 package 依其宣告驗證。
+>
+> 🔴 **High-Risk**：完整 Workflow 與 full package，包含 independent Review 與 pre-merge Closeout。
 
 每個階段完成後，輸入「what's next」查看下一步。
 
@@ -56,8 +59,8 @@ codex
 | 2. Spec | 產生 spec / 幫我寫規格文件 | `/spec` | spec-agent |
 | 3. Plan | 規劃實作計畫 / 幫我拆解任務 | `/create-plan` | plan-agent |
 | 4. TDD | 開始 TDD 實作 / 寫測試並實作 | `/tdd` | coder-agent |
-| 5. Review | review 我的 code / 幫我審核程式碼 | `/code-review` | code-reviewer-agent |
-| 6. Archive | archive 這個 change package / 幫我歸檔 | `/archive` | - |
+| 5. Review | review 我的 code / 幫我審核程式碼 | `/code-review` | code-reviewer-agent；package 使用 `07-review.md` |
+| 6. Closeout / Archive | closeout 這個 package / 幫我歸檔 | `/archive` | mode-required pre-merge `99-archive.md` |
 
 ---
 
@@ -89,7 +92,7 @@ codex
 | Plan | `implementation-planning` | 任務拆解、測試策略、影響分析 |
 | Implement | `tdd-workflow` + 語言 patterns | Red-Green-Refactor + `coding-standards`, `backend-patterns`, `frontend-patterns`, `python-patterns` |
 | Review | `code-security-review`, `security-review` | 程式碼品質 + 安全審核 |
-| Archive | `work-archiving`, `git-commit` | 歸檔紀錄 + Conventional Commit |
+| Closeout / Archive | `work-archiving` | pre-merge lifecycle evidence；不授權 Git 或 remote action |
 
 > 💡 **Skill 沒自動載入？**
 > - Codex CLI：用 `$brainstorming`、`$implementation-planning`，或先輸入 `/skills`
@@ -183,7 +186,8 @@ codex
    → 推薦切換到 code-reviewer-agent
 
 6. Review 通過後，輸入: "archive"
-   → 產生 99-archive.md 與 WORK_LOG 條目
+   → package flow 在原 implementation PR 內產生 pre-merge `99-archive.md`
+   → Simple 不要求 Archive；其他 local documentation 僅在目前任務明確要求時更新
 ```
 
 ### 範例 2: 檢查當前進度

@@ -319,13 +319,17 @@ Describe "Install-PortableRuntime maintainer-only exclusions" {
     It "does not deploy gate-check to an adopter target" {
         $sourceRoot = Join-Path $TestDrive 'template'
         $targetRoot = Join-Path $TestDrive 'target'
-        foreach ($directory in @('skills/demo-skill', 'skills/gate-check', 'agents')) {
+        foreach ($directory in @('skills/demo-skill', 'skills/gate-check', 'agents', 'docs', 'changes/_template')) {
             New-Item -ItemType Directory -Path (Join-Path $sourceRoot $directory) -Force | Out-Null
         }
         New-Item -ItemType Directory -Path $targetRoot | Out-Null
         Set-Content (Join-Path $sourceRoot 'skills/demo-skill/SKILL.md') 'demo'
         Set-Content (Join-Path $sourceRoot 'skills/gate-check/SKILL.md') 'maintainer'
         Set-Content (Join-Path $sourceRoot 'agents/demo.agent.md') "---`nname: demo`ndescription: demo`n---`n`n# Demo agent`n"
+        Set-Content (Join-Path $sourceRoot 'docs/WORKFLOW.template.md') '# Adopter lifecycle'
+        foreach ($name in $script:LifecycleTemplateFiles) {
+            Set-Content (Join-Path $sourceRoot "changes/_template/$name") "# template $name"
+        }
 
         $manifest = @{}
         $null = Install-PortableRuntime -SourceRoot $sourceRoot -TargetPath $targetRoot -ManifestEntries $manifest
@@ -335,6 +339,105 @@ Describe "Install-PortableRuntime maintainer-only exclusions" {
         Test-Path (Join-Path $targetRoot '.github/skills/gate-check') | Should -BeFalse
         $manifest.ContainsKey('.github/skills/demo-skill/SKILL.md') | Should -BeTrue
         $manifest.ContainsKey('github/skills/demo-skill/SKILL.md') | Should -BeFalse
+    }
+}
+
+Describe "Phase 3 adopter lifecycle distribution" {
+    BeforeEach {
+        $script:Phase3Source = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        $script:Phase3Target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        $script:Phase3Templates = @(
+            '00-intake.md', '01-brainstorm.md', '02-decision-log.md', '03-spec.md',
+            '04-plan.md', '05-test-plan.md', '06-impact-analysis.md', '07-review.md', '99-archive.md'
+        )
+        foreach ($directory in @('skills/demo', 'agents', 'docs', 'changes/_template')) {
+            New-Item -ItemType Directory -Path (Join-Path $script:Phase3Source $directory) -Force | Out-Null
+        }
+        New-Item -ItemType Directory -Path $script:Phase3Target -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $script:Phase3Source 'skills/demo/SKILL.md') -Value '# Demo'
+        Set-Content -LiteralPath (Join-Path $script:Phase3Source 'agents/demo.agent.md') -Value "---`nname: demo`ndescription: demo`n---`n`n# Demo"
+        Set-Content -LiteralPath (Join-Path $script:Phase3Source 'docs/AGENTS.template.md') -Value '# Agents'
+        Set-Content -LiteralPath (Join-Path $script:Phase3Source 'docs/CLAUDE.template.md') -Value '@AGENTS.md'
+        Set-Content -LiteralPath (Join-Path $script:Phase3Source 'docs/GEMINI.template.md') -Value 'Read AGENTS.md'
+        Set-Content -LiteralPath (Join-Path $script:Phase3Source 'docs/WORKFLOW.template.md') -Value '# Adopter lifecycle'
+        Set-Content -LiteralPath (Join-Path $script:Phase3Source 'WORKFLOW.md') -Value '# Maintainer lifecycle'
+        foreach ($name in $script:Phase3Templates) {
+            Set-Content -LiteralPath (Join-Path $script:Phase3Source "changes/_template/$name") -Value "# template $name"
+        }
+    }
+
+    It "installs the projection and canonical templates as template-managed without creating a work-item package" {
+        $manifest = @{}
+
+        $result = Install-PortableRuntime -SourceRoot $script:Phase3Source -TargetPath $script:Phase3Target -ManifestEntries $manifest
+
+        [IO.File]::ReadAllBytes((Join-Path $script:Phase3Target 'WORKFLOW.md')) | Should -Be ([IO.File]::ReadAllBytes((Join-Path $script:Phase3Source 'docs/WORKFLOW.template.md')))
+        [IO.File]::ReadAllBytes((Join-Path $script:Phase3Target 'WORKFLOW.md')) | Should -Not -Be ([IO.File]::ReadAllBytes((Join-Path $script:Phase3Source 'WORKFLOW.md')))
+        $manifest['WORKFLOW.md'].ownership | Should -Be 'template-managed'
+        $manifest['WORKFLOW.md'].source | Should -Be 'template:docs/WORKFLOW.template.md'
+        foreach ($name in $script:Phase3Templates) {
+            $relative = "changes/_template/$name"
+            [IO.File]::ReadAllBytes((Join-Path $script:Phase3Target $relative)) | Should -Be ([IO.File]::ReadAllBytes((Join-Path $script:Phase3Source $relative)))
+            $manifest[$relative].ownership | Should -Be 'template-managed'
+            $manifest[$relative].source | Should -Be "template:$relative"
+            $result.FilesAdded | Should -Contain $relative
+        }
+        @(Get-ChildItem -LiteralPath (Join-Path $script:Phase3Target 'changes') -Directory | Select-Object -ExpandProperty Name) | Should -Be @('_template')
+    }
+
+    It "updates only exact managed lifecycle baselines" {
+        $manifest = @{}
+        $null = Install-PortableRuntime -SourceRoot $script:Phase3Source -TargetPath $script:Phase3Target -ManifestEntries $manifest
+        Set-Content -LiteralPath (Join-Path $script:Phase3Source 'docs/WORKFLOW.template.md') -Value '# Adopter lifecycle v2'
+        Set-Content -LiteralPath (Join-Path $script:Phase3Source 'changes/_template/07-review.md') -Value '# Review v2'
+
+        $result = Install-PortableRuntime -SourceRoot $script:Phase3Source -TargetPath $script:Phase3Target -ManifestEntries $manifest
+
+        (Get-Content -Raw -LiteralPath (Join-Path $script:Phase3Target 'WORKFLOW.md')).Trim() | Should -Be '# Adopter lifecycle v2'
+        (Get-Content -Raw -LiteralPath (Join-Path $script:Phase3Target 'changes/_template/07-review.md')).Trim() | Should -Be '# Review v2'
+        $result.FilesUpdated | Should -Contain 'WORKFLOW.md'
+        $result.FilesUpdated | Should -Contain 'changes/_template/07-review.md'
+    }
+
+    It "preserves customized and unproven lifecycle content even with Force" {
+        $manifest = @{}
+        $null = Install-PortableRuntime -SourceRoot $script:Phase3Source -TargetPath $script:Phase3Target -ManifestEntries $manifest
+        Set-Content -LiteralPath (Join-Path $script:Phase3Target 'WORKFLOW.md') -Value '# Project customization'
+        Set-Content -LiteralPath (Join-Path $script:Phase3Source 'docs/WORKFLOW.template.md') -Value '# Adopter lifecycle v2'
+
+        $customized = Install-PortableRuntime -SourceRoot $script:Phase3Source -TargetPath $script:Phase3Target -ManifestEntries $manifest -Force
+
+        (Get-Content -Raw -LiteralPath (Join-Path $script:Phase3Target 'WORKFLOW.md')).Trim() | Should -Be '# Project customization'
+        $customized.FilesSkipped | Should -Contain 'WORKFLOW.md [preserved customization]'
+        $manifest['WORKFLOW.md'].status | Should -Be 'preserved-customization'
+
+        $unprovenTarget = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        New-Item -ItemType Directory -Path $unprovenTarget | Out-Null
+        Set-Content -LiteralPath (Join-Path $unprovenTarget 'WORKFLOW.md') -Value '# Existing lifecycle'
+        $unprovenManifest = @{}
+        $unproven = Install-PortableRuntime -SourceRoot $script:Phase3Source -TargetPath $unprovenTarget -ManifestEntries $unprovenManifest -Force
+        (Get-Content -Raw -LiteralPath (Join-Path $unprovenTarget 'WORKFLOW.md')).Trim() | Should -Be '# Existing lifecycle'
+        $unproven.FilesSkipped | Should -Contain 'WORKFLOW.md [preserved existing; manual decision required]'
+        $unprovenManifest.ContainsKey('WORKFLOW.md') | Should -BeFalse
+
+        $unprovenCases = @(
+            @{ Name = 'project-owned'; Entry = @{ name = 'WORKFLOW.md'; ownership = 'project-owned'; source = 'project:WORKFLOW.md'; managed_hash = Get-BytesHash ([Text.Encoding]::UTF8.GetBytes("# Existing lifecycle`n")) } },
+            @{ Name = 'unclear-source'; Entry = @{ name = 'WORKFLOW.md'; ownership = 'template-managed'; source = 'unknown'; managed_hash = Get-BytesHash ([Text.Encoding]::UTF8.GetBytes("# Existing lifecycle`n")) } },
+            @{ Name = 'missing-baseline'; Entry = @{ name = 'WORKFLOW.md'; ownership = 'template-managed'; source = 'template:docs/WORKFLOW.template.md'; managed_hash = $null } }
+        )
+        foreach ($case in $unprovenCases) {
+            $caseTarget = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+            New-Item -ItemType Directory -Path $caseTarget | Out-Null
+            Set-Content -LiteralPath (Join-Path $caseTarget 'WORKFLOW.md') -Value '# Existing lifecycle'
+            $caseManifest = @{ 'WORKFLOW.md' = $case.Entry }
+            $originalEntry = $case.Entry | ConvertTo-Json -Depth 5 -Compress
+
+            $caseResult = Install-PortableRuntime -SourceRoot $script:Phase3Source -TargetPath $caseTarget -ManifestEntries $caseManifest -Force
+
+            (Get-Content -Raw -LiteralPath (Join-Path $caseTarget 'WORKFLOW.md')).Trim() | Should -Be '# Existing lifecycle' -Because $case.Name
+            $caseResult.FilesSkipped | Should -Contain 'WORKFLOW.md [preserved existing; manual decision required]' -Because $case.Name
+            ($caseManifest['WORKFLOW.md'] | ConvertTo-Json -Depth 5 -Compress) | Should -Be $originalEntry -Because $case.Name
+        }
     }
 }
 
