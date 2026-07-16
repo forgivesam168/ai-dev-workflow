@@ -1,0 +1,64 @@
+{
+  "proposal_status": "PROPOSED — NOT APPROVED — NOT IMPLEMENTED",
+  "schema_version": 3,
+  "written_at": "2026-07-17T01:10:05Z",
+  "source_release": {
+    "release_id": "example-release-3",
+    "source_ref": "refs/tags/example-v3",
+    "version": "3.0.0-proposed"
+  },
+  "last_transaction": {
+    "id": "txn:customized-example",
+    "mode": "update",
+    "writer": "powershell",
+    "started_at": "2026-07-17T01:10:00Z",
+    "completed_at": "2026-07-17T01:10:05Z",
+    "result": "committed"
+  },
+  "components": [
+    {
+      "identity": {
+        "id": "cmp:canonical-coder-agent",
+        "path": "agents/coder.agent.md",
+        "path_key": "agents/coder.agent.md",
+        "kind": "file",
+        "role": "canonical",
+        "link": null
+      },
+      "provenance": {
+        "ownership": "template-managed",
+        "source": {
+          "kind": "template",
+          "locator": "template:agents/coder.agent.md",
+          "release": "example-release-3"
+        },
+        "generated_from": [],
+        "fork": {
+          "status": "customized",
+          "basis": "hash-divergence",
+          "decision": "preserve",
+          "classified_at": "2026-07-17T01:10:01Z"
+        }
+      },
+      "hashes": {
+        "algorithm": "sha256",
+        "content_basis": "exact-bytes",
+        "baseline": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_before": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "proposed_source": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "result_after": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "lifecycle": {
+        "state": "active",
+        "previous_paths": [],
+        "retirement": null
+      },
+      "last_operation": {
+        "transaction_id": "txn:customized-example",
+        "outcome": "preserved-customization"
+      },
+      "installed_at": "2026-04-22T10:00:00Z",
+      "updated_at": "2026-07-17T01:10:05Z"
+    }
+  ]
+}

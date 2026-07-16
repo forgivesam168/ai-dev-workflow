@@ -1,0 +1,20 @@
+{
+  "proposal_status": "PROPOSED — NOT APPROVED — NOT IMPLEMENTED",
+  "schema_version": 2,
+  "installed_at": "2026-07-17T01:00:00Z",
+  "source_ref": "writer-contract-reconstruction-not-runtime-capture",
+  "components": [
+    {
+      "name": "agents/coder.agent.md",
+      "installed_at": "2026-07-17T01:00:00Z",
+      "updated_at": "2026-07-17T01:00:01Z",
+      "source_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "managed_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observed_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "ownership": "template-managed",
+      "kind": "file",
+      "source": "template:agents/coder.agent.md",
+      "status": "in-sync"
+    }
+  ]
+}

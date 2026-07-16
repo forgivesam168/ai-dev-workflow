@@ -1,0 +1,18 @@
+{
+  "proposal_status": "PROPOSED — NOT APPROVED — NOT IMPLEMENTED",
+  "schema_version": 1,
+  "installed_at": "2026-04-22T10:00:00+00:00",
+  "source_ref": "example-v1-observation",
+  "components": [
+    {
+      "name": "agents/coder.agent.md",
+      "installed_at": "2026-04-22T10:00:00+00:00",
+      "source_hash": "sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    {
+      "name": "skills/tdd-workflow/",
+      "installed_at": "2026-04-22T10:00:00+00:00",
+      "source_hash": null
+    }
+  ]
+}

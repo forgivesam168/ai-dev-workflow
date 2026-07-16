@@ -195,3 +195,11 @@ These amendments preserve the approved architecture directions above. They corre
 - **Verification note**: The repository gate retained the approved Phase 2 soft line-count warnings for `agents/pm.agent.md` and `agents/spec.agent.md`; they remained warning-only and did not mask a structural or lifecycle hard finding. Historical `changes/2026-02-09-bootstrap-installer/05-review.md` likewise remained a nonblocking legacy-compatibility warning.
 - **Environment note**: Python verification retained the pre-existing `pytest-asyncio` future-default loop-scope deprecation warning; all required Python tests passed, so no deterministic blocker was present.
 - **Architecture direction changed**: No.
+
+### Proposal Pointer — Phase 4 Manifest Schema
+
+- **Status**: `PROPOSED — awaiting explicit user approval`.
+- **Artifacts**: The proposal is recorded in `phase-4-manifest-schema-proposal.md`, `phase-4-manifest-v3.schema.proposed.json`, and `phase-4-schema-examples/` within this Change Package.
+- **Authorization boundary**: Proposal only; not approved and not implemented. Production readers and writers remain limited to schema versions 1 and 2, current writers continue to emit version 2, and the Proposal PR must remain open until the user separately approves the schema and merge. This pointer is not Amendment A-07.
+- **Gate-check note — 2026-07-16**: The full repository gate passed with notes. `agents/pm.agent.md` and `agents/spec.agent.md` each remain at 29 non-empty lines, producing the already-approved `LINE_COUNT` soft warnings only; the structural checker reported no hard finding. Proceeding with proposal delivery does not promote the warnings, approve the schema, or authorize implementation.
+- **Architecture direction changed**: No.

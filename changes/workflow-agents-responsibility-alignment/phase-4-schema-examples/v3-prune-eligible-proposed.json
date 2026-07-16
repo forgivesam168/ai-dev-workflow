@@ -1,0 +1,128 @@
+{
+  "proposal_status": "PROPOSED — NOT APPROVED — NOT IMPLEMENTED",
+  "schema_version": 3,
+  "written_at": "2026-07-17T02:00:05Z",
+  "source_release": {
+    "release_id": "example-release-3",
+    "source_ref": "refs/tags/example-v3",
+    "version": "3.0.0-proposed"
+  },
+  "last_transaction": {
+    "id": "txn:prune-candidate-example",
+    "mode": "update",
+    "writer": "powershell",
+    "started_at": "2026-07-17T02:00:00Z",
+    "completed_at": "2026-07-17T02:00:05Z",
+    "result": "committed"
+  },
+  "components": [
+    {
+      "identity": {
+        "id": "cmp:canonical-retired-skill",
+        "path": "skills/retired-skill/SKILL.md",
+        "path_key": "skills/retired-skill/skill.md",
+        "kind": "file",
+        "role": "canonical",
+        "link": null
+      },
+      "provenance": {
+        "ownership": "template-managed",
+        "source": {
+          "kind": "template",
+          "locator": "template:skills/retired-skill/SKILL.md",
+          "release": "example-release-2"
+        },
+        "generated_from": [],
+        "fork": {
+          "status": "untouched",
+          "basis": "verified-managed-equality",
+          "decision": "manage",
+          "classified_at": "2026-07-17T02:00:01Z"
+        }
+      },
+      "hashes": {
+        "algorithm": "sha256",
+        "content_basis": "exact-bytes",
+        "baseline": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "observed_before": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "proposed_source": null,
+        "result_after": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+      },
+      "lifecycle": {
+        "state": "retired",
+        "previous_paths": [],
+        "retirement": {
+          "reason": "deleted",
+          "detected_at": "2026-07-17T02:00:02Z",
+          "source_evidence": {
+            "type": "component-absent-in-source",
+            "locator": "release:example-release-3#components"
+          },
+          "successor_component_id": null,
+          "pruned_at": null
+        }
+      },
+      "last_operation": {
+        "transaction_id": "txn:prune-candidate-example",
+        "outcome": "retired"
+      },
+      "installed_at": "2026-04-22T10:00:00Z",
+      "updated_at": "2026-07-17T02:00:05Z"
+    },
+    {
+      "identity": {
+        "id": "cmp:generated-retired-skill",
+        "path": ".github/skills/retired-skill/SKILL.md",
+        "path_key": ".github/skills/retired-skill/skill.md",
+        "kind": "file",
+        "role": "generated",
+        "link": null
+      },
+      "provenance": {
+        "ownership": "derived-runtime",
+        "source": {
+          "kind": "generated",
+          "locator": "generated:github-skill-mirror",
+          "release": "example-release-2"
+        },
+        "generated_from": [
+          "cmp:canonical-retired-skill"
+        ],
+        "fork": {
+          "status": "untouched",
+          "basis": "verified-managed-equality",
+          "decision": "manage",
+          "classified_at": "2026-07-17T02:00:03Z"
+        }
+      },
+      "hashes": {
+        "algorithm": "sha256",
+        "content_basis": "exact-bytes",
+        "baseline": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "observed_before": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "proposed_source": null,
+        "result_after": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+      },
+      "lifecycle": {
+        "state": "retired",
+        "previous_paths": [],
+        "retirement": {
+          "reason": "source-retired",
+          "detected_at": "2026-07-17T02:00:02Z",
+          "source_evidence": {
+            "type": "release-retirement-record",
+            "locator": "release:example-release-3#retired-skill"
+          },
+          "successor_component_id": null,
+          "pruned_at": null
+        }
+      },
+      "last_operation": {
+        "transaction_id": "txn:prune-candidate-example",
+        "outcome": "retired"
+      },
+      "installed_at": "2026-04-22T10:00:00Z",
+      "updated_at": "2026-07-17T02:00:05Z"
+    }
+  ]
+}
