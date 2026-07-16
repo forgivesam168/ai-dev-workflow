@@ -5,7 +5,12 @@
   "source_release": {
     "release_id": "example-release-3",
     "source_ref": "refs/tags/example-v3",
-    "version": "3.0.0-proposed"
+    "version": "3.0.0-proposed",
+    "component_catalog": {
+      "path": "manifest/component-catalog.json",
+      "schema_version": 1,
+      "sha256": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+    }
   },
   "last_transaction": {
     "id": "txn:valid-v3-example",
@@ -51,7 +56,8 @@
       "lifecycle": {
         "state": "active",
         "previous_paths": [],
-        "retirement": null
+        "retirement": null,
+        "reintroduces_component_id": null
       },
       "last_operation": {
         "transaction_id": "txn:valid-v3-example",

@@ -9,7 +9,7 @@ Companion artifacts:
 - `phase-4-manifest-v3.schema.proposed.json` — exact machine-readable candidate.
 - `phase-4-schema-examples/valid-v1-observed.json` — synthetic but shape-faithful v1 evidence, including the observed uppercase digest and nullable directory hash forms. Its `proposal_status` is proposal-only metadata, not a v1 writer field.
 - `phase-4-schema-examples/valid-v2-observed.json` — reconstruction from the current writer contract, not a runtime capture. Its `proposal_status` is proposal-only metadata, not a v2 writer field.
-- The six `v3-*.json` / `valid-v3-proposed.json` files — proposed v3 scenarios, not production fixtures.
+- The seven `v3-*.json` / `valid-v3-proposed.json` files — proposed v3 scenarios, not production fixtures. `v3-reintroduced-component.json` is a hypothetical post-authorized-reinstall snapshot, not evidence that authorization was granted or execution occurred.
 
 ## 1. Current Inventory: Facts, Inferences, and Unknowns
 
@@ -51,6 +51,7 @@ Goals of the candidate:
 
 - preserve four explicit hash timepoints and their byte basis;
 - distinguish stable component identity from current path identity;
+- bind every source release to one version-controlled canonical component catalog;
 - represent canonical, generated, project-owned, compatibility, fork, retirement, and tombstone provenance without overloading one status string;
 - let a future reader safely accept v1/v2 before any v3 writer is enabled;
 - make dry-run, stale detection, and prune evidence deterministic and auditable;
@@ -80,7 +81,7 @@ The recommendation is still a proposal. Approval of this document must identify 
 
 ## 4. Exact Candidate Schema Contract
 
-The exact candidate is `phase-4-manifest-v3.schema.proposed.json`, using JSON Schema Draft 2020-12. Every machine example deliberately includes `proposal_status: "PROPOSED — NOT APPROVED — NOT IMPLEMENTED"` so it cannot be mistaken for current production evidence. In the v1/v2 examples this is extra proposal-only metadata accepted by the current permissive top-level readers; it is not an observed legacy field and is not emitted by either legacy writer. An approved production schema would remove the proposal-only marker in a separately reviewed change.
+The exact candidate is `phase-4-manifest-v3.schema.proposed.json`, using JSON Schema Draft 2020-12. Every machine example deliberately includes `proposal_status: "PROPOSED — NOT APPROVED — NOT IMPLEMENTED"` so it cannot be mistaken for current production evidence. In the v1/v2 examples this is extra proposal-only metadata accepted by the current permissive top-level readers; it is not an observed legacy field and is not emitted by either legacy writer.
 
 Top-level contract:
 
@@ -88,8 +89,8 @@ Top-level contract:
 |---|---|
 | `schema_version` | Integer constant `3` |
 | `written_at` | UTC `Z` timestamp for the committed serialized document |
-| `source_release` | `{release_id, source_ref, version}` identifying the candidate source set |
-| `last_transaction` | Committed install/update/migration transaction, writer runtime, and start/end times |
+| `source_release` | `{release_id, source_ref, version, component_catalog}` identifying the candidate source set and exact catalog bytes |
+| `last_transaction` | The most recent transaction that successfully committed the complete Manifest, including writer runtime and start/end times |
 | `components` | Component records sorted by stable `identity.id` |
 
 Component contract:
@@ -100,20 +101,71 @@ Component contract:
 | `provenance` | Ownership, source locator/release, `generated_from` edges, and fork classification |
 | `hashes` | Exact-byte SHA-256 values for baseline, observed-before, proposed-source, and result-after |
 | `lifecycle` | Active/retired/tombstoned state, prior paths, and retirement evidence |
-| `last_operation` | Transaction reference and component outcome |
+| `last_operation` | The last operation that affected this component; its transaction reference may be older than the Manifest's `last_transaction` |
 | `installed_at`, `updated_at` | First known installation time (nullable for imported unknowns) and latest committed classification time |
 
-The schema rejects unknown object properties, malformed lowercase v3 hashes, unsafe logical path syntax, incompatible role/ownership combinations, active records with retirement data, and tombstones with a remaining result hash. Semantic validation, which JSON Schema cannot fully express, must additionally reject duplicate IDs/path keys, unsorted records, unresolved component references, source-kind/locator mismatches, invalid timestamp ordering, path-key mismatch, Windows aliases/reserved names, and link targets escaping the adopter root.
+Top-level `last_transaction` and component `last_operation` have intentionally different scopes. `last_transaction` identifies only the most recent successful commit of the complete Manifest. Each component's `last_operation` identifies the operation that most recently affected that component, so unchanged historical components do not have their references rewritten and their transaction IDs are not required to equal the top-level ID. A terminal tombstone retains the transaction reference for the operation that created that tombstone even when a later Manifest transaction adds another component. Future semantic validators must not treat that inequality as an error. The transaction ID is an auditable reference to bounded external journal/audit evidence when destructive proof is required; the Manifest does not embed an event log or unbounded transaction history.
+
+The schema rejects unknown object properties, malformed lowercase v3 hashes, unsafe logical path syntax, incompatible role/ownership combinations, active records with retirement data, and tombstones with a remaining result hash. Semantic validation, which JSON Schema cannot fully express, must additionally reject duplicate IDs, duplicate active path keys, invalid tombstone/active path-key pairing, unsorted records, unresolved component/catalog references, source-kind/locator mismatches, invalid timestamp ordering, path-key mismatch, Windows aliases/reserved names, and link targets escaping the adopter root.
 
 JSON object member order is not semantic. Canonical writer output should nevertheless use a fixed property order, UTF-8 without BOM, LF, two-space indentation, and exactly one final newline so Python and PowerShell can produce byte-identical golden output.
+
+### Candidate-to-production schema artifact contract
+
+The Change Package candidate deliberately retains its proposal marker, proposal wording, and non-production `$id` under `https://example.invalid/`. It is design evidence only and must never become a runtime import or dependency.
+
+If the schema is later approved, a separately authorized implementation creates the production artifact at `schemas/ai-workflow-install-manifest-v3.schema.json` with Draft 2020-12 and stable `$id` `urn:ai-dev-workflow:manifest-schema:v3`. Schema approval alone does not create that artifact, change a reader, enable a writer, migrate a manifest, or authorize any runtime behavior. The implementation removes `proposal_status` from top-level `required` and `properties`, removes proposal-only title/description wording, replaces the candidate identity with the stable production `$id`, and preserves every approved structural validation rule.
+
+Candidate-to-production validation is deterministic: parse both schemas; remove only the top-level `proposal_status` property/requirement; apply only the canonical `$id`/title/description substitutions; canonicalize both JSON objects; require deep equality; then run equivalent positive/negative vectors against each. Any other schema diff is blocking. The production reader must not import the Change Package candidate. Python and PowerShell must either consume the production artifact or prove identical behavior from the same versioned vectors.
+
+Each production positive vector is derived from its candidate example by removing only the top-level `proposal_status`; every other scenario field and value remains unchanged. Candidate validation uses the marked example, while production validation uses that marker-free derived representation. For every negative vector, apply the same semantic mutation to both representations after performing only that marker derivation for the production copy. This prevents the invalid comparison of a proposal-marked candidate example directly against the production schema while preserving identical behavioral coverage.
+
+The production schema artifact revision/digest is release metadata and is separate from manifest `schema_version: 3`; revising descriptions or validator packaging must not silently create a new manifest format. Reader support for v3 remains distinct from writer enablement. Until writer enablement is separately approved, production writers continue to emit v2.
 
 ## 5. Component Identity and Path Model
 
 `identity.id` is the durable identity; `identity.path` is the current repository-relative logical location. A rename keeps the ID and moves the old normalized path into `lifecycle.previous_paths`. IDs must not be derived solely from the path.
 
-Recommended identity source: each template release carries an explicit stable `cmp:` ID for every canonical component. Generated components have their own stable IDs and reference canonical IDs through `generated_from`. Import of v1/v2 must never guess that two ambiguous paths are the same component; unresolved records remain legacy/unknown and report-only until a reviewed mapping exists.
+The canonical source-side identity SSOT is fixed at the version-controlled path `manifest/component-catalog.json`; its location is not deferred to implementation. The proposed catalog top level contains at least:
 
-Paths use `/`, are relative to the adopter root, and contain no empty, `.` or `..` segment, backslash, drive prefix, UNC prefix, or alternate-data-stream separator. The candidate restricts path text to a conservative ASCII set. `path_key` is the ASCII-lowercase normalized path, and collisions are rejected on all operating systems, including Linux, so Windows and Ubuntu cannot accept different manifests.
+| Field | Exact contract |
+|---|---|
+| `catalog_schema_version` | Integer `1`, versioning the catalog shape independently |
+| `catalog_version` | Non-empty immutable release-scoped catalog revision |
+| `source_release` | The catalog's `{release_id, source_ref, version}` |
+| `components` | Records sorted by stable component ID |
+
+Every catalog component contains at least:
+
+| Field | Exact contract |
+|---|---|
+| `id` | Stable `cmp:` ID |
+| `canonical_source_path` | Normalized canonical source-side path |
+| `role`, `kind` | The same role/kind vocabulary enforced by the Manifest schema |
+| `lifecycle_status` | `active`, `retired`, or `tombstoned` source identity state |
+| `previous_paths` | Sorted, duplicate-free normalized prior source paths |
+| `generated_from` | Sorted, duplicate-free parent component IDs |
+| `successor_component_id` | Nullable rename/supersession relationship |
+| `reintroduces_component_id` | Nullable relationship from a new identity to a permanently tombstoned identity |
+| `introduced_release` | Release ID that first allocated this identity |
+| `retired_release` | Optional/nullable release ID that retired the identity |
+
+Allocation and validation rules are fixed:
+
+1. Every template-managed and derived-runtime identity is allocated by this catalog.
+2. Python and PowerShell read the same catalog bytes and catalog schema/version; neither has a private identity table.
+3. Readers/writers never derive IDs from path hashes, paths, timestamps, adopter content, or runtime-specific generators.
+4. A canonical rename retains the same ID and appends the prior path; it does not allocate a replacement merely because the path changed.
+5. Retired and tombstoned IDs are permanently reserved and never reused.
+6. A genuinely new component and an authorized reintroduction each receive a new ID; reintroduction points to the old tombstone.
+7. Duplicate IDs, duplicate active path keys, unknown parents, relationship cycles, self-reference, and illegal ID reuse are blocking catalog errors.
+8. Ambiguous v1/v2 paths or lineage are never guessed into an ID; they remain legacy/unknown and report-only until an approved mapping exists.
+9. Every catalog source change is version-controlled, reviewed, and subject to sync/catalog validation against both runtimes and generated mirrors.
+10. The catalog is evidence, not migration, overwrite, prune, reinstall, or other protected-action authorization, and it is never reverse-generated from adopter content.
+
+Every v3 `source_release.component_catalog` binds `{path: "manifest/component-catalog.json", schema_version: 1, sha256: <lowercase exact-byte SHA-256>}`. Semantic validation requires the digest to match the release's catalog bytes and every Manifest identity, role, kind, lifecycle, source path, `generated_from`, successor, and reintroduction relationship to agree with that bound catalog.
+
+Paths use `/`, are relative to the adopter root, and contain no empty, `.` or `..` segment, backslash, drive prefix, UNC prefix, or alternate-data-stream separator. The candidate restricts path text to a conservative ASCII set. `path_key` is the ASCII-lowercase normalized path. Duplicate active path keys are blocking on every operating system, including Linux, so Windows and Ubuntu cannot accept different active inventories. A single tombstoned record and a new active record may share a path key only when the new record explicitly reintroduces that tombstone and the old tombstoned target is not materialized; two active records or an unrelated collision remain blocking.
 
 For `mount` or `link`, `identity.link.target_path` is also root-relative. It records the logical target and materialization mode (`symlink`, `junction`, or `copy-fallback`) rather than raw host-specific link text. Readers must inspect without following a target outside the adopter root.
 
@@ -186,7 +238,7 @@ Lifecycle, computed report states, and operation results are deliberately separa
 |---|---|---|---|
 | `active` | `lifecycle.state` | Stable ID is present in the approved source release | Manage only according to fork/ownership evidence; otherwise preserve/report/block |
 | `retired` | `lifecycle.state` | Typed rename/delete/source-retirement evidence; target still present | Report/preserve; prune can only be proposed after independent eligibility checks |
-| `tombstoned` | `lifecycle.state` | Task-authorized prune completed, target absence verified, `pruned_at` and journal result committed | Retain audit evidence; no further delete is implied |
+| `tombstoned` | `lifecycle.state` | Task-authorized prune completed, target absence verified, `pruned_at` and journal result committed | Terminal for that ID; retain audit evidence and never transition it to active/retired |
 | `stale-detected` | Computed report state, never lifecycle authority | Persisted retirement plus an adopter target still present | Report only and evaluate customization/eligibility |
 | `prune-eligible` | Computed report field only, never persisted authority | Every D-05/AC-17 proof currently passes, including unchanged bytes and exact retirement evidence | Propose exact component selection; still requires external current-task approval and execution-time revalidation |
 | `preserved-customization` | Operation/report result; may be the persisted `last_operation.outcome`, not lifecycle | Canonical or derived hash divergence with preserved pre-operation bytes | Preserve and report; never overwrite or prune automatically |
@@ -194,7 +246,13 @@ Lifecycle, computed report states, and operation results are deliberately separa
 
 Lifecycle state is evidence, not an instruction. `retired` never authorizes deletion. `tombstoned` may only be written after deletion, fresh absence verification, atomic manifest commit, and all Section 14 requirements. Customized, derived-customized, project-owned, unknown, legacy, conflicted, and not-applicable records cannot be treated as automatically pruneable.
 
-If a retired source reappears, the system must not automatically revive, overwrite, recreate, or delete adopter content. The same stable ID is reported as a reconciliation event and requires a separately approved restore/reconciliation decision. A persisted tombstone remains audit evidence and does not disappear merely because the source reappears; any approved restore would add a later committed transition while retaining the tombstone history.
+Tombstone identity is permanent audit identity. A tombstoned component ID can never transition back to `active` or `retired`, can never be reused, and keeps its lifecycle, `pruned_at`, retirement evidence, hashes, and `last_operation` unchanged.
+
+If its source reappears, the default result is report-only: do not restore, recreate, overwrite, remove the tombstone, or materialize a target. A future reinstall requires separate explicit, current-task, action-specific authorization. After that authorized reinstall succeeds, the active component has a brand-new ID and sets `lifecycle.reintroduces_component_id` to the old tombstoned ID; every persisted field of the old tombstone component remains unchanged. The complete Manifest may be reserialized because it now has a new top-level transaction and component, so no claim is made that the old component's raw JSON byte slice is preserved. This relationship is not `generated_from`, is not a rename `successor_component_id`, and never constitutes authorization.
+
+Future semantic validators treat the following as hard failures: self-reference; a missing or non-tombstoned reintroduction target; a relationship cycle; reuse or mutation of the old ID; a reintroduction field on a retired/tombstoned record; two active records with the same path key; or a tombstone/active same-path pair without the exact reintroduction link and verified absence of the tombstoned materialized target. Draft 2020-12 cannot express these cross-record conditions, so the candidate schema supplies the structural property and comments while the Proposal fixes the required semantics.
+
+`v3-reintroduced-component.json` retains the old terminal tombstone and its historical `last_operation`, adds a different active ID linked through `reintroduces_component_id`, and binds the source catalog containing both identities. It is a hypothetical post-authorized-reinstall snapshot only. Source reappearance itself still produces a report, and the example/report/schema does not supply the separate authorization required for actual reinstall.
 
 ## 10. Persisted State Versus Loader/Operation Outcomes
 
@@ -317,16 +375,19 @@ No implementation may truncate the live manifest in place, silently discard a co
 | Parse outcomes | Missing manifest; corrupt JSON; unsupported version | Missing is warning/report-only; corrupt/unsupported are blocking; all prove zero repository writes |
 | Schema rejection | Duplicate component identity ID; duplicate normalized path identity; invalid enum; invalid/uppercase v3 hash; missing/extra/wrong-type field | Same reject vector and diagnostic class in Python and PowerShell |
 | Identity security | Traversal; absolute/drive/UNC path; backslash; Windows reserved/alias path; case collision; long path; escaping/cyclic link | Windows and Ubuntu parity with zero writes |
+| Component catalog | Valid exact-byte binding; wrong/missing digest; duplicate ID; duplicate active path key; unknown parent; generated/source cycle; self-reference; retired/tombstoned ID reuse; ambiguous v1/v2 mapping | Both runtimes read `manifest/component-catalog.json`; every invalid catalog is blocking and produces zero writes |
 | Hash semantics | Missing target; all relevant four-timepoint equal/different/null combinations; null-baseline; no-single-byte-stream kind | Exact-byte golden vectors; no null value infers untouched or prune safety |
 | Classification | Untouched managed; customized canonical; project-owned; derived runtime; modified derived (`derived-customized`); legacy; unknown; conflicted; not-applicable | All eight status/basis/decision mappings enforced; no ownership laundering |
 | Provenance graph | Valid canonical/generated graph; missing parent; duplicate parent; cycle; source-kind mismatch | Unresolved or conflicting graph blocks mutation |
-| Canonical lifecycle | Canonical rename preserving stable ID; canonical delete; source retirement; retired source reappears; tombstone retention | Retirement evidence retained; reappearance reports reconciliation and never auto-restores/overwrites |
+| Canonical lifecycle | Canonical rename preserving stable ID; canonical delete; source retirement; retired source reappears; tombstone retention; attempted tombstone transition/ID reuse | Tombstone ID/evidence remain terminal; reappearance reports only and never auto-restores/overwrites |
+| Reintroduction | Valid old tombstone + distinct new active ID/link; self-reference; missing/non-tombstone target; cycle; mutated old evidence; duplicate active path; unrelated tombstone/active path collision | Only the valid relationship is accepted, and only after separate reinstall authorization; no relationship grants authority |
 | Stale lifecycle | Unmodified stale target; modified stale canonical target; modified stale derived target | Only unmodified/evidence-complete target can be reported as computed prune-eligible; modified targets preserved |
 | Dry-run | Repeat identical inputs; volatile timestamp separation; changed manifest/source/file after report | Identical canonical report hashes; stale report rejection; no-write inventory/hash proof |
 | Prune authorization | Prune without approval; prune missing each individual proof; exact approved prune proposal; no-prune-all; CLI flag without external authorization | Zero delete for missing approval/proof; approved case binds exact IDs/report hash/approval reference and revalidates TOCTOU |
 | Prune target safety | Unselected sibling; non-empty directory; link escape; modified/unknown/legacy target; TOCTOU change | Whole-selection preflight blocks before deletion; false tombstone never commits |
 | Atomicity/recovery | Interrupted migration; atomic write failure before stage, mid-component publish, before manifest replace, after replace, during flush; competing lock; rollback failure | Exact prior-byte restoration or explicit recovery-required with preserved journal/evidence; no partial silent success |
 | Serialization | UTF-8/LF/final newline/property order/component sort/timestamp precision | Byte-identical Python/PowerShell golden manifests and reports |
+| Candidate/production schema | Candidate production misuse/import; deterministic allowlisted transformation; unexpected structural diff; wrong production path/`$id`; artifact revision independent from manifest version | Runtime imports only `schemas/ai-workflow-install-manifest-v3.schema.json`; transformed structures/vectors are identical or blocking |
 | Runtime/platform parity | Every preceding vector in Python and PowerShell on Windows and Ubuntu | Same semantic result, diagnostics class, canonical bytes/report hash, and write/no-write inventory |
 | Repository integration | Targeted tests, relevant full tests, sync/catalog/static checks, full repository gate, worktree invariance | All deterministic gates green; no generated drift or scope leakage |
 | Independent review | Correctness, security, path/link handling, recovery, migration, authorization, parity | No unresolved Critical/High finding before delivery |
@@ -340,12 +401,12 @@ No item below is approved merely because it is recommended here.
 | ID | Decision | Recommendation | Alternatives and trade-off |
 |---|---|---|---|
 | OD-01 | Manifest architecture | Structured v3 (Option B) | Flat extension is initially cheaper but ambiguous; event log is stronger auditability but disproportionate complexity |
-| OD-02 | Exact schema artifact | Approve the companion Draft 2020-12 schema after removing the proposal-only marker in implementation | Hand-coded validators alone reduce portability; a different schema dialect adds tooling variation |
-| OD-03 | Stable identity allocation | Explicit release-catalog component IDs, never path-only IDs | Generated path IDs are easy but break rename identity; random IDs impede deterministic parity |
+| OD-02 | Exact production schema artifact | If later approved, create Draft 2020-12 `schemas/ai-workflow-install-manifest-v3.schema.json` with `$id` `urn:ai-dev-workflow:manifest-schema:v3` through the allowlisted deterministic transformation/diff contract in Section 4; candidate remains non-runtime | Importing the Change Package candidate conflates proposal and runtime; hand-coded-only validators reduce portability; any broader transform hides structural drift |
+| OD-03 | Stable identity allocation and catalog SSOT | Version-controlled `manifest/component-catalog.json` with catalog schema version 1, exact release digest binding, and all ten allocation rules in Section 5 | Path/random/runtime-generated IDs break rename/reuse/parity guarantees; adopter-derived catalogs can launder ambiguous ownership |
 | OD-04 | Path character/collision policy | Conservative ASCII paths plus global ASCII-lower collision keys | Unicode NFC/case-fold supports more names but has cross-runtime/platform edge cases requiring a larger proof set |
 | OD-05 | Hash model | Four exact-byte SHA-256 timepoints with lowercase v3 encoding | Three overloaded hashes preserve compatibility but cannot prove before/source/after; tree hashes need a separate directory design |
 | OD-06 | Provenance/fork model | Structured ownership, typed source, derivation edges, and the exhaustive eight-state status/basis/decision mapping in Section 8 | A smaller status set is shorter but conflates untouched, canonical customization, derived customization, conflict, and non-hashable kinds |
-| OD-07 | Lifecycle model | Active → retired → explicitly authorized tombstone; compute prune eligibility | Persisted eligibility is convenient but becomes stale and can be mistaken for authority |
+| OD-07 | Lifecycle/reintroduction model | Tombstone is terminal and permanently reserves its ID; source reappearance reports only; a separately authorized reinstall allocates a new active ID linked by `reintroduces_component_id` while preserving the old tombstone | Reactivating/reusing the old ID destroys audit identity; automatic restore turns source presence into unauthorized mutation; persisted eligibility becomes stale authority |
 | OD-08 | Parse-state location | Loader/report envelope, not self-reported inside the manifest | Persisting it inside the payload fails for missing/corrupt inputs and risks rewriting evidence |
 | OD-09 | Legacy policy | Reader-first v1/v2 compatibility; no read-time migration; ambiguous records remain report-only | Eager migration simplifies later code but can destroy evidence and has no safe inference for all records |
 | OD-10 | Writer enablement | Separate approval after dual-runtime reader/parity proof and migration rehearsal | Enabling reader/writer together shortens rollout but increases rollback and compatibility risk |

@@ -35,7 +35,7 @@
       "items": {
         "$ref": "#/$defs/component"
       },
-      "$comment": "Writers sort components by identity.id. Readers additionally reject duplicate identity.id and identity.path_key values because JSON Schema uniqueItems cannot express property-level uniqueness."
+      "$comment": "Writers sort components by identity.id. Readers reject duplicate identity.id and duplicate active identity.path_key values. One tombstoned record and one active record may share a path key only when the active record explicitly reintroduces that tombstoned ID and the tombstoned target is absent; JSON Schema cannot express those cross-record rules."
     }
   },
   "$defs": {
@@ -69,7 +69,7 @@
       "minLength": 1,
       "maxLength": 512,
       "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[a-z0-9@+_.-]+(?:/[a-z0-9@+_.-]+)*$",
-      "$comment": "ASCII lowercase of the normalized relative path. Readers verify equality with lower(identity.path) and reject duplicate keys on every platform."
+      "$comment": "ASCII lowercase of the normalized relative path. Readers verify equality with lower(identity.path) and reject duplicate active keys on every platform. A tombstone/active same-key exception requires the explicit reintroduction relationship and semantic validation."
     },
     "sourceRelease": {
       "type": "object",
@@ -77,7 +77,8 @@
       "required": [
         "release_id",
         "source_ref",
-        "version"
+        "version",
+        "component_catalog"
       ],
       "properties": {
         "release_id": {
@@ -94,8 +95,33 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 64
+        },
+        "component_catalog": {
+          "$ref": "#/$defs/componentCatalogBinding"
         }
       }
+    },
+    "componentCatalogBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "schema_version",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "const": "manifest/component-catalog.json"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "$comment": "This binding identifies the version-controlled canonical component catalog for the source release. Semantic validation requires the digest to match exact catalog bytes and every manifest identity/provenance relationship to match that catalog."
     },
     "transaction": {
       "type": "object",
@@ -638,7 +664,8 @@
       "required": [
         "state",
         "previous_paths",
-        "retirement"
+        "retirement",
+        "reintroduces_component_id"
       ],
       "properties": {
         "state": {
@@ -663,6 +690,16 @@
             },
             {
               "$ref": "#/$defs/retirement"
+            }
+          ]
+        },
+        "reintroduces_component_id": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/componentId"
             }
           ]
         }
@@ -707,6 +744,9 @@
                     }
                   }
                 ]
+              },
+              "reintroduces_component_id": {
+                "type": "null"
               }
             }
           }
@@ -734,11 +774,15 @@
                     }
                   }
                 ]
+              },
+              "reintroduces_component_id": {
+                "type": "null"
               }
             }
           }
         }
-      ]
+      ],
+      "$comment": "Tombstoned IDs are terminal and permanently reserved. A non-null reintroduces_component_id is allowed only on a new active component ID and must resolve to a different tombstoned component. Readers reject self-reference, missing/non-tombstoned targets, cycles, reuse of the tombstoned ID, or mutation of the old tombstone; these cross-record constraints require semantic validation."
     },
     "operation": {
       "type": "object",

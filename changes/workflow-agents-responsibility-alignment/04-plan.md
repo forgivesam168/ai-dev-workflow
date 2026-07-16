@@ -2,7 +2,7 @@
 
 ## Plan Status
 
-- **Status**: Phase 4 schema proposal locally verified; Proposal PR pending; implementation not authorized
+- **Status**: Phase 4 schema proposal approval-blocking correction locally verified; follow-up commit and CI pending; schema not approved; implementation not authorized
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
@@ -19,7 +19,7 @@
 | 1 — AGENTS / WORKFLOW / risk contract | Merged | Required | Required |
 | 2 — Agent / Skill / Prompt / Instruction alignment | Merged | Required | Required |
 | 3 — Change Package / Review / Archive semantics | Merged | Required | Required |
-| 4 — Manifest / provenance / stale-derived migration | Schema proposal locally verified; Proposal PR pending; implementation not authorized | Required | Required |
+| 4 — Manifest / provenance / stale-derived migration | Schema proposal approval-blocking correction locally verified; follow-up commit and CI pending; schema not approved; implementation not authorized | Required | Required |
 | 5 — Cross-CLI evidence and adapter proposal | Pending | Required | Evidence PR before implementation PR |
 | 6 — Bash deprecation completion | Pending | Required | Required |
 
@@ -923,7 +923,7 @@ Separate approval and separate PR required; naming decision must be recorded bef
 
 ### Schema Proposal Status
 
-- **Status**: `PROPOSED — NOT APPROVED — NOT IMPLEMENTED`; schema proposal locally verified; Proposal PR pending; implementation not authorized.
+- **Status**: `PROPOSED — NOT APPROVED — NOT IMPLEMENTED`; approval-blocking correction locally verified on PR #11; follow-up commit and CI pending; implementation not authorized.
 - **Authorization boundary**: This branch may contain proposal documentation, a machine-readable candidate schema, non-runtime examples, and this task/status evidence only. It must not modify either installer, runtime reader/writer, production gate, or test behavior; it must stop with an open Proposal PR after successful CI and must not merge.
 - **Proposal branch**: `design/phase-4-manifest-schema-proposal` from merged Phase 3 `main` at `f8a0116ce4af0b463c838150350a9ccfa7c2cac6`.
 - **Approval boundary**: Schema approval, Proposal PR merge approval, Phase 4 implementation authorization, and any migration/prune execution approval remain separate user decisions.
@@ -966,8 +966,27 @@ Luna may create or modify only:
 - `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/v3-retired-component.json`
 - `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/v3-stale-but-modified.json`
 - `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/v3-prune-eligible-proposed.json`
+- `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/v3-reintroduced-component.json`
 
 If this exact allowlist cannot express a complete, internally consistent proposal, Luna must stop and report the missing path and contract reason. No production path, test, gate, installer, generated mirror, decision-log amendment, or additional artifact is implicitly allowed.
+
+### Approval-Blocking Correction Scope
+
+- **Baseline**: PR #11 remains open and non-Draft at expected head `5bf032b4747839541d201dc86b96d2ddd18a805b`; local/remote proposal branch match; local/origin `main` remain `f8a0116ce4af0b463c838150350a9ccfa7c2cac6`; existing CI is successful; reviews and review threads are empty.
+- **Tombstone identity**: Tombstoned component IDs are terminal and permanently reserved. A separately authorized future reintroduction receives a new ID and uses a non-authorizing relationship to the unchanged tombstoned component.
+- **Stable-ID catalog**: The proposal must define `manifest/component-catalog.json` as the single version-controlled source-side allocation SSOT; neither runtime may independently derive IDs, and legacy ambiguity remains report-only.
+- **Production schema boundary**: The proposal must define `schemas/ai-workflow-install-manifest-v3.schema.json` with stable `$id` `urn:ai-dev-workflow:manifest-schema:v3` as the future production artifact while retaining the Change Package candidate, proposal marker, and `example.invalid` identity in this PR.
+- **Delivery boundary**: Luna is the only Proposal product writer. Sol owns governance, audit, one non-amended follow-up commit, normal push, PR/CI verification, and the mandatory stop with PR #11 still open. No production reader/writer/test/gate, schema emission, migration, prune, real-adopter operation, merge, or Phase 5 work is authorized.
+
+### Approval-Blocking Correction Evidence
+
+- Luna used the existing built-in `worker` as the only Proposal product writer; requested model GPT-5.6 and reasoning effort medium; observed model/effort unknown; no configuration change. Luna changed exactly the Proposal, candidate schema, six existing candidate-v3 examples, and new `v3-reintroduced-component.json`; v1/v2 examples and all production/test/gate paths remained unchanged.
+- Luna recorded RED evidence for the absent terminal-tombstone/new-ID relationship, absent fixed component-catalog SSOT/binding, and absent production schema identity/transformation contract. GREEN added `lifecycle.reintroduces_component_id`, catalog binding on all seven candidate-v3 examples, the reintroduction example, exact catalog allocation rules, future production path/URN, and updated OD-02/OD-03/OD-07 while retaining `PROPOSED — NOT APPROVED — NOT IMPLEMENTED`.
+- Sol independently reviewed the actual Proposal/schema/example diffs. Two Medium ambiguities were returned to the same Luna and resolved: component `last_operation` may predate top-level `last_transaction`, and marker-free production vectors remove only top-level `proposal_status` before applying the same scenario/negative mutations. Current audit: 0 Critical, 0 High, 0 unresolved Medium.
+- Sol JSON/schema validation parsed the candidate plus seven candidate-v3 examples and accepted all 7/7 examples. Focused validation rejected 5/5 structural schema negatives, 8/8 Manifest semantic negatives, and 4/4 catalog semantic negatives; two positive semantic models and the candidate/production boundary passed.
+- The final intended correction scope is exactly nine Luna product paths plus Sol-owned `02-decision-log.md` and `04-plan.md`. Candidate Draft 2020-12 remains under `example.invalid` with its proposal marker; no `manifest/component-catalog.json` or `schemas/ai-workflow-install-manifest-v3.schema.json` production artifact is created in this PR.
+- Existing Python regression passed 92 tests; full Pester 5.6.1 passed 181 tests with 0 failed/skipped/not-run; direct sync, catalog, lifecycle, Change Package, and Agent checks passed; `git diff --check` passed. The stable-diff full repository gate returned `GATE PASSED WITH NOTES`, limited to the recorded Agent line-count warnings, and preserved branch, HEAD, status, path, byte length, and SHA-256 invariance for all 11 changed paths.
+- Rule-based gates: Architecture Decision Exit — pass for proposal correction review; Pre-Implementation Readiness — `N/A — this task contains proposal correction only; Phase 4 implementation is not authorized`; Pre-Delivery Verification — pass; Migration / Deployment Readiness — `N/A — no migration or deployment execution is authorized in this task.` Deterministic failure remains blocking and cannot be overridden by this review evidence or `agentic-eval`.
 
 ### Local Proposal Verification Evidence
 
