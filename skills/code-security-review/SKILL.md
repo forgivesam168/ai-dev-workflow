@@ -32,6 +32,14 @@ Use this skill when:
 - `04-plan.md` to verify all tasks completed
 - Tests passing and coverage ≥80%
 
+## Review Role Contract
+
+New Change Packages record independent Review in canonical `07-review.md`. Historical `05-review.md` remains readable; it is not the canonical filename for a new package. Canonical and legacy files may coexist only when the legacy file is the documented pointer-only alias—two independent Review bodies are competing evidence and blocking.
+
+Every Review body contains observable `Summary`, `Findings`, `Verification Evidence`, and `Decision`. Decision is exactly `PASS`, `PASS_WITH_NOTES`, or `BLOCKED`. Any unresolved Critical/High finding or required deterministic test/build/lint/static/gate failure requires `BLOCKED`.
+
+`agentic-eval` is self-evaluation, not independent Review. It cannot replace this Review when the selected mode requires independence, and neither self-evaluation nor prose can override deterministic failure.
+
 ## Review Priorities (High → Low)
 
 ### 🔴 Critical (Must Fix)
@@ -134,11 +142,40 @@ dotnet test /p:CollectCoverage=true
 
 ### Step 5: Generate Review Document
 
-Create `changes/<YYYY-MM-DD>-<slug>/05-review.md`:
+For a new package, create `changes/<YYYY-MM-DD>-<slug>/07-review.md`:
+
+Use the canonical structured role below. Every field appears exactly once, every option list is replaced by one selected value, and every evidence field is substantive:
+
+```markdown
+# 07 Review
+
+## Summary
+- Reviewed scope: [scope reviewed]
+- Independent reviewer: [reviewer identity]
+
+## Findings
+- Critical: None | Resolved — evidence | Unresolved — evidence
+- High: None | Resolved — evidence | Unresolved — evidence
+- Medium: None | finding and disposition
+- Low: None | finding and disposition
+
+## Verification Evidence
+- Targeted tests: PASS — evidence | BLOCKED — evidence | N/A — reason
+- Required full/static/project gates: PASS — evidence | BLOCKED — evidence | N/A — reason
+- Unavailable or unverified checks: None | WARNING — non-blocking evidence | BLOCKED — required deterministic evidence
+
+## Decision
+- Decision: PASS | PASS_WITH_NOTES | BLOCKED
+- Rationale: [evidence-based rationale]
+```
+
+`None` is the explicit zero-finding value. `WARNING` is recorded and supports `PASS_WITH_NOTES` without blocking. Unresolved Critical/High findings or `BLOCKED` deterministic evidence require Decision `BLOCKED`. `agentic-eval` cannot replace this independent Review or override deterministic evidence.
+
+The extended example below is optional detail guidance, not the canonical semantic-role shape; it cannot replace or rename the structured fields above.
 
 ---
 
-**Template**:
+**Optional detailed-review appendix example**:
 
 ```markdown
 # Code Review: {Feature Name}
@@ -158,7 +195,9 @@ Create `changes/<YYYY-MM-DD>-<slug>/05-review.md`:
 
 ---
 
-## Critical Issues 🔴 (Must Fix Before Merge)
+## Findings
+
+### Critical Issues 🔴 (Must Fix Before Merge)
 
 ### Issue 1: {Title}
 **Severity**: Critical
@@ -186,7 +225,7 @@ decimal price = 19.99M; // Decimal for money
 
 ---
 
-## High Priority Issues 🟡 (Should Fix)
+### High Priority Issues 🟡 (Should Fix)
 
 ### Issue 3: {Title}
 **Severity**: High
@@ -196,7 +235,7 @@ decimal price = 19.99M; // Decimal for money
 
 ---
 
-## Medium Priority Issues 🟢 (Nice to Fix)
+### Medium Priority Issues 🟢 (Nice to Fix)
 
 ### Issue 4: {Title}
 **Severity**: Medium
@@ -206,7 +245,9 @@ decimal price = 19.99M; // Decimal for money
 
 ---
 
-## Security Checklist
+## Verification Evidence
+
+### Security Checklist
 
 - [ ] No secrets or credentials in code
 - [ ] SQL injection prevented (parameterized queries)
@@ -219,7 +260,7 @@ decimal price = 19.99M; // Decimal for money
 
 ---
 
-## Financial Precision Checklist
+### Financial Precision Checklist
 
 - [ ] Money stored as `decimal` or integer minor units
 - [ ] Currency explicitly stored (ISO 4217 code)
@@ -229,7 +270,7 @@ decimal price = 19.99M; // Decimal for money
 
 ---
 
-## Code Quality Assessment
+### Code Quality Assessment
 
 ### DDD Compliance
 - [ ] Entities have behavior (not anemic models)
@@ -252,7 +293,7 @@ decimal price = 19.99M; // Decimal for money
 
 ---
 
-## Test Coverage
+### Test Coverage
 
 **Overall Coverage**: {X%}
 
@@ -268,7 +309,7 @@ decimal price = 19.99M; // Decimal for money
 
 ---
 
-## Performance Concerns
+### Performance Concerns
 
 ### Issue 1: {N+1 Query Problem}
 **File**: `{path}:{line}`
@@ -278,7 +319,7 @@ decimal price = 19.99M; // Decimal for money
 
 ---
 
-## Breaking Changes
+### Breaking Changes
 
 ⚠️ **API Breaking Change Detected**
 
@@ -292,7 +333,7 @@ decimal price = 19.99M; // Decimal for money
 
 ---
 
-## Recommendations
+### Recommendations
 
 ### Must Do (Before Merge)
 1. {Critical issue 1}
@@ -308,22 +349,22 @@ decimal price = 19.99M; // Decimal for money
 
 ---
 
-## Approval Status
+## Decision
 
 **Reviewer Decision**: {Choose one}
-- 🔴 **Request Changes**: Critical issues must be fixed
-- 🟡 **Approve with Comments**: Minor issues, can merge after fixes
-- 🟢 **Approve**: No blocking issues, ready to merge
+- **BLOCKED**: Deterministic failure or unresolved Critical/High findings
+- **PASS_WITH_NOTES**: No blockers; warnings or non-blocking follow-up remain
+- **PASS**: No blocking findings; required verification evidence is complete
 
 **Next Steps**:
 1. {Action item 1}
 2. {Action item 2}
-3. After fixes, run review again or proceed to archive
+3. After fixes, run Review again; after PASS/PASS_WITH_NOTES, complete applicable pre-merge Closeout
 
 ---
 
 ## Related Artifacts
-- Spec: `03-spec.md`
+- Spec: `03-spec.md` (if selected)
 - Plan: `04-plan.md`
 - Test Plan: `05-test-plan.md` (if exists)
 - Git branch: `feature/{branch-name}`
@@ -466,7 +507,7 @@ Fix critical issues → Re-run tests → Request re-review
 ```
 Input: "archive 這個 change package"
 [System loads work-archiving skill]
-→ Generate 99-archive.md and WORK_LOG entry
+→ Generate the requested pre-merge 99-archive.md; update other local logs only when explicitly requested
 ```
 
 **VS Code**:
@@ -478,7 +519,7 @@ Or: "finalize and archive"
 Or use workflow orchestrator:
 ```
 Input: "what's next?"
-[System detects review complete, recommends archive stage]
+[System validates Review content/status, then recommends Closeout when the selected package contract requires it]
 ```
 
 ## Troubleshooting
@@ -522,12 +563,12 @@ Input: "what's next?"
 
 ## Verification
 
-在產出 `05-review.md` 前，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
+在產出 `07-review.md` 前，逐項確認（Gate = 交付前閘門；Verification = 自我完成確認）：
 
 - [ ] 已依序切換 Security、Performance、Future Maintainer 三個 Specialist Lens，各視角均有記錄輸出
 - [ ] 所有 🔴 Critical 問題已列出且有具體修復方案（不得只說「有問題」）
 - [ ] Financial Precision 檢查完成：所有金錢欄位確認無 float/double（`rg "float\|double" <changed-files>` 無命中）
 - [ ] 測試覆蓋率已量測，核心路徑 100%、整體 ≥80%（或明確說明例外理由）
 - [ ] Security Checklist 所有項目已逐條確認（無靜默略過）
-- [ ] `05-review.md` 已建立，Approval Status 已填寫（🔴 / 🟡 / 🟢 其中之一）
-- [ ] 若 Approval Status 為 🔴，已明確列出 Must Fix 項目清單
+- [ ] `07-review.md` 已建立，Decision 已填寫（`PASS` / `PASS_WITH_NOTES` / `BLOCKED` 其中之一）
+- [ ] 若 Decision 為 `BLOCKED`，已明確列出 Must Fix 項目清單

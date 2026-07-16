@@ -1,26 +1,25 @@
 # Changes（Change Package）
 
-本資料夾用來保存「每次需求/變更」的規格與決策產物，讓團隊在需求反覆變更、MVP 變棕地後仍可安全演進。
+Change Package 是 lifecycle evidence container，不是每個 task 都必須建立的進度系統。
 
-## 命名
-建立資料夾：
-- `changes/<YYYY-MM-DD>-<slug>/`
-  - slug 以英文小寫 + `-`（例如：`2026-02-07-audit-workpaper-import`）
+## Execution modes
 
-## 建立方式
-1) 複製 `changes/_template/` 成新資料夾
-2) 依序填寫：
-   - `00-intake.md` → 最少要先寫這份
-   - 需要釐清就寫 `01/02/03`
-   - `/plan` 後補齊 `04/05`
-   - 棕地或高風險再補 `06-impact-analysis.md`
-3) PR 裡必填：Change Package 路徑（例如：`changes/2026-02-07-xxx/`）
+- **Simple**：不要求 repository package、Review 或 Archive；保留 targeted verification 與準確 completion evidence。
+- **Standard**：維護一個 declared plan/lifecycle SSOT；cross-session、cross-component、contract-change、independent-review、migration/audit-sensitive 或 escalation-prone trigger 成立時才要求 compact package。自願建立的 package 依其宣告驗證。
+- **High-Risk**：使用 full package，包含 `00`–`06` substantive evidence、canonical `07-review.md` 與 pre-merge `99-archive.md` Closeout。
 
-## 何時可以用快速路？
-- 低風險小修（文案/註解/非常局部的 bug）
-- 仍需要 `00-intake.md` + PR 驗證步驟
+## Package path and declaration
 
-## 合併後
-- 補 `99-archive.md`（放 PR link、結果、後續）
-- 不需要把資料夾搬去別處；保留在 `changes/` 即是你們的「可稽核歷史」。
+需要或自願使用 package 時建立 `changes/<YYYY-MM-DD>-<slug>/`，並依宣告的 `Compact`／`Full` contract 驗證，不因 Simple mode 本身禁止 package。`00-intake.md` 的 Task/status SSOT、External tracker、Execution mode、Package trigger/reason 與 Package contract 各自只能宣告一次；file SSOT 必須可存取，external tracker 必須可識別，且全程只能有一個 dynamic progress owner。
 
+不得複製空白檔案湊數，檔名存在不代表 role 或 stage complete。Compact package 只加入 selected-stage／risk 所需 evidence；Full package 使用完整 template roles。
+
+## Review and Closeout compatibility
+
+- 新 package 的 Review 是 `07-review.md`；legacy `05-review.md` 仍可辨識。
+- 新 package 的 Closeout 是 `99-archive.md`；`99-closeout.md` 可作 narrow pointer-only alias。
+- 兩份獨立 Review bodies 或兩份獨立 Closeout bodies 是 competing evidence，必須阻擋。
+- Canonical Review 與 Closeout 的 structured fields 必須選定且有 substantive evidence；原樣 template、未解 Critical/High、deterministic BLOCKED 與狀態衝突均為 blocking。
+- Triggered Standard 與 High-Risk 在原 implementation PR 內完成 pre-merge Closeout；不得預先宣稱 actual merge evidence，也不得為補 merge evidence 自動建立 post-merge commit/push。
+
+詳見 root `WORKFLOW.md` 與 `instructions/changes.instructions.md`。

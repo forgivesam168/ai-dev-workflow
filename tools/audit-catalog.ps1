@@ -38,6 +38,7 @@ $RequiredChangeFiles = @(
     '04-plan.md',
     '05-test-plan.md',
     '06-impact-analysis.md',
+    '07-review.md',
     '99-archive.md'
 )
 
@@ -124,6 +125,30 @@ if ($missingInInstructions.Count -gt 0) {
 
 $contractStatus = if ($missingInWorkflow.Count -eq 0 -and $missingInInstructions.Count -eq 0) { 'PASS' } else { 'FAIL' }
 Add-Result 'Change-pkg contract' '(all files)' '(checked)' $contractStatus $contractNote
+
+$templateRoot = Join-Path $rootDir 'changes\_template'
+$actualTemplates = if (Test-Path -LiteralPath $templateRoot -PathType Container) {
+    @(Get-ChildItem -LiteralPath $templateRoot -File | Select-Object -ExpandProperty Name)
+} else { @() }
+$missingTemplates = @($RequiredChangeFiles | Where-Object { $_ -notin $actualTemplates })
+$unexpectedTemplates = @($actualTemplates | Where-Object { $_ -notin $RequiredChangeFiles })
+$templateNotes = @(
+    if ($missingTemplates.Count) { "Missing canonical templates: $($missingTemplates -join ', ')" }
+    if ($unexpectedTemplates.Count) { "Unexpected templates: $($unexpectedTemplates -join ', ')" }
+) -join '. '
+$templateStatus = if ($missingTemplates.Count -eq 0 -and $unexpectedTemplates.Count -eq 0) { 'PASS' } else { 'FAIL' }
+Add-Result 'Change-pkg template set' ($RequiredChangeFiles.Count) $actualTemplates.Count $templateStatus $templateNotes
+
+$semanticSignals = @('Compact', 'Full', '05-review.md', '99-closeout.md', 'pointer-only')
+$semanticMissing = @()
+foreach ($signal in $semanticSignals) {
+    if ($workflowContent -notmatch [regex]::Escape($signal) -or $instructionsContent -notmatch [regex]::Escape($signal)) {
+        $semanticMissing += $signal
+    }
+}
+$semanticStatus = if ($semanticMissing.Count -eq 0) { 'PASS' } else { 'FAIL' }
+$semanticNote = if ($semanticMissing.Count) { "Missing semantic contract signals: $($semanticMissing -join ', ')" } else { '' }
+Add-Result 'Change-pkg semantic roles' 'Compact/Full + aliases' '(checked)' $semanticStatus $semanticNote
 
 # ─── Output table ──────────────────────────────────────────────────────────
 Write-Host ''

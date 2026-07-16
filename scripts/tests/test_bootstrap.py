@@ -841,6 +841,10 @@ def test_install_portable_runtime_creates_mounts_and_generated_agents(tmp_path: 
         encoding="utf-8",
     )
     (source_root / "agents").mkdir(parents=True)
+    (source_root / "agents" / "demo.agent.md").write_text(
+        "---\nname: demo\ndescription: demo\n---\n\n# Demo\n",
+        encoding="utf-8",
+    )
     (source_root / "agents" / "coder.agent.md").write_text(
         """---
 name: coder-agent
@@ -857,6 +861,7 @@ Be precise.
     (source_root / "docs" / "AGENTS.template.md").write_text("# Shared guide\n", encoding="utf-8")
     (source_root / "docs" / "CLAUDE.template.md").write_text("@AGENTS.md\n", encoding="utf-8")
     (source_root / "docs" / "GEMINI.template.md").write_text("Read AGENTS.md\n", encoding="utf-8")
+    _write_phase3_lifecycle_fixture_assets(source_root, "# Adopter lifecycle\n")
     target_root.mkdir()
 
     result = bootstrap.install_portable_runtime(
@@ -1639,6 +1644,7 @@ description: Template coder
     (source_root / "docs" / "AGENTS.template.md").write_text("# Shared guide\n", encoding="utf-8")
     (source_root / "docs" / "CLAUDE.template.md").write_text("@AGENTS.md\n", encoding="utf-8")
     (source_root / "docs" / "GEMINI.template.md").write_text("Read AGENTS.md\n", encoding="utf-8")
+    _write_phase3_lifecycle_fixture_assets(source_root, "# Adopter lifecycle\n")
 
     (target_root / ".github" / "skills" / "demo-skill").mkdir(parents=True)
     (target_root / ".github" / "skills" / "demo-skill" / "SKILL.md").write_text(
@@ -1719,3 +1725,169 @@ def test_sync_workflow_files_update_preserves_forked_template_managed_file(
         manifest_entries[".github/instructions/demo.instructions.md"]["status"]
         == "preserved-customization"
     )
+
+
+PHASE3_TEMPLATE_FILES = (
+    "00-intake.md",
+    "01-brainstorm.md",
+    "02-decision-log.md",
+    "03-spec.md",
+    "04-plan.md",
+    "05-test-plan.md",
+    "06-impact-analysis.md",
+    "07-review.md",
+    "99-archive.md",
+)
+
+
+def _write_phase3_lifecycle_fixture_assets(source_root: Path, workflow: str) -> None:
+    (source_root / "docs").mkdir(parents=True, exist_ok=True)
+    (source_root / "docs" / "WORKFLOW.template.md").write_text(workflow, encoding="utf-8")
+    template_root = source_root / "changes" / "_template"
+    template_root.mkdir(parents=True, exist_ok=True)
+    for name in PHASE3_TEMPLATE_FILES:
+        (template_root / name).write_text(f"# template {name}\n", encoding="utf-8")
+
+
+def _create_phase3_lifecycle_source(source_root: Path, workflow: str) -> None:
+    (source_root / "skills" / "demo").mkdir(parents=True)
+    (source_root / "skills" / "demo" / "SKILL.md").write_text("# Demo\n", encoding="utf-8")
+    (source_root / "agents").mkdir(parents=True)
+    (source_root / "agents" / "demo.agent.md").write_text(
+        "---\nname: demo\ndescription: demo\n---\n\n# Demo\n",
+        encoding="utf-8",
+    )
+    (source_root / "docs").mkdir(parents=True)
+    (source_root / "docs" / "AGENTS.template.md").write_text("# Agents\n", encoding="utf-8")
+    (source_root / "docs" / "CLAUDE.template.md").write_text("@AGENTS.md\n", encoding="utf-8")
+    (source_root / "docs" / "GEMINI.template.md").write_text("Read AGENTS.md\n", encoding="utf-8")
+    _write_phase3_lifecycle_fixture_assets(source_root, workflow)
+    (source_root / "WORKFLOW.md").write_text("# Maintainer-only lifecycle\n", encoding="utf-8")
+
+
+def test_phase3_installs_projection_and_canonical_templates_as_template_managed(
+    tmp_path: Path,
+) -> None:
+    source_root = tmp_path / "template"
+    target_root = tmp_path / "project"
+    _create_phase3_lifecycle_source(source_root, "# Adopter lifecycle\nportable only\n")
+    target_root.mkdir()
+    manifest_entries = {}
+
+    result = bootstrap.install_portable_runtime(
+        source_root, target_root, force=False, manifest_entries=manifest_entries
+    )
+
+    assert (target_root / "WORKFLOW.md").read_bytes() == (
+        source_root / "docs" / "WORKFLOW.template.md"
+    ).read_bytes()
+    assert (target_root / "WORKFLOW.md").read_bytes() != (source_root / "WORKFLOW.md").read_bytes()
+    assert manifest_entries["WORKFLOW.md"]["ownership"] == "template-managed"
+    assert manifest_entries["WORKFLOW.md"]["source"] == "template:docs/WORKFLOW.template.md"
+    for name in PHASE3_TEMPLATE_FILES:
+        relative = f"changes/_template/{name}"
+        assert (target_root / relative).read_bytes() == (source_root / relative).read_bytes()
+        assert manifest_entries[relative]["ownership"] == "template-managed"
+        assert manifest_entries[relative]["source"] == f"template:{relative}"
+        assert relative in result.files_added
+    assert sorted(path.name for path in (target_root / "changes").iterdir()) == ["_template"]
+
+
+def test_phase3_updates_only_exact_managed_lifecycle_baselines(tmp_path: Path) -> None:
+    source_root = tmp_path / "template"
+    target_root = tmp_path / "project"
+    _create_phase3_lifecycle_source(source_root, "# Adopter lifecycle v1\n")
+    target_root.mkdir()
+    manifest_entries = {}
+    bootstrap.install_portable_runtime(
+        source_root, target_root, force=False, manifest_entries=manifest_entries
+    )
+
+    (source_root / "docs" / "WORKFLOW.template.md").write_text(
+        "# Adopter lifecycle v2\n", encoding="utf-8"
+    )
+    (source_root / "changes" / "_template" / "07-review.md").write_text(
+        "# template 07-review v2\n", encoding="utf-8"
+    )
+    result = bootstrap.install_portable_runtime(
+        source_root, target_root, force=False, manifest_entries=manifest_entries
+    )
+
+    assert (target_root / "WORKFLOW.md").read_text(encoding="utf-8") == "# Adopter lifecycle v2\n"
+    assert (target_root / "changes" / "_template" / "07-review.md").read_text(
+        encoding="utf-8"
+    ) == "# template 07-review v2\n"
+    assert "WORKFLOW.md" in result.files_updated
+    assert "changes/_template/07-review.md" in result.files_updated
+
+
+def test_phase3_preserves_customized_or_unproven_lifecycle_content(tmp_path: Path) -> None:
+    source_root = tmp_path / "template"
+    target_root = tmp_path / "project"
+    _create_phase3_lifecycle_source(source_root, "# Adopter lifecycle v1\n")
+    target_root.mkdir()
+    manifest_entries = {}
+    bootstrap.install_portable_runtime(
+        source_root, target_root, force=False, manifest_entries=manifest_entries
+    )
+    (target_root / "WORKFLOW.md").write_text("# Project customization\n", encoding="utf-8")
+    (source_root / "docs" / "WORKFLOW.template.md").write_text(
+        "# Adopter lifecycle v2\n", encoding="utf-8"
+    )
+
+    customized = bootstrap.install_portable_runtime(
+        source_root, target_root, force=True, manifest_entries=manifest_entries
+    )
+
+    assert (target_root / "WORKFLOW.md").read_text(encoding="utf-8") == "# Project customization\n"
+    assert "WORKFLOW.md [preserved customization]" in customized.files_skipped
+    assert manifest_entries["WORKFLOW.md"]["status"] == "preserved-customization"
+
+    unproven_root = tmp_path / "unproven"
+    unproven_root.mkdir()
+    (unproven_root / "WORKFLOW.md").write_text("# Existing lifecycle\n", encoding="utf-8")
+    unproven_manifest = {}
+    unproven = bootstrap.install_portable_runtime(
+        source_root, unproven_root, force=True, manifest_entries=unproven_manifest
+    )
+    assert (unproven_root / "WORKFLOW.md").read_text(encoding="utf-8") == "# Existing lifecycle\n"
+    assert "WORKFLOW.md [preserved existing; manual decision required]" in unproven.files_skipped
+    assert "WORKFLOW.md" not in unproven_manifest
+
+    unproven_cases = {
+        "project-owned": {
+            "name": "WORKFLOW.md",
+            "ownership": "project-owned",
+            "source": "project:WORKFLOW.md",
+            "managed_hash": bootstrap.hash_bytes(b"# Existing lifecycle\n"),
+        },
+        "unclear-source": {
+            "name": "WORKFLOW.md",
+            "ownership": "template-managed",
+            "source": "unknown",
+            "managed_hash": bootstrap.hash_bytes(b"# Existing lifecycle\n"),
+        },
+        "missing-baseline": {
+            "name": "WORKFLOW.md",
+            "ownership": "template-managed",
+            "source": "template:docs/WORKFLOW.template.md",
+            "managed_hash": None,
+        },
+    }
+    for case_name, component in unproven_cases.items():
+        case_root = tmp_path / case_name
+        case_root.mkdir()
+        (case_root / "WORKFLOW.md").write_text("# Existing lifecycle\n", encoding="utf-8")
+        case_manifest = {"WORKFLOW.md": dict(component)}
+        original_component = dict(component)
+
+        case_result = bootstrap.install_portable_runtime(
+            source_root, case_root, force=True, manifest_entries=case_manifest
+        )
+
+        assert (case_root / "WORKFLOW.md").read_text(encoding="utf-8") == "# Existing lifecycle\n"
+        assert (
+            "WORKFLOW.md [preserved existing; manual decision required]"
+            in case_result.files_skipped
+        ), case_name
+        assert case_manifest["WORKFLOW.md"] == original_component, case_name

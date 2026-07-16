@@ -9,6 +9,7 @@ BeforeAll {
 
     $script:AdopterAgents = Read-RepoFile 'docs/AGENTS.template.md'
     $script:Workflow = Read-RepoFile 'WORKFLOW.md'
+    $script:AdopterWorkflow = Read-RepoFile 'docs/WORKFLOW.template.md'
     $script:MaintainerAgents = Read-RepoFile 'AGENTS.md'
     $script:ProjectAgentDocuments = @(
         [pscustomobject]@{ Path = 'docs/AGENTS.template.md'; Content = $script:AdopterAgents }
@@ -116,9 +117,10 @@ Describe 'Phase 1 Project AGENTS fallback contract' {
 }
 
 Describe 'Phase 1 lifecycle ownership and execution modes' {
-    It 'declares WORKFLOW as the maintainer lifecycle SSOT without preselecting an adopter source' {
+    It 'declares WORKFLOW as the maintainer lifecycle SSOT and the approved adopter projection' {
         $script:Workflow | Should -Match '(?is)lifecycle SSOT'
-        $script:Workflow | Should -Match '(?is)maintainer.{0,200}WORKFLOW\.md.{0,300}(?:adopter-facing|adopter).{0,300}(?:Phase 3|separate approval).{0,300}(?:open|not selected|must not)'
+        $script:Workflow | Should -Match '(?is)maintainer.{0,200}WORKFLOW\.md.{0,300}docs/WORKFLOW\.template\.md.{0,300}adopter.{0,300}WORKFLOW\.md.{0,300}template-managed'
+        $script:AdopterWorkflow | Should -Match '(?is)distribution projection.{0,200}not.{0,100}(?:second|independent) policy owner'
     }
 
     It 'selects exactly one of only Simple, Standard, and High-Risk' {
@@ -267,9 +269,20 @@ Describe 'Phase 1 named High-Risk gate contract' {
         $script:AgenticEval | Should -Match '(?is)Simple.{0,160}not required.{0,300}Standard.{0,200}risk-triggered.{0,300}High-Risk.{0,300}(?:named|explicitly named) gates'
     }
 
-    It 'preserves the Phase 3 lifecycle-source and Phase 4 Manifest-schema approval guards' {
-        $script:Workflow | Should -Match '(?is)Phase 3.{0,300}adopter.{0,300}(?:open|separate user approval|not selected)'
+    It 'records the approved Phase 3 lifecycle source while preserving the Phase 4 Manifest-schema guard' {
+        $script:Workflow | Should -Match '(?is)adopter-facing distribution source.{0,120}docs/WORKFLOW\.template\.md'
+        $script:Workflow | Should -Match '(?is)docs/WORKFLOW\.template\.md.{0,220}portable projection.{0,180}not a second policy owner'
         $script:Workflow | Should -Match '(?is)Phase 4.{0,300}Manifest schema.{0,300}(?:not approved|unapproved|separate approval)'
+    }
+
+    It 'routes package stages by semantic content and status rather than filename presence' {
+        $router = Read-RepoFile 'skills/workflow-orchestrator/SKILL.md'
+
+        $router | Should -Match '(?is)deterministic semantic verifier.{0,300}filename.{0,120}never.{0,120}proof'
+        $router | Should -Match '07-review\.md'
+        $router | Should -Match '(?is)Review is `PASS` / `PASS_WITH_NOTES`.{0,300}Review is `BLOCKED`|Review is `BLOCKED`.{0,300}Review is `PASS` / `PASS_WITH_NOTES`'
+        $router | Should -Match '(?is)05-review\.md.{0,200}99-closeout\.md.{0,240}pointer-only.{0,180}blocking'
+        $router | Should -Not -Match '(?is)\|\s*File Present\s*\|\s*Stage\s*\|'
     }
 }
 

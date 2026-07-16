@@ -61,7 +61,7 @@ Describe 'Phase 0D archive authorization' {
         $script:SkillText | Should -Match '(?i)(?:create|update).{0,80}archive (?:document|summary)'
         $script:SkillText | Should -Match '(?i)(?:read-only|readonly).{0,80}(?:commit|PR|Issue).{0,80}evidence'
 
-        $script:PromptText | Should -Match '(?i)only for requested local archive documentation'
+        $script:PromptText | Should -Match '(?i)only for requested local (?:Closeout/)?Archive documentation'
         $script:PromptText | Should -Match '(?i)this Prompt authorizes only.{0,120}local archive-documentation writes'
         $script:PromptText | Should -Match '(?i)\]\(\.\./skills/work-archiving/SKILL\.md\)'
         $script:PromptText | Should -Not -Match '(?m)^## (?:Process|Rules|Prerequisites|Output Format)\s*$'
@@ -142,10 +142,15 @@ Describe 'Phase 0D archive authorization' {
         $script:WorkflowText | Should -Match '(?i)protected actions require separate current-task approval'
     }
 
-    It 'preserves Stage 6, after-merge timing, filename, ADR criteria, and data guards' {
+    It 'defines mode-aware pre-merge Closeout timing, remote merge evidence, ADR criteria, and data guards' {
         $allText = $script:ArchiveTexts -join "`n"
-        $allText | Should -Match '(?i)Stage 6\s*\(Archive\)'
-        $allText | Should -Match '(?i)after (?:the )?PR is merged'
+        $allText | Should -Match '(?i)Stage 6\s*\(Closeout / Archive\)'
+        $allText | Should -Match '(?is)Simple.{0,180}Standard without a package.{0,160}do not require a repository Archive'
+        $allText | Should -Match '(?is)Triggered Standard.{0,160}High-Risk.{0,200}99-archive\.md.{0,120}pre-merge.{0,180}original implementation PR'
+        $allText | Should -Match '(?is)(?:authoritative remote delivery evidence.{0,180}external|(?:PR|Issue|Release).{0,180}authoritative)'
+        $allText | Should -Match '(?is)pre-merge.{0,240}(?:unavailable|unknown)|(?:unavailable|unknown).{0,240}pre-merge'
+        $allText | Should -Not -Match '(?i)after (?:the )?PR is merged'
+        $allText | Should -Match '(?i)do not create a post-merge commit or push'
         $allText | Should -Match '99-archive\.md'
         $allText | Should -Match '(?i)Hard to reverse'
         $allText | Should -Match '(?i)Future confusion'
@@ -154,6 +159,17 @@ Describe 'Phase 0D archive authorization' {
         $allText | Should -Match '(?i)secrets'
         $allText | Should -Match '(?i)(?:sensitive data|PII)'
         $allText | Should -Match '(?i)historical Archive artifacts.{0,80}readable'
+    }
+
+    It 'requires canonical Closeout content and blocks delivery when Review or deterministic evidence is blocked' {
+        foreach ($heading in @('Outcome', 'Approved Scope', 'Verification Evidence', 'Review Status', 'Delivery Status', 'Remaining or Deferred Work', 'Authorization Boundary', 'Rollback or Recovery')) {
+            $script:SkillText | Should -Match "(?m)^## $([regex]::Escape($heading))\s*$"
+        }
+        $script:SkillText | Should -Match '(?is)blocked Review.{0,180}(?:deterministic failure|deterministic status).{0,160}BLOCKED'
+        $script:SkillText | Should -Match '(?is)WARNING.{0,120}(?:without blocking|nonblocking).{0,160}COMPLETE_WITH_NOTES'
+        $script:SkillText | Should -Match '(?im)^- Evidence or N/A:.*N/A —'
+        $script:SkillText | Should -Match '(?is)actual merged state.{0,100}merge SHA.{0,100}mergedAt.{0,180}Expected head SHA.{0,120}commit SHA'
+        $script:SkillText | Should -Match '(?is)05-review\.md.{0,200}99-closeout\.md.{0,260}pointer-only.{0,200}blocking'
     }
 
     It 'preserves the requested local documentation writes without treating them as Git authorization' {

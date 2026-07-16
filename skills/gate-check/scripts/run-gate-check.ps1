@@ -125,6 +125,42 @@ try {
 # & npx eslint src/    # ESLint example
 # if ($LASTEXITCODE -ne 0) { $failed = $true }
 
+# --- REQUIRED: Lifecycle projection contract -----------------------------
+Write-Host ''
+Write-Host '--- [REQUIRED] Lifecycle projection contract ---'
+try {
+    $lifecycleResult = & pwsh -NoProfile -File (Join-Path $rootDir 'tools\check-lifecycle-contract.ps1') 2>&1
+    $lifecycleExit = $LASTEXITCODE
+    $lifecycleResult | ForEach-Object { Write-Host "    $_" }
+    if ($lifecycleExit -ne 0) {
+        Write-Host '  ❌ FAIL — check-lifecycle-contract.ps1 reported hard findings' -ForegroundColor Red
+        $failed = $true
+    } else {
+        Write-Host '  ✅ PASS — maintainer/adopter lifecycle projection contract satisfied' -ForegroundColor Green
+    }
+} catch {
+    Write-Host "  ❌ FAIL — check-lifecycle-contract.ps1 error: $_" -ForegroundColor Red
+    $failed = $true
+}
+
+# --- REQUIRED: Change Package semantic contract --------------------------
+Write-Host ''
+Write-Host '--- [REQUIRED] Change Package semantic contract ---'
+try {
+    $packageResult = & pwsh -NoProfile -File (Join-Path $rootDir 'tools\verify-change-package.ps1') 2>&1
+    $packageExit = $LASTEXITCODE
+    $packageResult | ForEach-Object { Write-Host "    $_" }
+    if ($packageExit -ne 0) {
+        Write-Host '  ❌ FAIL — verify-change-package.ps1 reported hard findings' -ForegroundColor Red
+        $failed = $true
+    } else {
+        Write-Host '  ✅ PASS — new/historical package semantics satisfied' -ForegroundColor Green
+    }
+} catch {
+    Write-Host "  ❌ FAIL — verify-change-package.ps1 error: $_" -ForegroundColor Red
+    $failed = $true
+}
+
 # --- REQUIRED: Agent structure contract ---------------------------------
 Write-Host ''
 Write-Host '--- [REQUIRED] Agent structure contract ---'

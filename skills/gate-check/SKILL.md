@@ -36,8 +36,8 @@ If you are using this template in your own project (via `bootstrap.ps1` or `inst
 > Managed `.github` destinations: no drift. Catalog parity: 9 agents / 10 prompts / 35 total skills / 34 adopter skills / 1 maintainer-only skill. → `GATE PASSED`
 
 **GATE PASSED WITH NOTES**
-> Catalog check: 36 total skills found, expected 35. A new skill was added without updating the reviewed contract.
-> → `GATE PASSED WITH NOTES` — update the 35/34/1 catalog contract in the same reviewed change; log to `02-decision-log.md`.
+> Agent structure check: a canonical Agent exceeds the 25-line soft target while retaining all required responsibility fields.
+> → `GATE PASSED WITH NOTES` — record the warning and proceed only because no deterministic contract failed.
 
 **GATE FAILED**
 > `check-sync.ps1` reports drift: `.github/agents/coder.agent.md` is out of date with source.
@@ -49,6 +49,8 @@ If you are using this template in your own project (via `bootstrap.ps1` or `inst
 |-------|-----------|-----------------|
 | Managed source vs `.github` destinations | **Required** | `pwsh -File .\tools\check-sync.ps1` (read-only; exit code 0 = clean) |
 | Catalog count parity | **Required** | `pwsh -File .\tools\audit-catalog.ps1` (exit code 0 = clean) |
+| Lifecycle projection contract | **Required** | `pwsh -File .\tools\check-lifecycle-contract.ps1` (portable parity, exclusions, mappings) |
+| Change Package semantics | **Required** | `pwsh -File .\tools\verify-change-package.ps1` (new/historical content and role resolver) |
 | Canonical Agent structure | **Required** | `pwsh -File .\tools\check-agent-structure.ps1` (hard findings exit nonzero; line-count warnings exit 0) |
 | Python bootstrap tests | **Required** | pytest 8.3.5 |
 | PowerShell bootstrap/tool tests | **Required** | Pester 5.6.1 |

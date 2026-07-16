@@ -100,6 +100,8 @@ Nine specialized agents cover the full development lifecycle. Each agent has a d
 
 ## 6-Stage Workflow
 
+Every task selects exactly one execution mode: **Simple**, **Standard**, or **High-Risk**. Simple uses lightweight checkpoints and does not require a repository package. Standard uses one declared plan/lifecycle SSOT and requires a compact package only when a canonical trigger applies. A voluntarily created package follows its declared Compact or Full contract. High-Risk uses the full lifecycle and package.
+
 ```
 1. Brainstorm → 2. Spec → 3. Plan → 4. Implement → 5. Review → 6. Archive
    (釐清需求)    (規格)    (計畫)     (TDD)       (Code+Security) (歸檔)
@@ -110,12 +112,12 @@ Nine specialized agents cover the full development lifecycle. Each agent has a d
 | Stage | VS Code | Description |
 |-------|---------|-------------|
 | 0 | `/workflow` | **Orchestrator**: Detect current stage, guide next step |
-| 1 | `/brainstorm` | Triage risk, ask at least five discovery questions, create change package |
+| 1 | `/brainstorm` | Triage risk, clarify requirements, and create only mode-required evidence |
 | 2 | `/spec` | Generate specification document |
 | 3 | `/create-plan` | Create executable implementation plan |
 | 4 | `/tdd` | Implement with Red-Green-Refactor |
-| 5 | `/code-review` | Code Review + Security Review (parallel) |
-| 6 | `/archive` | Finalize and document |
+| 5 | `/code-review` | Code Review + Security Review; package Review uses `07-review.md` |
+| 6 | `/archive` | Produce mode-required pre-merge Closeout in `99-archive.md` |
 
 > **Codex / Claude / Antigravity CLI users**: The above are VS Code prompt shortcuts (`.github/prompts/`).
 > In CLI, use natural language instead — e.g., "review my code", "create an implementation plan".
@@ -131,16 +133,17 @@ Use `/workflow` for guided progression:
 - Shows progress and what's remaining
 - Interactive execution with confirmation
 
-### Workflow Paths
+### Execution Modes and Change Packages
 
-- **Standard path**: Brainstorm → Spec → Plan → Implement (TDD) → Review → Archive
-- **Fast path**: Brainstorm → Plan → Implement → Review (low-risk only, skip Spec)
+- **Simple**: localized, reversible work with reliable targeted verification; does not require a Change Package, Review artifact, or Archive artifact.
+- **Standard**: one declared plan/lifecycle SSOT. Cross-session, cross-component, contract-change, independent-review, migration/audit-sensitive, or escalation-prone work uses a compact Change Package.
+- **High-Risk**: full `00`–`06` evidence plus canonical `07-review.md` and pre-merge `99-archive.md` Closeout.
 
-Each work item produces a **Change Package** under `changes/<YYYY-MM-DD>-<slug>/`.
+Triggered Standard and High-Risk packages live under `changes/<YYYY-MM-DD>-<slug>/`. Filename existence alone never proves a stage complete. Legacy `05-review.md` remains readable; `99-closeout.md` is a pointer-only compatibility alias when it coexists with `99-archive.md`.
 
-### Quality Gates (Automatic)
+### Quality Gates (Risk-Adaptive)
 
-Between stages, agents automatically validate output quality before handing off using `agentic-eval`. **No manual triggers needed** — agents run these checks internally and report results.
+`agentic-eval` is self-evaluation, not independent review. Simple does not require it, Standard is risk-triggered, and High-Risk uses the four named rule-based gates in `WORKFLOW.md`. Deterministic failures always block and cannot be overridden by self-evaluation.
 
 | Trigger | Runs In | What It Checks | If FAIL |
 |---------|---------|----------------|---------|

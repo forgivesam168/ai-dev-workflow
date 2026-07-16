@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Phase 2 local implementation verified; PR pending
+- **Status**: Phase 3 local implementation verified; PR pending
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 2 — Agent / Skill / Prompt / Instruction Alignment
+- **Current active phase**: Phase 3 — Change Package / Review / Archive Semantics
 
 ## Phase Status Summary
 
@@ -17,8 +17,8 @@
 | 0C — Manifest parse safety containment | Merged | Required | Required |
 | 0D — Archive authorization containment | Merged | Required | Required |
 | 1 — AGENTS / WORKFLOW / risk contract | Merged | Required | Required |
-| 2 — Agent / Skill / Prompt / Instruction alignment | Local implementation verified; PR pending | Required | Required |
-| 3 — Change Package / Review / Archive semantics | Pending | Required | Required |
+| 2 — Agent / Skill / Prompt / Instruction alignment | Merged | Required | Required |
+| 3 — Change Package / Review / Archive semantics | Local implementation verified; PR pending | Required | Required |
 | 4 — Manifest / provenance / stale-derived migration | Pending | Required | Required |
 | 5 — Cross-CLI evidence and adapter proposal | Pending | Required | Evidence PR before implementation PR |
 | 6 — Bash deprecation completion | Pending | Required | Required |
@@ -696,6 +696,16 @@ Phase 2 has separate user approval and must be delivered as one Phase and one PR
 - Final scope audit: exactly 64 changed/untracked paths, all in the reviewed allowlist; 0 unexpected and 0 missing. No lifecycle-semantic, Phase 3 source-selection, Phase 4 schema, D-10 adapter, migration, prune, real-adopter, deployment, or production change.
 - Rule-based High-Risk gates: Architecture Decision Exit — pass; Pre-Implementation Readiness — pass; Pre-Delivery Verification — pass; Migration / Deployment Readiness — `N/A — no migration or deployment execution is authorized in this Phase.`
 - Coverage: N/A — Phase 2 changes Markdown responsibility contracts and deterministic PowerShell checkers; focused structural/parity/regression evidence is the meaningful verification boundary rather than a line-coverage metric.
+- PR #9
+- Final head: `38caaa764bb5db956a4f75931767ab25954d230c`
+- Squash merge SHA: `117e3192ff002040ce4e05fe5d3bf975696c9d4a`
+- Commits: 1
+- Changed files: 64
+- Remote Verify Change Package: completed / success
+- Remote verify-sync Ubuntu: completed / success
+- Remote verify-sync Windows: completed / success
+- Reviews: none
+- Review threads: none
 
 ## Phase 3 — Change Package / Review / Archive Semantics
 
@@ -716,6 +726,108 @@ Implement D-07 and D-08, resolve lifecycle artifact contracts, and distribute pr
 - Adopter-facing lifecycle source design approved after maintainer/adopter difference review.
 - Separate decision on Archive artifact naming.
 - Review semantic role compatibility design approved.
+
+### Prerequisite Evidence
+
+- Phase 2 is merged through PR #9 at squash merge SHA `117e3192ff002040ce4e05fe5d3bf975696c9d4a`; its final head, one-commit/64-file shape, successful remote checks, and review/thread evidence are recorded above.
+- The current task explicitly approves Phase 3 product implementation and resolves the adopter source, compact/full package, single task/status SSOT, Review filename/alias, Archive/Closeout filename/alias, Hybrid closeout, bootstrap mapping, and current-schema preservation prerequisites. Amendment A-06 records that approval append-only.
+- Root `WORKFLOW.md` remains the maintainer lifecycle SSOT; `docs/WORKFLOW.template.md` is the approved adopter projection and installs to adopter root `WORKFLOW.md` as `template-managed`.
+- The current schema safely represents these assets through existing `name`, `source_hash`, `managed_hash`, `observed_hash`, `ownership`, `kind`, `source`, and `status` fields. No new schema version, field, or migration encoding is required or authorized.
+- Migration / Deployment Readiness: `N/A — no migration or deployment execution is authorized in this Phase.`
+
+### Maintainer / Adopter Difference Review
+
+This is the single Phase 3 difference review. The projection is a distribution view of the root contract, not a second policy owner.
+
+| Contract area | Root maintainer source | Adopter projection | Parity / exclusion rule |
+|---|---|---|---|
+| Lifecycle ownership and modes | `WORKFLOW.md` | `docs/WORKFLOW.template.md` | Preserve the canonical lifecycle pointer and exactly Simple/Standard/High-Risk with equivalent entry and escalation behavior. |
+| Stages and verification | Full maintainer narrative, command tables, and stage exits | Portable stage purpose, entry/exit, verification, and handoff semantics | Preserve behavior; omit template-repository maintenance UX and surface-specific command claims. |
+| High-Risk gates | Four named rule-based gates and cross-gate semantics | Same four gates and blocking/warning/N/A/independent-review boundary | Required deterministic semantic parity; no aggregate score. |
+| Change Package and SSOT | Maintainer contract plus repository paths | Portable compact/full, trigger, semantic-role, and single-owner contract | Preserve required roles and blocking semantics; adopter paths are project-relative. |
+| Review / Closeout | Canonical semantic definitions and compatibility aliases | Same role, filename, alias, content/status, and Hybrid closeout behavior | Preserve `07-review.md`, legacy `05-review.md`, `99-archive.md`, alias `99-closeout.md`, and competing-evidence blocking. |
+| Authorization / completion | Protected-action and honest-completion boundaries | Same portable boundaries | Archive grants local documentation only; actual merge evidence remains remote-authoritative. |
+| Maintainer-only material | Catalog, sync/generator, maintainer CI, repository maintenance, template release/bootstrap maintenance, repo-specific memory and MCP/CLI operational sections | Excluded | Difference is intentional and must be detected by forbidden-marker tests; exclusion cannot remove portable lifecycle semantics. |
+| Deferred capabilities | D-10 unobserved adapters and Phase 4 schema/migration | Excluded except explicit deferral/safe boundary | No unsupported CLI claim, schema design, migration, prune, or real-adopter behavior. |
+
+### Confirmed Responsibility Mapping
+
+| Responsibility | Canonical owner / implementation | Required alignment |
+|---|---|---|
+| Maintainer lifecycle | `WORKFLOW.md` | Replace the open Phase 3 source note; define approved package, Review, Closeout, Hybrid, merge-evidence, and single-SSOT semantics without changing Phase 1 modes/gates. |
+| Adopter lifecycle | `docs/WORKFLOW.template.md` | New projection with portable semantic markers and explicit maintainer-only exclusions; never a direct root copy. |
+| Package templates | `changes/_template/**`; `changes/README.md`; `instructions/changes.instructions.md` | Add declaration fields, canonical `07-review.md`, pre-merge `99-archive.md`, compact/full guidance, content/status markers, and alias compatibility; never create actual packages. |
+| Review method | `skills/code-security-review/SKILL.md` | Generate canonical `07-review.md`, retain `05-review.md` as historical alias, require Summary/Findings/Verification/Decision, and block deterministic/Critical/High failures. |
+| Closeout method | `skills/work-archiving/SKILL.md`; `prompts/archive.prompt.md` | Make closeout mode-aware and pre-merge for package flows while retaining Phase 0D protected-action boundaries and remote-authoritative merge evidence. |
+| Stage routing | `skills/workflow-orchestrator/SKILL.md` | Use execution mode, package trigger, semantic resolver, and content/status evidence rather than filename existence. |
+| Package verification | `tools/verify-change-package.ps1` and tests | Deterministic new/historical resolver; canonical/alias competition, SSOT, role content/status, Simple/no-package, compact/full, and non-mutating output. |
+| Lifecycle projection verification | `tools/check-lifecycle-contract.ps1` and tests | Deterministic root/projection portable parity, maintainer-only exclusion, canonical template set, and bootstrap source/target mapping. |
+| Audit / repository gate / CI | `tools/audit-catalog.ps1`, gate-check, and `verify-change-package.yml` | Align audit with semantic roles; make lifecycle contract a required gate and package verification a noninteractive CI check on Ubuntu while full gate remains Windows/Ubuntu. |
+| Bootstrap distribution | `scripts/bootstrap.py`; `scripts/bootstrap.ps1`; equivalent tests | Install projection/templates with existing-schema `template-managed` records; update only exact expected managed baseline; preserve customized/project-owned/legacy/unknown; retain Phase 0C missing/corrupt/unsupported behavior. |
+| User documentation | `README.md`; `README.zh-TW.md`; `QUICKSTART.md` | Remove Fast Path/every-task-package/post-merge Archive drift and document Simple/Standard/High-Risk, compact/full, canonical Review, and pre-merge Closeout. |
+| Generated mirrors | Repository sync flow only | Regenerate only directly changed Skill/Prompt/Instruction mirrors; no hand-owned mirror policy. |
+
+### Exact Luna Product Allowlist
+
+Lifecycle sources and user documentation:
+
+- `WORKFLOW.md`
+- `docs/WORKFLOW.template.md`
+- `README.md`
+- `README.zh-TW.md`
+- `QUICKSTART.md`
+- `changes/README.md`
+
+Change Package templates and scoped instruction:
+
+- `changes/_template/00-intake.md`
+- `changes/_template/01-brainstorm.md`
+- `changes/_template/02-decision-log.md`
+- `changes/_template/03-spec.md`
+- `changes/_template/04-plan.md`
+- `changes/_template/05-test-plan.md`
+- `changes/_template/06-impact-analysis.md`
+- `changes/_template/07-review.md`
+- `changes/_template/99-archive.md`
+- `instructions/changes.instructions.md`
+
+Canonical Skills and Prompt:
+
+- `skills/workflow-orchestrator/SKILL.md`
+- `skills/code-security-review/SKILL.md`
+- `skills/work-archiving/SKILL.md`
+- `prompts/archive.prompt.md`
+
+Bootstrap implementations and tests:
+
+- `scripts/bootstrap.py`
+- `scripts/bootstrap.ps1`
+- `scripts/tests/test_bootstrap.py`
+- `scripts/bootstrap.Tests.ps1`
+
+Deterministic verifier, projection, audit, regression, gate, and CI:
+
+- `tools/verify-change-package.ps1`
+- `tools/verify-change-package.Tests.ps1`
+- `tools/check-lifecycle-contract.ps1`
+- `tools/check-lifecycle-contract.Tests.ps1`
+- `tools/audit-catalog.ps1`
+- `tools/audit-catalog.Tests.ps1`
+- `tools/workflow-risk-mode.Tests.ps1`
+- `tools/archive-authorization.Tests.ps1`
+- `skills/gate-check/SKILL.md`
+- `skills/gate-check/scripts/run-gate-check.ps1`
+- `.github/workflows/verify-change-package.yml`
+
+Generator-owned mirrors, writable only through `tools/sync-dotgithub.ps1`:
+
+- `.github/instructions/changes.instructions.md`
+- `.github/skills/workflow-orchestrator/SKILL.md`
+- `.github/skills/code-security-review/SKILL.md`
+- `.github/skills/work-archiving/SKILL.md`
+- `.github/prompts/archive.prompt.md`
+
+If this exact allowlist is insufficient, Luna must stop and report the missing path and contract reason. No scope expansion is implicit. Sol alone may update `02-decision-log.md` and `04-plan.md` as governance evidence.
 
 ### Exact Scope
 
@@ -779,6 +891,30 @@ Revert lifecycle distribution and semantic contract together; continue recognizi
 ### Approval and PR Boundary
 
 Separate approval and separate PR required; naming decision must be recorded before implementation.
+
+### Observed Evidence
+
+- Luna agent: built-in `worker`; requested GPT-5.6 with reasoning `medium`; observed model/effort: unknown because the runtime did not expose metadata. Sol requested GPT-5.6 with reasoning `xhigh`; observed model/effort: unknown because the runtime did not expose metadata.
+- Initial bounded TDD slices: lifecycle projection `0/12 -> 12/12`; semantic package verifier `0/13 -> 14/14`; Python/PowerShell lifecycle distribution `0/3 -> 3/3` per runtime; audit/gate/CI integration `16/20 -> 20/20`.
+- Correction round 1: `10/25 -> 29/29`; resolved canonical template/parser mismatch, substantive content/status validation, single task/status SSOT conflicts, Simple voluntary-package handling, and pre-merge structured status consistency.
+- Correction round 2: `26/37 -> 38/38`; preserved warning-only semantics, distinguished actual merge claims from allowed head/commit SHA evidence, and made rollback/recovery evidence versus `N/A — reason` mutually exclusive.
+- Luna final combined Phase 3 regressions: 100 passed, 0 failed, 0 skipped. Luna did not run the full repository gate and performed no protected Git or remote action.
+- Sol targeted Pester 5.6.1: 100 passed, 0 failed, 0 skipped, 0 not run, 0 failed containers.
+- Sol full Pester 5.6.1 (`scripts` + `tools`): 181 passed, 0 failed, 0 skipped, 0 not run, 0 failed containers.
+- Sol Python bootstrap regression: 92 passed. The pre-existing `pytest-asyncio` future-default loop-scope deprecation warning remained warning-only.
+- Direct lifecycle checker: pass with 19 root markers, 19 adopter-projection markers, and exactly 9 canonical templates.
+- Direct package verifier with and without BaseRef: pass for 8 historical packages; one nonblocking legacy `05-review.md` warning remained.
+- `check-sync.ps1`: pass; all changed canonical Instruction/Prompt/Skill sources match generated `.github/**` mirrors.
+- `audit-catalog.ps1`: pass; 9 agents, 10 prompts, 35 total skills, 34 adopter skills, 1 maintainer-only `gate-check`, 9 canonical Change Package templates, and semantic-role parity.
+- Agent structure checker: pass with warning-only line-count findings for `agents/pm.agent.md` and `agents/spec.agent.md`; no structural hard finding.
+- `.github/workflows/verify-change-package.yml`: YAML safe-parse pass; job `verify` invokes the semantic verifier with BaseRef and enforces worktree invariance.
+- `git diff --check`: pass.
+- Full repository gate: `GATE PASSED WITH NOTES`; all required Python/Pester/sync/catalog/lifecycle/package/agent-structure/diff checks passed. Notes were limited to the approved Phase 2 soft line-count warnings.
+- Worktree invariance: targeted/full/direct checks and the full gate left status unchanged; the final gate preserved the path, byte length, and SHA-256 of all 36 changed/untracked files.
+- Final scope audit: 36 changed/untracked paths, all inside the exact product allowlist or Sol-owned `02-decision-log.md` / `04-plan.md`; 0 unexpected paths. No Phase 4 schema/version/migration, real adopter execution, prune, D-10 adapter, unobserved capability claim, deployment, production, branch deletion, tag, release, force push, rebase, push-main, auto-merge, or admin-bypass change.
+- Sol independent audit: 0 Critical, 0 High, 0 unresolved Medium, 0 Low product findings after two bounded correction rounds. The first round resolved 3 High and 2 Medium findings; the second and final round resolved 2 High and 1 Medium findings.
+- Rule-based High-Risk gates: Architecture Decision Exit — pass; Pre-Implementation Readiness — pass; Pre-Delivery Verification — pass; Migration / Deployment Readiness — `N/A — no migration or deployment execution is authorized in this Phase.`
+- Coverage: N/A — Phase 3 behavior is covered through deterministic PowerShell semantic/contract fixtures plus Python and PowerShell bootstrap parity; a line-coverage percentage is not the meaningful acceptance boundary for these repository tools and Markdown contracts.
 
 ## Phase 4 — Manifest / Provenance / Stale-Derived Migration
 

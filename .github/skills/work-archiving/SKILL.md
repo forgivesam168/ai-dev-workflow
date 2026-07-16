@@ -8,12 +8,14 @@ license: See LICENSE.txt in repository root
 
 ## When to Use This Skill
 
-Use this skill at **Stage 6 (Archive)** of the workflow when:
-- Code review is approved and the change has merge evidence
-- Need to finalize and document completed work
-- Time to close out the change package documentation
+Use this skill at **Stage 6 (Closeout / Archive)** of the workflow when:
+- A triggered Standard or High-Risk package is ready for pre-merge lifecycle closeout
+- Required Review is `PASS` or `PASS_WITH_NOTES`, and deterministic gates are green
+- Need to finalize the requested local package documentation in the original implementation PR
 - Asked to archive, finalize, or close out this work
 - Completing the 6-stage workflow cycle
+
+Simple and Standard without a package do not require a repository Archive/Closeout. A voluntarily created package follows its declared Compact or Full contract. Do not create package files merely to pad a filename list.
 
 ## Authorization Boundary
 
@@ -45,21 +47,22 @@ When approval is missing, do not execute the protected action. Report the exact 
 
 ## Prerequisites
 
-Before archiving:
-- [ ] Code review status and existing merge evidence are available for read-only inspection
+Before closeout:
+- [ ] Selected execution mode, Compact/Full package contract, and single task/status SSOT are declared
+- [ ] Required Review content/status is available when independent Review applies
 - [ ] Tests are passing, if applicable
 - [ ] The requested documentation scope is clear
+- [ ] Actual merge evidence is either absent/unknown pre-merge or read-only remote evidence already exists; it is never invented
 
 ## Archiving Workflow
 
 ### Step 1: Review Change Package Status
 
-Check the change package folder (`changes/<YYYY-MM-DD>-<slug>/`) for completeness:
-- `01-brainstorm.md` — Initial requirements and risk assessment
-- `02-decision-log.md` — Key decisions made
-- `03-spec.md` — Specification (if standard path)
-- `04-plan.md` — Implementation plan
-- `05-review.md` — Code review results
+Check the declared package contract and semantic roles, not filename existence alone:
+
+- Compact: Intake, decision evidence, plan/lifecycle evidence, exactly one task/status SSOT, Review only when independent Review is required, and pre-merge Closeout. Brainstorm, Spec, separate Test Plan, and Impact Analysis are included only when selected by stage/risk.
+- Full: `00-intake.md` through `06-impact-analysis.md`, canonical `07-review.md`, and canonical `99-archive.md`.
+- Historical `05-review.md` remains readable as Review. `99-closeout.md` is a compatibility alias. Canonical and alias files may coexist only with the documented pointer-only alias; two independent semantic bodies are blocking.
 
 Record only evidence that already exists. Do not treat the presence of an Archive request as authorization for a protected action.
 
@@ -68,34 +71,40 @@ Record only evidence that already exists. Do not treat the presence of an Archiv
 When the current task requests the archive document, create `changes/<YYYY-MM-DD>-<slug>/99-archive.md`:
 
 ```markdown
-# Archive: [Feature Name]
+# Closeout: [Feature Name]
 
-**Date Completed**: YYYY-MM-DD
-**Status**: Completed / Completed with Known Issues
+## Outcome
+- Status: COMPLETE | COMPLETE_WITH_NOTES | BLOCKED
+- Summary: [verified result without overstating delivery]
 
-## Summary
-Brief description of what was implemented.
+## Approved Scope
+- Completed: [approved scope completed]
+- Excluded: [preserved boundaries]
 
-## Key Outcomes
-- Outcome 1
-- Outcome 2
+## Verification Evidence
+- Tests/checks/gates: PASS — evidence | BLOCKED — evidence | N/A — reason
+- Evidence gaps: None | WARNING — non-blocking evidence | BLOCKED — required deterministic evidence
 
-## Commits
-- Existing commit evidence and message
+## Review Status
+- Review file: `07-review.md` | N/A — reason
+- Decision: PASS | PASS_WITH_NOTES | BLOCKED | N/A — reason
 
-## Related Issues/PRs
-- Existing Issue or PR reference
+## Delivery Status
+- State: pre-merge | unmerged
+- Remote delivery evidence: Not available pre-merge.
 
-## Known Issues / Technical Debt
-- Issue 1 (tracked in the existing evidence)
+## Remaining or Deferred Work
+- Remaining: None | [remaining work]
+- Deferred: None | [deferred or separately authorized work]
 
-## Lessons Learned
-- What went well
-- What could be improved
-- Recommendations for future work
+## Authorization Boundary
+- Local documentation authorization and any separately approved protected action.
+
+## Rollback or Recovery
+- Evidence or N/A: [substantive rollback/restore/compensation/recovery/safe-stop evidence] | N/A — [reason]
 ```
 
-The current Archive output structure and `99-archive.md` filename remain unchanged in this phase. Historical Archive artifacts remain readable.
+Every structured field appears exactly once and replaces its option list with one substantive selected value. `WARNING` is recorded without blocking and supports `COMPLETE_WITH_NOTES`. A blocked Review or required deterministic failure requires Outcome `BLOCKED`. Pre-merge Closeout keeps authoritative merge-result evidence external and must not claim an actual merged state, merge SHA, or `mergedAt` anywhere in the artifact. Expected head SHA, final head, and commit SHA evidence remain allowed. Do not create a post-merge commit or push merely to add merge-result evidence. Historical Archive artifacts remain readable.
 
 ### Step 3: Record Requested Local Documentation
 
@@ -111,12 +120,14 @@ Before any separately protected action, verify all three requirements for that s
 
 | Section | Required | Description |
 |---------|----------|-------------|
-| Summary | Yes | Brief description of completed work |
-| Key Outcomes | Yes | Bullet list of deliverables |
-| Commits | Yes | Existing commit evidence and hashes, if available |
-| Related Issues/PRs | If applicable | Existing references only; no remote closure |
-| Known Issues | If applicable | Technical debt or limitations |
-| Lessons Learned | Recommended | Retrospective notes |
+| Outcome | Yes | Verified outcome without overstating delivery |
+| Approved Scope | Yes | Scope completed and boundaries preserved |
+| Verification Evidence | Yes | Deterministic commands/checks and observed results |
+| Review Status | Yes | PASS / PASS_WITH_NOTES / BLOCKED / N/A with reason |
+| Delivery Status | Yes | Accurate pre-merge or observed external delivery state |
+| Remaining or Deferred Work | Yes | Unverified, unmerged, deferred, or separately authorized work |
+| Authorization Boundary | Yes | Local documentation scope and separate protected approvals |
+| Rollback or Recovery | Yes | Applicable rollback/restore/compensation/recovery/safe-stop evidence, or `N/A — reason` |
 
 ## Troubleshooting
 
@@ -124,13 +135,14 @@ Before any separately protected action, verify all three requirements for that s
 |---------|----------|
 | Change package incomplete | Review missing local documentation and report the gap |
 | Protected action approval missing | Report the exact action-specific approval required, then stop or hand off |
-| Review not approved | Return to Stage 5 (Review) to address feedback |
+| Review or deterministic gate blocked | Set Closeout delivery status to `BLOCKED` and return to the owning stage |
+| Actual merge evidence unavailable | Record it as unavailable/unknown pre-merge; do not invent it |
 | No `CHANGELOG.md` exists | Create one only when the current task explicitly requests it; otherwise leave it unchanged |
 
 ## Integration with Workflow
 
-This skill completes the documentation work for the 6-stage workflow:
-1. Brainstorm → 2. Specification → 3. Planning → 4. Implementation → 5. Review → **6. Archive**
+This skill completes applicable pre-merge documentation for the 6-stage workflow:
+1. Brainstorm → 2. Specification → 3. Planning → 4. Implementation → 5. Review → **6. Closeout / Archive**
 
 After archiving, the change package serves as:
 - **Audit trail** for regulatory/compliance needs
@@ -192,8 +204,9 @@ Before completing the requested local documentation, confirm:
 - [ ] The requested archive document exists at `changes/<slug>/99-archive.md`, when requested
 - [ ] `docs/WORK_LOG.md` and `CHANGELOG.md` were updated only when explicitly requested
 - [ ] All architecture decisions were checked against the three ADR conditions
-- [ ] Code review status and existing merge evidence are recorded without inventing new evidence
+- [ ] Review content/status and deterministic evidence were validated, not inferred from filenames
+- [ ] Actual merge evidence is read from PR/Issue/Release evidence when available, or explicitly unavailable/unknown pre-merge; it is never invented
 - [ ] Sensitive data (secrets, credentials, PII) is not present in archive documents
-- [ ] The change package contains the required files for its selected workflow path
+- [ ] The Change Package contains the semantic roles required by its Compact/Full contract without empty padding
 - [ ] Remaining Open Questions are clearly marked
 - [ ] Any missing protected-action approval is reported with a safe stop or handoff
