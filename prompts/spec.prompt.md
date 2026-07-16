@@ -1,61 +1,21 @@
 ---
-description: 'Generate a comprehensive specification document (PRD/Spec) for a feature. Transforms ideas into structured, testable requirements.'
+description: 'Route approved requirements into a testable specification through the canonical specification Skill.'
 ---
 
-# Spec Command
+# Specification Command
 
-> **💡 Recommended Agent**: This command works best with `spec-agent` (Specification Specialist). Use `/agent` in CLI or select from agent dropdown in VS Code.
+## Entry
 
-Use `/spec` after `/brainstorm` to transform clarified requirements into a formal specification document. If brainstorm was skipped, assumption-driven, or incomplete, continue clarifying before drafting the spec.
+Use `/spec` with the approved problem statement, decisions, project vocabulary, context, scope boundaries, and known constraints.
 
-## When to Use
-- After brainstorming session is complete
-- When you have clear goals and chosen approach
-- Before `/plan`
+## Route
 
-## Process
+Follow [specification](../skills/specification/SKILL.md) for clarification, specification structure, acceptance-criteria quality, traceability, and handoff readiness. Follow the canonical Workflow contract declared by Project AGENTS for lifecycle placement only; this Prompt does not select an adopter-facing lifecycle source.
 
-### Step 1: Clarifying Questions
-If not already covered in brainstorm, or if brainstorm proceeded on assumptions, ask the missing questions before drafting:
-- The specific problem being solved
-- Target users and their needs
-- Core functionality requirements
-- Success criteria and acceptance criteria
-- Scope and boundaries (goals / non-goals)
-- Technical constraints (security, performance, schema)
+## Output
 
-### Step 2: Generate Structured Spec
+Return the required specification artifact with observable acceptance criteria, exclusions, assumptions, dependencies, and unresolved decisions clearly separated.
 
-Create `changes/<...>/03-spec.md` with:
+## Handoff
 
-1. **Overview**: Brief description and context
-2. **Goals**: Primary objectives and business value
-3. **Non-Goals**: Explicitly excluded features
-4. **User Stories**: Detailed scenarios with acceptance criteria
-5. **Functional Requirements**: Specific features and capabilities
-6. **Technical Considerations**:
-   - Security requirements
-   - Performance requirements
-   - Schema/API contract requirements
-7. **Success Metrics**: Measurable outcomes
-8. **Open Questions**: Items requiring further clarification
-
-## Quality Criteria
-- Requirements are explicit and testable
-- User stories include clear acceptance criteria
-- Technical considerations address security and scalability
-- All edge cases and error scenarios are covered
-- Junior developer can understand and implement
-
-## Financial Systems Additional Requirements
-- Money fields: specify precision and storage format (integer minor units or decimal string)
-- Idempotency requirements for transactions
-- Audit trail requirements
-- Timezone handling
-
-## Next Step
-After spec completion:
-- Run `/plan` to break down into executable tasks
-- Or use `/workflow` for guided progression
-
-💡 Tip: Spec is complete when acceptance criteria are explicit and testable
+Stop on a material unresolved decision. Otherwise return the specification to the planner with its verification and traceability gaps made explicit.

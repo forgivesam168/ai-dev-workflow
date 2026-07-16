@@ -7,6 +7,17 @@ description: Frontend development patterns for React, Next.js, state management,
 
 Modern frontend patterns for React, Next.js, and performant user interfaces.
 
+## UI/UX Design Consultation Tactics
+
+Use this method when the Frontend Designer specialist is asked to consult on a Spec or Plan:
+
+1. **Component spec**: define purpose, public props, content rules, interaction model, and integration boundary without writing production code.
+2. **States and variants**: cover default, loading, empty, success, error, disabled, and permission-sensitive states plus every intentional visual variant.
+3. **Accessibility**: document semantic structure, names and labels, keyboard behavior, focus order and visibility, contrast, and assistive-technology expectations.
+4. **Design system**: reuse established tokens, components, spacing, typography, and interaction patterns; identify any genuinely new primitive explicitly.
+5. **Responsive behavior**: describe layout changes at project-defined breakpoints and verify that content, touch targets, and reading order remain usable.
+6. **Handoff**: return component decisions, states, accessibility requirements, responsive constraints, design-system impact, risks, and unresolved questions to the requesting Spec or Plan owner.
+
 ## Component Patterns
 
 ### Composition Over Inheritance

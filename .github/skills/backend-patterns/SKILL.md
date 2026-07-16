@@ -7,6 +7,17 @@ description: Backend architecture patterns, API design, database optimization, a
 
 Backend architecture patterns and best practices for scalable server-side applications.
 
+## Database Design and Review Tactics
+
+Use this method when the DBA specialist is asked to consult on a Spec or Plan:
+
+1. **Schema contract**: identify entities, columns, types, nullability, constraints, relationships, ownership, and compatibility boundaries before proposing implementation.
+2. **Migration safety**: classify expand/contract impact, bound the affected data, and define an executable migration plus rollback, restore, compensation, or safe-stop path appropriate to the risk.
+3. **Financial precision**: represent money with decimal types or integer minor units and an explicit currency; reject floating-point storage or arithmetic for monetary values.
+4. **Index discipline**: justify each index against measured read behavior and document write/storage trade-offs; do not add speculative indexes.
+5. **Query evidence**: use the database's query-plan evidence such as `EXPLAIN` or `EXPLAIN ANALYZE` when performance is in scope, and separate observed results from assumptions.
+6. **Handoff**: return the schema decisions, migration/rollback requirements, query or index evidence, compatibility impact, risks, and unresolved questions to the requesting Spec or Plan owner.
+
 ## API Design Patterns
 
 ### RESTful API Structure

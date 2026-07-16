@@ -49,6 +49,7 @@ If you are using this template in your own project (via `bootstrap.ps1` or `inst
 |-------|-----------|-----------------|
 | Managed source vs `.github` destinations | **Required** | `pwsh -File .\tools\check-sync.ps1` (read-only; exit code 0 = clean) |
 | Catalog count parity | **Required** | `pwsh -File .\tools\audit-catalog.ps1` (exit code 0 = clean) |
+| Canonical Agent structure | **Required** | `pwsh -File .\tools\check-agent-structure.ps1` (hard findings exit nonzero; line-count warnings exit 0) |
 | Python bootstrap tests | **Required** | pytest 8.3.5 |
 | PowerShell bootstrap/tool tests | **Required** | Pester 5.6.1 |
 | Diff hygiene | **Required** | `git diff --check` |
@@ -57,6 +58,8 @@ If you are using this template in your own project (via `bootstrap.ps1` or `inst
 The gate never installs dependencies or repairs drift. Missing pytest or Pester is reported as `ENVIRONMENT_PREREQUISITE_MISSING` and stops with a nonzero exit code. CI is responsible for preparing the pinned test environment.
 
 Every required check above must pass for `GATE PASSED`. The gate does not install missing prerequisites or repair drift.
+
+The Agent checker is deterministic and per-file. It reports required persona/lens/scope/handoff structure, resolvable owning Skill pointers, prohibited responsibility findings, and each Agent's non-empty line count. Structural findings are hard failures; exceeding the 25-line target is a soft warning that can produce `GATE PASSED WITH NOTES` but never a nonzero result by itself. The checker performs no aggregate scoring, LLM/network call, or automatic rewrite.
 
 ## Boundary: gate-check vs agentic-eval
 

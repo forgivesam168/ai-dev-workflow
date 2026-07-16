@@ -153,24 +153,29 @@ Describe 'Phase 1 lifecycle ownership and execution modes' {
         }
     }
 
-    It 'keeps PM mode and artifact semantics canonical in WORKFLOW' {
+    It 'keeps PM as a thin router to canonical Workflow and Skill owners' {
         $pmAgent = Read-RepoFile 'agents/pm.agent.md'
 
         $pmAgent | Should -Match '(?is)WORKFLOW\.md.{0,400}Simple.{0,160}Standard.{0,160}High-Risk'
         $pmAgent | Should -Match '(?is)WORKFLOW\.md.{0,300}(?:canonical|SSOT).{0,300}(?:mode|artifact)'
+        $pmAgent | Should -Match '(?i)\]\(\.\./skills/workflow-orchestrator/SKILL\.md\)'
+        $pmAgent | Should -Not -Match '(?m)^## (?:Stage Detection|Execution Mode Routing)\s*$'
     }
 
-    It 'uses package stage detection only as a router when a Change Package exists' {
+    It 'keeps package stage-detection procedure out of the PM persona' {
         $pmAgent = Read-RepoFile 'agents/pm.agent.md'
 
-        $pmAgent | Should -Match '(?is)(?:when|if) a Change Package exists.{0,400}stage detection.{0,200}(?:only as|is only).{0,120}router'
+        $pmAgent | Should -Match '(?is)read status.{0,240}recommend the next Agent only'
+        $pmAgent | Should -Match '(?i)workflow-orchestrator'
+        $pmAgent | Should -Not -Match '(?is)\|\s*File Present\s*\|\s*Stage\s*\|\s*Next Step\s*\|'
     }
 
     It 'allows Simple routing without treating an absent Change Package as a missing artifact' {
         $pmAgent = Read-RepoFile 'agents/pm.agent.md'
 
-        $pmAgent | Should -Match '(?is)Simple.{0,300}(?:does not require|no mandatory).{0,160}Change Package.{0,200}(?:changes/|changes folder)'
-        $pmAgent | Should -Match '(?is)(?:absence|missing).{0,160}(?:Change Package|changes/|changes folder).{0,240}(?:must not|does not).{0,160}(?:missing artifact|artifact gap)'
+        $script:Workflow | Should -Match '(?is)### Simple.{0,1600}(?:does not require|no mandatory).{0,160}(?:six-stage|six stage).{0,200}Change Package'
+        $pmAgent | Should -Match '(?is)WORKFLOW\.md.{0,300}whether an artifact is required'
+        $pmAgent | Should -Match '(?is)absence of optional artifacts alone.{0,160}not an artifact gap'
     }
 
     It 'keeps readiness and completion evidence mode-aware' {
@@ -182,7 +187,11 @@ Describe 'Phase 1 lifecycle ownership and execution modes' {
         $brainstormPrompt = Read-RepoFile 'prompts/brainstorm.prompt.md'
         $brainstormSkill = Read-RepoFile 'skills/brainstorming/SKILL.md'
         $brainstormPrompt | Should -Not -Match '(?im)^\s*\d+\.\s+Create the change package skeleton\s*$'
-        $brainstormPrompt | Should -Match '(?is)Simple.{0,300}(?:does not require|no mandatory).{0,160}Change Package'
+        $brainstormPrompt | Should -Match '(?is)canonical Workflow contract.{0,160}declared by Project AGENTS'
+        $brainstormPrompt | Should -Not -Match '(?i)\]\(\.\./WORKFLOW(?:\.md)?\)'
+        $brainstormPrompt | Should -Match '(?i)\]\(\.\./skills/brainstorming/SKILL\.md\)'
+        $brainstormPrompt | Should -Not -Match '(?m)^### (?:Simple|Standard|High-Risk)\s*$'
+        $script:Workflow | Should -Match '(?is)### Simple.{0,1600}(?:does not require|no mandatory).{0,160}(?:six-stage|six stage).{0,200}Change Package'
         $brainstormSkill | Should -Match '(?is)Simple.{0,300}does not require a Change Package'
     }
 
@@ -278,6 +287,45 @@ Describe 'Phase 1 generated runtime parity' {
             'skills/implementation-planning/SKILL.md',
             'skills/agentic-eval/SKILL.md',
             'skills/agentic-eval/references/stage-rubrics.md'
+        )
+
+        foreach ($canonicalPath in $canonicalPaths) {
+            $canonical = [IO.File]::ReadAllBytes((Join-Path $script:RepoRoot $canonicalPath))
+            $derived = [IO.File]::ReadAllBytes((Join-Path $script:RepoRoot ".github/$canonicalPath"))
+            [Linq.Enumerable]::SequenceEqual($canonical, $derived) | Should -BeTrue -Because "$canonicalPath must be generator-owned and byte-equal"
+        }
+    }
+
+    It 'keeps every Phase 2 changed canonical Agent Skill Prompt and Instruction byte-equal to its generated mirror' {
+        $canonicalPaths = @(
+            'agents/architect.agent.md',
+            'agents/brainstorm.agent.md',
+            'agents/code-reviewer.agent.md',
+            'agents/coder.agent.md',
+            'agents/dba.agent.md',
+            'agents/frontend-designer.agent.md',
+            'agents/plan.agent.md',
+            'agents/pm.agent.md',
+            'agents/spec.agent.md',
+            'skills/backend-patterns/SKILL.md',
+            'skills/frontend-patterns/SKILL.md',
+            'skills/code-security-review/SKILL.md',
+            'skills/implementation-planning/SKILL.md',
+            'prompts/archive.prompt.md',
+            'prompts/brainstorm.prompt.md',
+            'prompts/code-review.prompt.md',
+            'prompts/commit-gen.prompt.md',
+            'prompts/create-plan.prompt.md',
+            'prompts/spec.prompt.md',
+            'prompts/tdd.prompt.md',
+            'prompts/workflow.prompt.md',
+            'instructions/code-review.instructions.md',
+            'instructions/python.instructions.md',
+            'instructions/playbooks/architect.md',
+            'instructions/playbooks/database-reviewer.md',
+            'instructions/playbooks/planner.md',
+            'instructions/playbooks/security-reviewer.md',
+            'instructions/playbooks/tdd-guide.md'
         )
 
         foreach ($canonicalPath in $canonicalPaths) {

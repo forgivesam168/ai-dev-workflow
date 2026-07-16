@@ -503,7 +503,6 @@ Input: "what's next?"
 
 - [Implementation Planning Skill](../implementation-planning/SKILL.md) - Previous stage
 - [Work Archiving Skill](../work-archiving/SKILL.md) - Next stage
-- [Security Review Playbook](../../instructions/playbooks/security-reviewer.md)
 - [DDD Good Practices](../../instructions/dotnet-architecture-good-practices.instructions.md)
 
 ---
