@@ -1,6 +1,8 @@
 # Phase 4 — Manifest Schema Proposal
 
-**Status: PROPOSED — NOT APPROVED — NOT IMPLEMENTED**
+**Status: SCHEMA APPROVED — NOT IMPLEMENTED**
+
+Approval evidence: Amendment A-07 approves OD-01 through OD-17 and the complete technical contract recorded at exact Proposal head `16aa063139431cbd07cba147d81be1d2cb3da609`. Candidate artifacts remain non-runtime evidence; the production Schema has not been created, Phase 4 product implementation is not authorized, production writers still emit v2, and no migration, prune, or real-adopter operation is authorized.
 
 This document and its companion JSON files are decision evidence only. Production readers and writers still support the existing v1/v2 contract, and production writers still emit v2. Nothing in this proposal authorizes importing the proposed schema into runtime code, changing a gate, migrating a manifest, pruning a component, or operating on a real adopter repository.
 
@@ -394,9 +396,9 @@ No implementation may truncate the live manifest in place, silently discard a co
 
 Scenario files in this proposal cover observed v1, writer-derived v2, a valid v3 candidate, customization, derivation, retirement, stale-but-modified, and a proposed prune candidate. They are design inputs, not evidence that runtime tests already exist or pass.
 
-## 18. Centralized Open Decisions Requiring Explicit Approval
+## 18. Centralized Approved Decisions
 
-No item below is approved merely because it is recommended here.
+OD-01 through OD-17 are approved by Amendment A-07 as the internally consistent Manifest v3 Schema Design recorded at exact Proposal head `16aa063139431cbd07cba147d81be1d2cb3da609`. This approval does not make the Candidate artifacts runtime dependencies or authorize implementation or execution.
 
 | ID | Decision | Recommendation | Alternatives and trade-off |
 |---|---|---|---|
@@ -418,4 +420,4 @@ No item below is approved merely because it is recommended here.
 | OD-16 | Source authenticity | Keep SHA-256 as integrity only; approve a separate trust mechanism if authenticity is required | Treating a digest as authenticity is unsafe; mandatory signatures now would expand scope and dependencies |
 | OD-17 | Migration/deployment execution | N/A — no migration or deployment execution is authorized in this Phase | Any real execution requires a later exact scope, rollback/recovery evidence, and action-specific approval |
 
-The precise next decision is whether to approve, reject, or amend OD-01 through OD-17 as one internally consistent v3 contract. Until that happens, Phase 4 remains **PROPOSED — NOT APPROVED — NOT IMPLEMENTED**, production writers remain v2, and no migration or prune work may begin.
+OD-01 through OD-17 are approved as one internally consistent v3 contract. Phase 4 remains **SCHEMA APPROVED — NOT IMPLEMENTED**: Candidate artifacts remain non-runtime, the production Schema has not been created, production writers remain v2, and Phase 4 product implementation, migration, prune, and real-adopter operation require separate explicit current-task authorization.

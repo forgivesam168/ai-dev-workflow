@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Phase 4 schema proposal approval-blocking correction locally verified; follow-up commit and CI pending; schema not approved; implementation not authorized
+- **Status**: Phase 4 Schema Design approved; Proposal PR #11 merge pending; product implementation, migration, prune, and real-adopter execution not authorized
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 4 — Manifest Schema Proposal only; implementation not authorized
+- **Current active phase**: Phase 4 — Manifest Schema approval evidence and Proposal PR #11 merge only; product implementation not authorized
 
 ## Phase Status Summary
 
@@ -19,7 +19,7 @@
 | 1 — AGENTS / WORKFLOW / risk contract | Merged | Required | Required |
 | 2 — Agent / Skill / Prompt / Instruction alignment | Merged | Required | Required |
 | 3 — Change Package / Review / Archive semantics | Merged | Required | Required |
-| 4 — Manifest / provenance / stale-derived migration | Schema proposal approval-blocking correction locally verified; follow-up commit and CI pending; schema not approved; implementation not authorized | Required | Required |
+| 4 — Manifest / provenance / stale-derived migration | Schema Design approved; Proposal PR #11 merge pending; product implementation, migration, prune, and real-adopter execution not authorized | Required | Required |
 | 5 — Cross-CLI evidence and adapter proposal | Pending | Required | Evidence PR before implementation PR |
 | 6 — Bash deprecation completion | Pending | Required | Required |
 
@@ -923,10 +923,11 @@ Separate approval and separate PR required; naming decision must be recorded bef
 
 ### Schema Proposal Status
 
-- **Status**: `PROPOSED — NOT APPROVED — NOT IMPLEMENTED`; approval-blocking correction locally verified on PR #11; follow-up commit and CI pending; implementation not authorized.
-- **Authorization boundary**: This branch may contain proposal documentation, a machine-readable candidate schema, non-runtime examples, and this task/status evidence only. It must not modify either installer, runtime reader/writer, production gate, or test behavior; it must stop with an open Proposal PR after successful CI and must not merge.
+- **Status**: `SCHEMA APPROVED — NOT IMPLEMENTED`; Proposal PR #11 merge pending; Phase 4 product implementation is not authorized.
+- **Authorization boundary**: This branch may update approval/status evidence and merge the approved Proposal PR only. Candidate schema/examples must remain byte-identical to approved head `16aa063139431cbd07cba147d81be1d2cb3da609`; installers, runtime readers/writers, production schema/gates/tests, migration, prune, and real-adopter behavior remain unchanged.
 - **Proposal branch**: `design/phase-4-manifest-schema-proposal` from merged Phase 3 `main` at `f8a0116ce4af0b463c838150350a9ccfa7c2cac6`.
-- **Approval boundary**: Schema approval, Proposal PR merge approval, Phase 4 implementation authorization, and any migration/prune execution approval remain separate user decisions.
+- **Approval evidence**: Amendment A-07 records explicit current-task approval of OD-01 through OD-17 and the complete Manifest v3 Schema Design at exact head `16aa063139431cbd07cba147d81be1d2cb3da609`.
+- **Delivery boundary**: Proposal PR #11 is approved for guarded squash merge after the status-only commit and latest CI pass. Product implementation, writer enablement, migration, prune, and real-adopter execution remain separate future decisions.
 
 ### Validated Current-State Inventory for the Proposal
 

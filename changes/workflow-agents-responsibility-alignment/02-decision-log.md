@@ -205,3 +205,25 @@ These amendments preserve the approved architecture directions above. They corre
 - **Approval-blocking correction review — 2026-07-17**: Still `PROPOSED — awaiting explicit user approval`. The proposal now makes tombstoned IDs terminal and permanently reserved, models any future separately authorized reintroduction as a new ID pointing to the unchanged tombstone, fixes `manifest/component-catalog.json` as the version-controlled source-side identity SSOT, and recommends future production schema path `schemas/ai-workflow-install-manifest-v3.schema.json` with `$id` `urn:ai-dev-workflow:manifest-schema:v3`. None of these proposal corrections authorizes schema approval, runtime import, writer enablement, migration, prune, merge, or Phase 4 implementation.
 - **Gate-check note — 2026-07-17**: The correction changes no canonical Agent. The unchanged 29-line `agents/pm.agent.md` and `agents/spec.agent.md` findings remain the already-approved `LINE_COUNT` soft warnings; proceed only if the final stable-diff gate again reports no structural or other hard failure. This recorded disposition cannot override a deterministic failure.
 - **Architecture direction changed**: No.
+
+### Amendment A-07 — Manifest v3 Schema Contract Approved
+
+- **Approval source**: Explicit current-task instruction, "Phase 4 Manifest v3 Schema Approval and Proposal Merge".
+- **Approved Proposal**: PR #11 at exact head `16aa063139431cbd07cba147d81be1d2cb3da609`; OD-01 through OD-17 in that head are approved as one complete, internally consistent contract.
+- **Approved architecture**: Structured Manifest schema version 3 with the approved identity, provenance, four-timepoint hash, ownership/fork classification, lifecycle, loader/report parse-state, compatibility, deterministic dry-run, atomic publication, rollback, link/mount, and cross-runtime parity contracts.
+- **Production Schema identity**: Future production artifact `schemas/ai-workflow-install-manifest-v3.schema.json`, JSON Schema Draft 2020-12, stable `$id` `urn:ai-dev-workflow:manifest-schema:v3`, produced only through the approved allowlisted deterministic candidate-to-production transform.
+- **Stable Component Identity**: Canonical source-side catalog `manifest/component-catalog.json`, catalog schema version 1, exact source-release digest binding, and no path-, timestamp-, adopter-content-, or runtime-generated IDs.
+- **Hash semantics**: Four distinct exact-byte SHA-256 timepoints — baseline, observed-before, proposed-source, and result-after — with the approved canonical encoding and Python/PowerShell serialized-byte parity requirements.
+- **Lifecycle semantics**: Tombstoned is terminal; its ID is permanently reserved. Source reappearance is report-only. Any separately authorized future reintroduction receives a new ID linked to the unchanged tombstone through `reintroduces_component_id`; the relationship is not authorization.
+- **Rollout**: Reader-first v1/v2 compatibility and in-memory normalization only; no read-time rewrite. Writer enablement remains a separate future decision, and production writers continue to emit v2.
+- **Safe-Prune**: Option A is approved as the design contract: exact component IDs plus exact report hash plus external explicit current-task action-specific authorization, with no prune-all behavior.
+- **Candidate boundary**: Change Package schema/examples remain non-runtime decision evidence with proposal markers and `example.invalid`; approval does not make them runtime dependencies or create the production Schema artifact.
+- **Execution boundary**: No writer enablement, Phase 4 product implementation, migration, prune, real-adopter execution, deployment, or production operation is authorized by this amendment.
+- **Next authorization**: Phase 4 product implementation still requires a separate explicit current-task approval.
+- **Architecture direction changed**: No.
+
+### Gate-Check Note — 2026-07-17 (Schema Approval Status)
+
+- **Check**: Final status-only Schema approval diff before Proposal PR #11 delivery and guarded merge.
+- **Finding**: The complete repository gate passed every required check and returned `GATE PASSED WITH NOTES`. `agents/pm.agent.md` and `agents/spec.agent.md` remain at 29 non-empty lines and produced only the already-approved `LINE_COUNT` soft warnings; no Agent or generated file changed. The historical `05-review.md` compatibility warning and pre-existing `pytest-asyncio` deprecation warning also remained nonblocking.
+- **Decision**: Proceed after rerunning the full gate on this final recorded diff. These warnings do not match an approved blocking condition and cannot override any deterministic failure.
