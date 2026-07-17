@@ -2543,10 +2543,13 @@ function Main {
     $manifestResult = Get-InstallManifest -TargetPath $targetProjectPath -SourceRoot $catalogSourceRoot
     $pendingV3Validation = $manifestResult.State -eq 'v3-validation-blocked'
     if ($manifestResult.State -eq 'valid-v3') {
-        Write-Error "manifest-v3-writer-disabled: $($manifestResult.ManifestPath)" -ErrorAction Continue
-        Write-Error 'Manifest v3 writer/migration is not enabled.' -ErrorAction Continue
-        Write-Error 'The v3 Manifest was recognized read-only and will not be downgraded or overwritten.' -ErrorAction Continue
-        Write-Error 'Operation aborted before backup, directory, file, link, temporary artifact, or Manifest mutation.' -ErrorAction Continue
+        $diagnostic = @(
+            "manifest-v3-writer-disabled: $($manifestResult.ManifestPath)"
+            'Manifest v3 writer/migration is not enabled.'
+            'The v3 Manifest was recognized read-only and will not be downgraded or overwritten.'
+            'Operation aborted before backup, directory, file, link, temporary artifact, or Manifest mutation.'
+        ) -join [Environment]::NewLine
+        Write-Error $diagnostic -ErrorAction Continue
         exit 1
     }
     if ($manifestResult.State -eq 'unsupported') {
