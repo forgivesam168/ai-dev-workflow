@@ -1,8 +1,10 @@
 # Phase 4 — Manifest Schema Proposal
 
-**Status: SCHEMA APPROVED — NOT IMPLEMENTED**
+**Status: SCHEMA APPROVED — PHASE 4A LOCALLY VERIFIED; PR PENDING**
 
-Approval evidence: Amendment A-07 approves OD-01 through OD-17 and the complete technical contract recorded at exact Proposal head `16aa063139431cbd07cba147d81be1d2cb3da609`. Candidate artifacts remain non-runtime evidence; the production Schema has not been created, Phase 4 product implementation is not authorized, production writers still emit v2, and no migration, prune, or real-adopter operation is authorized.
+Approval evidence: Amendment A-07 approves OD-01 through OD-17 and the complete technical contract recorded at exact Proposal head `16aa063139431cbd07cba147d81be1d2cb3da609`. Candidate artifacts remain non-runtime evidence. Amendment A-08 separately authorizes only the Phase 4A reader-first tranche; production writers still emit v2, and no conversion planner, migration, tombstone mutation, prune, or real-adopter operation is authorized.
+
+Implementation status: Amendment A-08 authorizes only Phase 4A. The Production Schema, Stable Component ID Catalog, strict read-only v3 support, v1/v2 compatibility, and pre-write v3 mutation block are locally verified; the Phase 4A PR is pending. Production writers remain v2, and conversion planning, migration, tombstone mutation, prune, real-adopter operation, and later Phase 4 tranches remain unauthorized and unimplemented.
 
 This document and its companion JSON files are decision evidence only. Production readers and writers still support the existing v1/v2 contract, and production writers still emit v2. Nothing in this proposal authorizes importing the proposed schema into runtime code, changing a gate, migrating a manifest, pruning a component, or operating on a real adopter repository.
 
@@ -420,4 +422,4 @@ OD-01 through OD-17 are approved by Amendment A-07 as the internally consistent 
 | OD-16 | Source authenticity | Keep SHA-256 as integrity only; approve a separate trust mechanism if authenticity is required | Treating a digest as authenticity is unsafe; mandatory signatures now would expand scope and dependencies |
 | OD-17 | Migration/deployment execution | N/A — no migration or deployment execution is authorized in this Phase | Any real execution requires a later exact scope, rollback/recovery evidence, and action-specific approval |
 
-OD-01 through OD-17 are approved as one internally consistent v3 contract. Phase 4 remains **SCHEMA APPROVED — NOT IMPLEMENTED**: Candidate artifacts remain non-runtime, the production Schema has not been created, production writers remain v2, and Phase 4 product implementation, migration, prune, and real-adopter operation require separate explicit current-task authorization.
+OD-01 through OD-17 are approved as one internally consistent v3 contract. Phase 4A Reader-First Foundation is separately authorized and in progress under Amendment A-08; Candidate artifacts remain non-runtime, production writers remain v2, and conversion planning, writer enablement, migration, tombstone mutation, prune, real-adopter operation, and later Phase 4 tranches require separate explicit current-task authorization.

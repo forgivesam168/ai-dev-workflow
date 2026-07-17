@@ -21,7 +21,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 MIN_GIT = "2.0.0"
 MIN_PYTHON = "3.7.0"
@@ -52,7 +52,12 @@ PORTABLE_SKILL_LINKS = [
     Path(".agent/skills"),
 ]
 MANIFEST_FILENAME = ".ai-workflow-install.json"
-SUPPORTED_MANIFEST_SCHEMA_VERSIONS = (1, 2)
+SUPPORTED_MANIFEST_SCHEMA_VERSIONS = (1, 2, 3)
+PRODUCTION_MANIFEST_SCHEMA = Path("schemas/ai-workflow-install-manifest-v3.schema.json")
+COMPONENT_CATALOG_PATH = Path("manifest/component-catalog.json")
+COMPONENT_CATALOG_SCHEMA_VERSION = 1
+COMPONENT_CATALOG_RELEASE_ID = "ai-dev-workflow:component-catalog:1"
+COMPONENT_CATALOG_VERSION = "1"
 LIFECYCLE_TEMPLATE_FILES = (
     "00-intake.md",
     "01-brainstorm.md",
@@ -102,6 +107,15 @@ class ManifestLoadResult:
     schema_version: Optional[int]
     detail: Optional[str]
     manifest_path: Path
+    diagnostic_category: Optional[str] = None
+    catalog_validated: bool = False
+
+
+class ManifestValidationError(ValueError):
+    def __init__(self, category: str, detail: str) -> None:
+        super().__init__(detail)
+        self.category = category
+        self.detail = detail
 
 
 def version_to_tuple(version: str) -> Tuple[int, int, int]:
@@ -256,10 +270,845 @@ def get_path_hash(path: Path) -> Optional[str]:
     return f"sha256:{calculate_file_hash(path)}"
 
 
-def load_install_manifest(target_root: Path) -> ManifestLoadResult:
+_COMPONENT_ID_PATTERN = re.compile(r"^cmp:[a-z0-9][a-z0-9._-]{2,127}$")
+_TRANSACTION_ID_PATTERN = re.compile(r"^txn:[a-z0-9][a-z0-9._-]{2,127}$")
+_HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+_TIMESTAMP_PATTERN = re.compile(
+    r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?Z$"
+)
+_RELATIVE_PATH_PATTERN = re.compile(r"^[A-Za-z0-9@+_.-]+(?:/[A-Za-z0-9@+_.-]+)*$")
+_WINDOWS_RESERVED_NAMES = {
+    "con", "prn", "aux", "nul",
+    *(f"com{index}" for index in range(1, 10)),
+    *(f"lpt{index}" for index in range(1, 10)),
+}
+_FORK_MAPPING = {
+    "untouched": ("verified-managed-equality", "manage"),
+    "customized": ("hash-divergence", "preserve"),
+    "project-owned": ("explicit-project-ownership", "preserve"),
+    "legacy": ("legacy-import", "report-only"),
+    "unknown": ("missing-lineage", "report-only"),
+    "derived-customized": ("derived-hash-divergence", "preserve"),
+    "conflicted": ("conflicting-evidence", "block"),
+    "not-applicable": ("hash-not-applicable", "report-only"),
+}
+_ROLE_OWNERSHIP = {
+    "canonical": "template-managed",
+    "generated": "derived-runtime",
+    "project-owned": "project-owned",
+    "compatibility": "legacy-compat",
+}
+
+
+def _validation_error(category: str, detail: str) -> None:
+    raise ManifestValidationError(category, detail)
+
+
+def _exact_object(
+    value: Any, expected_keys: Set[str], category: str, label: str
+) -> Dict[str, Any]:
+    if not isinstance(value, dict):
+        _validation_error(category, f"{label} must be an object.")
+    observed = set(value)
+    if observed != expected_keys:
+        missing = sorted(expected_keys - observed)
+        unknown = sorted(observed - expected_keys)
+        _validation_error(
+            category,
+            f"{label} has invalid properties; missing={missing}, unknown={unknown}.",
+        )
+    return value
+
+
+def _validate_component_id(value: Any, category: str, label: str) -> str:
+    if not isinstance(value, str) or not _COMPONENT_ID_PATTERN.fullmatch(value):
+        _validation_error(category, f"{label} is not a valid component ID.")
+    return value
+
+
+def _validate_optional_component_id(value: Any, category: str, label: str) -> Optional[str]:
+    if value is None:
+        return None
+    return _validate_component_id(value, category, label)
+
+
+def _validate_relative_path(value: Any, category: str, label: str) -> str:
+    if not isinstance(value, str) or not value or len(value) > 512:
+        _validation_error(category, f"{label} must be a non-empty relative path.")
+    if (
+        not _RELATIVE_PATH_PATTERN.fullmatch(value)
+        or value.startswith("/")
+        or "\\" in value
+        or ":" in value
+        or "//" in value
+    ):
+        _validation_error(category, f"{label} contains unsafe path syntax.")
+    for segment in value.split("/"):
+        if segment in {".", ".."} or segment.endswith((".", " ")):
+            _validation_error(category, f"{label} contains an unsafe path segment.")
+        base_name = segment.split(".", 1)[0].lower()
+        if base_name in _WINDOWS_RESERVED_NAMES:
+            _validation_error(category, f"{label} contains a Windows reserved name.")
+    return value
+
+
+def _validate_hash(value: Any, category: str, label: str) -> Optional[str]:
+    if value is None:
+        return None
+    if not isinstance(value, str) or not _HASH_PATTERN.fullmatch(value):
+        _validation_error(category, f"{label} must be null or a lowercase SHA-256 digest.")
+    return value
+
+
+def _timestamp_key(value: Any, category: str, label: str) -> Tuple[int, ...]:
+    if not isinstance(value, str):
+        _validation_error(category, f"{label} must be a UTC timestamp.")
+    match = _TIMESTAMP_PATTERN.fullmatch(value)
+    if not match:
+        _validation_error(category, f"{label} must use canonical UTC Z syntax.")
+    parts = [int(part) for part in match.groups()[:6]]
+    fraction = (match.group(7) or "").ljust(9, "0")
+    try:
+        datetime(*parts)
+    except ValueError:
+        _validation_error(category, f"{label} is not a real calendar timestamp.")
+    return tuple(parts + [int(fraction or "0")])
+
+
+def _validate_sorted_unique_strings(
+    value: Any,
+    category: str,
+    label: str,
+    *,
+    component_ids: bool = False,
+    paths: bool = False,
+    max_items: int = 64,
+) -> List[str]:
+    if not isinstance(value, list) or len(value) > max_items:
+        _validation_error(category, f"{label} must be an array with at most {max_items} items.")
+    if any(not isinstance(item, str) for item in value):
+        _validation_error(category, f"{label} must contain only strings.")
+    if value != sorted(value) or len(set(value)) != len(value):
+        _validation_error(category, f"{label} must be sorted and duplicate-free.")
+    for item in value:
+        if component_ids:
+            _validate_component_id(item, category, label)
+        if paths:
+            _validate_relative_path(item, category, label)
+    return value
+
+
+def _reject_relationship_cycles(
+    records: Dict[str, Dict[str, Any]], category: str, *, catalog: bool
+) -> None:
+    graph: Dict[str, List[str]] = {}
+    for component_id, record in records.items():
+        if catalog:
+            edges = list(record["generated_from"])
+            edges.extend(
+                candidate
+                for candidate in (
+                    record["successor_component_id"],
+                    record["reintroduces_component_id"],
+                )
+                if candidate is not None
+            )
+        else:
+            edges = list(record["provenance"]["generated_from"])
+            lifecycle = record["lifecycle"]
+            if lifecycle["reintroduces_component_id"] is not None:
+                edges.append(lifecycle["reintroduces_component_id"])
+            retirement = lifecycle["retirement"]
+            if retirement is not None and retirement["successor_component_id"] is not None:
+                edges.append(retirement["successor_component_id"])
+        graph[component_id] = edges
+
+    visiting: Set[str] = set()
+    visited: Set[str] = set()
+
+    def visit(node: str) -> None:
+        if node in visiting:
+            _validation_error(category, "Component relationship graph contains a cycle.")
+        if node in visited:
+            return
+        visiting.add(node)
+        for child in graph.get(node, []):
+            visit(child)
+        visiting.remove(node)
+        visited.add(node)
+
+    for component_id in sorted(graph):
+        visit(component_id)
+
+
+def _load_and_validate_component_catalog(
+    source_root: Path,
+) -> Tuple[Dict[str, Any], Dict[str, Dict[str, Any]], bytes]:
+    catalog_path = source_root / COMPONENT_CATALOG_PATH
+    try:
+        catalog_bytes = catalog_path.read_bytes()
+    except OSError:
+        _validation_error("catalog-missing", f"Component Catalog is unavailable: {catalog_path}")
+    try:
+        catalog = json.loads(catalog_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        _validation_error("catalog-json", "Component Catalog is not valid UTF-8 JSON.")
+
+    catalog = _exact_object(
+        catalog,
+        {"catalog_schema_version", "catalog_version", "source_release", "components"},
+        "catalog-schema",
+        "Component Catalog",
+    )
+    if (
+        type(catalog["catalog_schema_version"]) is not int
+        or catalog["catalog_schema_version"] != COMPONENT_CATALOG_SCHEMA_VERSION
+    ):
+        _validation_error("catalog-schema", "Unsupported Component Catalog schema version.")
+    if catalog["catalog_version"] != COMPONENT_CATALOG_VERSION:
+        _validation_error("catalog-release", "Unexpected Component Catalog version.")
+    source_release = _exact_object(
+        catalog["source_release"],
+        {"release_id", "source_ref", "version"},
+        "catalog-schema",
+        "Component Catalog source_release",
+    )
+    if source_release != {
+        "release_id": COMPONENT_CATALOG_RELEASE_ID,
+        "source_ref": COMPONENT_CATALOG_PATH.as_posix(),
+        "version": COMPONENT_CATALOG_VERSION,
+    }:
+        _validation_error("catalog-release", "Unexpected Component Catalog release identity.")
+    if not isinstance(catalog["components"], list) or len(catalog["components"]) > 10000:
+        _validation_error("catalog-schema", "Component Catalog components must be an array.")
+
+    records: Dict[str, Dict[str, Any]] = {}
+    active_path_keys: Set[str] = set()
+    component_order: List[str] = []
+    required = {
+        "id", "canonical_source_path", "role", "kind", "lifecycle_status",
+        "previous_paths", "generated_from", "successor_component_id",
+        "reintroduces_component_id", "introduced_release", "retired_release",
+    }
+    for index, raw_component in enumerate(catalog["components"]):
+        component = _exact_object(
+            raw_component, required, "catalog-schema", f"Catalog component {index}"
+        )
+        component_id = _validate_component_id(component["id"], "catalog-schema", "Catalog component ID")
+        if component_id in records:
+            _validation_error("catalog-duplicate-id", f"Duplicate Catalog ID: {component_id}")
+        component_order.append(component_id)
+        path = _validate_relative_path(
+            component["canonical_source_path"], "catalog-schema", "Catalog canonical_source_path"
+        )
+        if component["role"] not in _ROLE_OWNERSHIP:
+            _validation_error("catalog-schema", "Catalog component role is invalid.")
+        if component["kind"] not in {"file", "directory", "mount", "link"}:
+            _validation_error("catalog-schema", "Catalog component kind is invalid.")
+        if component["lifecycle_status"] not in {"active", "retired", "tombstoned"}:
+            _validation_error("catalog-lifecycle", "Catalog lifecycle_status is invalid.")
+        _validate_sorted_unique_strings(
+            component["previous_paths"], "catalog-schema", "Catalog previous_paths", paths=True
+        )
+        _validate_sorted_unique_strings(
+            component["generated_from"], "catalog-schema", "Catalog generated_from",
+            component_ids=True, max_items=10000,
+        )
+        _validate_optional_component_id(
+            component["successor_component_id"], "catalog-reference", "Catalog successor_component_id"
+        )
+        _validate_optional_component_id(
+            component["reintroduces_component_id"], "catalog-reference", "Catalog reintroduces_component_id"
+        )
+        if component["introduced_release"] != COMPONENT_CATALOG_RELEASE_ID:
+            _validation_error("catalog-release", "Catalog introduced_release is invalid.")
+        if component["lifecycle_status"] == "active":
+            if component["retired_release"] is not None:
+                _validation_error("catalog-lifecycle", "Active Catalog identity cannot be retired.")
+            if component["successor_component_id"] is not None:
+                _validation_error("catalog-lifecycle", "Active Catalog identity cannot declare a successor.")
+            path_key = path.lower()
+            if path_key in active_path_keys:
+                _validation_error("catalog-duplicate-active-path", f"Duplicate active Catalog path: {path}")
+            active_path_keys.add(path_key)
+        elif not isinstance(component["retired_release"], str) or not component["retired_release"]:
+            _validation_error("catalog-lifecycle", "Retired Catalog identity needs retired_release.")
+        if component["lifecycle_status"] != "active" and component["reintroduces_component_id"] is not None:
+            _validation_error("catalog-lifecycle", "Terminal Catalog identity cannot reintroduce another ID.")
+        if component["role"] == "generated":
+            if not component["generated_from"]:
+                _validation_error("catalog-reference", "Generated Catalog identity needs a parent.")
+        elif component["generated_from"]:
+            _validation_error("catalog-reference", "Non-generated Catalog identity cannot have parents.")
+        if component["kind"] in {"mount", "link"} and component["role"] != "generated":
+            _validation_error(
+                "catalog-role-kind",
+                "Catalog mount/link identities must be generated and parent-bound.",
+            )
+        records[component_id] = component
+
+    if component_order != sorted(component_order):
+        _validation_error("catalog-schema", "Component Catalog records must be sorted by ID.")
+    for component_id, component in records.items():
+        references = list(component["generated_from"])
+        references.extend(
+            value
+            for value in (
+                component["successor_component_id"], component["reintroduces_component_id"]
+            )
+            if value is not None
+        )
+        for reference in references:
+            if reference == component_id:
+                _validation_error("catalog-self-reference", f"Catalog ID self-references: {component_id}")
+            if reference not in records:
+                _validation_error("catalog-reference", f"Unknown Catalog reference: {reference}")
+        reintroduced = component["reintroduces_component_id"]
+        if reintroduced is not None:
+            if component["lifecycle_status"] != "active" or records[reintroduced]["lifecycle_status"] != "tombstoned":
+                _validation_error("catalog-lifecycle", "Catalog reintroduction must target a tombstone.")
+    _reject_relationship_cycles(records, "catalog-cycle", catalog=True)
+    return catalog, records, catalog_bytes
+
+
+def _validate_v3_source_release(value: Any) -> Dict[str, Any]:
+    source_release = _exact_object(
+        value,
+        {"release_id", "source_ref", "version", "component_catalog"},
+        "manifest-schema",
+        "Manifest source_release",
+    )
+    for key, maximum in (("release_id", 128), ("source_ref", 256), ("version", 64)):
+        observed = source_release[key]
+        if not isinstance(observed, str) or not observed or len(observed) > maximum:
+            _validation_error("manifest-schema", f"Manifest source_release.{key} is invalid.")
+    binding = _exact_object(
+        source_release["component_catalog"],
+        {"path", "schema_version", "sha256"},
+        "manifest-schema",
+        "Manifest component_catalog binding",
+    )
+    if binding["path"] != COMPONENT_CATALOG_PATH.as_posix():
+        _validation_error("catalog-release", "Manifest binds an unexpected Component Catalog path.")
+    if (
+        type(binding["schema_version"]) is not int
+        or binding["schema_version"] != COMPONENT_CATALOG_SCHEMA_VERSION
+    ):
+        _validation_error("catalog-release", "Manifest binds an unsupported Component Catalog schema.")
+    _validate_hash(binding["sha256"], "catalog-digest", "Manifest Component Catalog digest")
+    return source_release
+
+
+def _validate_v3_transaction(value: Any) -> Dict[str, Any]:
+    transaction = _exact_object(
+        value,
+        {"id", "mode", "writer", "started_at", "completed_at", "result"},
+        "manifest-schema",
+        "Manifest last_transaction",
+    )
+    transaction_id = transaction["id"]
+    if not isinstance(transaction_id, str) or not _TRANSACTION_ID_PATTERN.fullmatch(transaction_id):
+        _validation_error("manifest-schema", "Manifest transaction ID is invalid.")
+    if transaction["mode"] not in {"install", "update", "migration"}:
+        _validation_error("manifest-schema", "Manifest transaction mode is invalid.")
+    if transaction["writer"] not in {"python", "powershell"}:
+        _validation_error("manifest-schema", "Manifest transaction writer is invalid.")
+    if transaction["result"] != "committed":
+        _validation_error("manifest-schema", "Manifest transaction must be committed.")
+    started = _timestamp_key(transaction["started_at"], "manifest-timestamp", "Transaction started_at")
+    completed = _timestamp_key(transaction["completed_at"], "manifest-timestamp", "Transaction completed_at")
+    if started > completed:
+        _validation_error("manifest-timestamp", "Transaction completed_at precedes started_at.")
+    return transaction
+
+
+def _validate_v3_link(value: Any, kind: str) -> Optional[Dict[str, Any]]:
+    if kind not in {"mount", "link"}:
+        if value is not None:
+            _validation_error("manifest-link", "Only mount/link identities may contain link metadata.")
+        return None
+    link = _exact_object(
+        value,
+        {"target_path", "target_path_key", "mode"},
+        "manifest-link",
+        "Manifest identity.link",
+    )
+    target_path = _validate_relative_path(
+        link["target_path"], "manifest-link", "Manifest link target_path"
+    )
+    if link["target_path_key"] != target_path.lower():
+        _validation_error("manifest-link", "Manifest link target_path_key does not match target_path.")
+    if link["mode"] not in {"symlink", "junction", "copy-fallback"}:
+        _validation_error("manifest-link", "Manifest link mode is invalid.")
+    if kind == "link" and link["mode"] != "symlink":
+        _validation_error("manifest-link", "A link identity must use symlink mode.")
+    return link
+
+
+def _validate_v3_fork(value: Any) -> Dict[str, Any]:
+    fork = _exact_object(
+        value,
+        {"status", "basis", "decision", "classified_at"},
+        "manifest-schema",
+        "Manifest provenance.fork",
+    )
+    expected = _FORK_MAPPING.get(fork["status"])
+    if expected is None or (fork["basis"], fork["decision"]) != expected:
+        _validation_error("manifest-fork", "Manifest fork status/basis/decision mapping is invalid.")
+    _timestamp_key(fork["classified_at"], "manifest-timestamp", "Fork classified_at")
+    return fork
+
+
+def _validate_v3_provenance(value: Any, role: str, kind: str) -> Dict[str, Any]:
+    provenance = _exact_object(
+        value,
+        {"ownership", "source", "generated_from", "fork"},
+        "manifest-schema",
+        "Manifest provenance",
+    )
+    if provenance["ownership"] != _ROLE_OWNERSHIP[role]:
+        _validation_error("manifest-provenance", "Manifest role and ownership disagree.")
+    source = _exact_object(
+        provenance["source"],
+        {"kind", "locator", "release"},
+        "manifest-schema",
+        "Manifest provenance.source",
+    )
+    source_kind = source["kind"]
+    expected_source_kind = {
+        "canonical": "template",
+        "generated": "generated",
+        "project-owned": "project",
+        "compatibility": "legacy",
+    }[role]
+    if source_kind != expected_source_kind:
+        _validation_error("manifest-provenance", "Manifest role and source kind disagree.")
+    locator = source["locator"]
+    if (
+        not isinstance(locator, str)
+        or len(locator) < 3
+        or len(locator) > 512
+        or not re.fullmatch(r"(?:template|project|generated|legacy|unknown):[A-Za-z0-9@+_.:/#-]+", locator)
+        or not locator.startswith(f"{source_kind}:")
+        or "\\" in locator
+        or locator.split(":", 1)[1].startswith("/")
+        or re.match(r"^[A-Za-z]:/", locator.split(":", 1)[1])
+        or "://" in locator.split(":", 1)[1]
+        or any(part in {".", ".."} for part in locator.split(":", 1)[1].split("/"))
+    ):
+        _validation_error("manifest-provenance", "Manifest source locator is unsafe or inconsistent.")
+    if source["release"] is not None and (
+        not isinstance(source["release"], str) or not source["release"] or len(source["release"]) > 128
+    ):
+        _validation_error("manifest-schema", "Manifest source release is invalid.")
+    generated_from = _validate_sorted_unique_strings(
+        provenance["generated_from"],
+        "manifest-provenance",
+        "Manifest generated_from",
+        component_ids=True,
+    )
+    if role == "generated" and not generated_from:
+        _validation_error("manifest-provenance", "Generated Manifest component needs a parent.")
+    if role != "generated" and generated_from:
+        _validation_error("manifest-provenance", "Non-generated Manifest component cannot have parents.")
+    fork = _validate_v3_fork(provenance["fork"])
+    if fork["status"] == "project-owned" and role != "project-owned":
+        _validation_error("manifest-fork", "Project-owned fork status requires project-owned role.")
+    if fork["status"] == "legacy" and role != "compatibility":
+        _validation_error("manifest-fork", "Legacy fork status requires compatibility role.")
+    if fork["status"] == "derived-customized" and role != "generated":
+        _validation_error("manifest-fork", "Derived customization requires generated role.")
+    if fork["status"] == "customized" and role != "canonical":
+        _validation_error("manifest-fork", "Canonical customization requires canonical role.")
+    if fork["status"] == "not-applicable" and kind == "file":
+        _validation_error("manifest-fork", "A regular file cannot use not-applicable hash status.")
+    return provenance
+
+
+def _validate_v3_hashes(value: Any, fork: Dict[str, Any], kind: str) -> Dict[str, Any]:
+    hashes = _exact_object(
+        value,
+        {"algorithm", "content_basis", "baseline", "observed_before", "proposed_source", "result_after"},
+        "manifest-schema",
+        "Manifest hashes",
+    )
+    if hashes["algorithm"] != "sha256" or hashes["content_basis"] != "exact-bytes":
+        _validation_error("manifest-hash", "Manifest hash algorithm/content basis is invalid.")
+    for key in ("baseline", "observed_before", "proposed_source", "result_after"):
+        _validate_hash(hashes[key], "manifest-hash", f"Manifest hashes.{key}")
+    status = fork["status"]
+    if status == "untouched":
+        if hashes["baseline"] is None or hashes["baseline"] != hashes["observed_before"]:
+            _validation_error("manifest-fork", "Untouched classification needs equal known baseline and observation.")
+    if status in {"customized", "derived-customized"}:
+        if (
+            hashes["baseline"] is None
+            or hashes["observed_before"] is None
+            or hashes["baseline"] == hashes["observed_before"]
+        ):
+            _validation_error("manifest-fork", "Customization classification needs known divergent hashes.")
+    if kind in {"mount", "directory", "link"} and status == "not-applicable":
+        if any(hashes[key] is not None for key in hashes if key not in {"algorithm", "content_basis"}):
+            _validation_error("manifest-hash", "Non-hashable component cannot claim content hashes.")
+    return hashes
+
+
+def _validate_v3_retirement(value: Any) -> Dict[str, Any]:
+    retirement = _exact_object(
+        value,
+        {"reason", "detected_at", "source_evidence", "successor_component_id", "pruned_at"},
+        "manifest-schema",
+        "Manifest retirement",
+    )
+    if retirement["reason"] not in {"renamed", "deleted", "source-retired", "superseded"}:
+        _validation_error("manifest-lifecycle", "Manifest retirement reason is invalid.")
+    _timestamp_key(retirement["detected_at"], "manifest-timestamp", "Retirement detected_at")
+    evidence = _exact_object(
+        retirement["source_evidence"],
+        {"type", "locator"},
+        "manifest-schema",
+        "Manifest retirement source_evidence",
+    )
+    if evidence["type"] not in {"rename-map", "component-absent-in-source", "release-retirement-record"}:
+        _validation_error("manifest-lifecycle", "Manifest retirement evidence type is invalid.")
+    if not isinstance(evidence["locator"], str) or not re.fullmatch(
+        r"(?:template|release):[A-Za-z0-9@+_.:/#-]+", evidence["locator"]
+    ):
+        _validation_error("manifest-lifecycle", "Manifest retirement evidence locator is invalid.")
+    _validate_optional_component_id(
+        retirement["successor_component_id"], "manifest-lifecycle", "Retirement successor_component_id"
+    )
+    if retirement["pruned_at"] is not None:
+        _timestamp_key(retirement["pruned_at"], "manifest-timestamp", "Retirement pruned_at")
+    return retirement
+
+
+def _validate_v3_lifecycle(value: Any, hashes: Dict[str, Any], outcome: str) -> Dict[str, Any]:
+    lifecycle = _exact_object(
+        value,
+        {"state", "previous_paths", "retirement", "reintroduces_component_id"},
+        "manifest-schema",
+        "Manifest lifecycle",
+    )
+    state = lifecycle["state"]
+    if state not in {"active", "retired", "tombstoned"}:
+        _validation_error("manifest-lifecycle", "Manifest lifecycle state is invalid.")
+    _validate_sorted_unique_strings(
+        lifecycle["previous_paths"], "manifest-path", "Manifest previous_paths", paths=True
+    )
+    reintroduces = _validate_optional_component_id(
+        lifecycle["reintroduces_component_id"],
+        "manifest-reintroduction",
+        "Manifest reintroduces_component_id",
+    )
+    if state == "active":
+        if lifecycle["retirement"] is not None:
+            _validation_error("manifest-lifecycle", "Active Manifest component cannot have retirement data.")
+    else:
+        if not isinstance(lifecycle["retirement"], dict):
+            _validation_error("manifest-lifecycle", "Terminal Manifest component needs retirement data.")
+        retirement = _validate_v3_retirement(lifecycle["retirement"])
+        if reintroduces is not None:
+            _validation_error("manifest-reintroduction", "Terminal Manifest component cannot reintroduce an ID.")
+        if hashes["proposed_source"] is not None:
+            _validation_error("manifest-lifecycle", "Terminal Manifest component cannot have proposed source bytes.")
+        if state == "retired":
+            if retirement["pruned_at"] is not None or outcome != "retired":
+                _validation_error("manifest-lifecycle", "Retired Manifest component has invalid terminal evidence.")
+        elif retirement["pruned_at"] is None or hashes["result_after"] is not None or outcome != "tombstoned":
+            _validation_error("manifest-lifecycle", "Tombstoned Manifest component has invalid terminal evidence.")
+    return lifecycle
+
+
+def _validate_v3_component(value: Any, index: int) -> Dict[str, Any]:
+    component = _exact_object(
+        value,
+        {"identity", "provenance", "hashes", "lifecycle", "last_operation", "installed_at", "updated_at"},
+        "manifest-schema",
+        f"Manifest component {index}",
+    )
+    identity = _exact_object(
+        component["identity"],
+        {"id", "path", "path_key", "kind", "role", "link"},
+        "manifest-schema",
+        "Manifest identity",
+    )
+    _validate_component_id(identity["id"], "manifest-schema", "Manifest component ID")
+    path = _validate_relative_path(identity["path"], "manifest-path", "Manifest identity.path")
+    if identity["path_key"] != path.lower():
+        _validation_error("manifest-path", "Manifest identity.path_key does not match identity.path.")
+    if identity["kind"] not in {"file", "directory", "mount", "link"}:
+        _validation_error("manifest-schema", "Manifest identity kind is invalid.")
+    if identity["role"] not in _ROLE_OWNERSHIP:
+        _validation_error("manifest-schema", "Manifest identity role is invalid.")
+    if identity["kind"] in {"mount", "link"} and identity["role"] != "generated":
+        _validation_error(
+            "manifest-role-kind",
+            "Manifest mount/link identities must be generated and parent-bound.",
+        )
+    _validate_v3_link(identity["link"], identity["kind"])
+    provenance = _validate_v3_provenance(component["provenance"], identity["role"], identity["kind"])
+    hashes = _validate_v3_hashes(component["hashes"], provenance["fork"], identity["kind"])
+    operation = _exact_object(
+        component["last_operation"],
+        {"transaction_id", "outcome"},
+        "manifest-schema",
+        "Manifest last_operation",
+    )
+    if not isinstance(operation["transaction_id"], str) or not _TRANSACTION_ID_PATTERN.fullmatch(operation["transaction_id"]):
+        _validation_error("manifest-schema", "Manifest component transaction ID is invalid.")
+    if operation["outcome"] not in {
+        "installed", "updated", "preserved-existing", "preserved-customization",
+        "conflicted", "reported", "retired", "tombstoned",
+    }:
+        _validation_error("manifest-schema", "Manifest component outcome is invalid.")
+    lifecycle = _validate_v3_lifecycle(component["lifecycle"], hashes, operation["outcome"])
+    outcome = operation["outcome"]
+    fork_status = provenance["fork"]["status"]
+    if outcome in {"installed", "updated"}:
+        if hashes["proposed_source"] is None or hashes["result_after"] != hashes["proposed_source"]:
+            _validation_error("manifest-hash", "Installed/updated result must equal proposed source bytes.")
+    elif outcome == "preserved-customization":
+        if fork_status not in {"customized", "derived-customized"} or hashes["result_after"] != hashes["observed_before"]:
+            _validation_error("manifest-fork", "Preserved customization evidence is inconsistent.")
+    elif outcome == "preserved-existing":
+        if hashes["result_after"] != hashes["observed_before"]:
+            _validation_error("manifest-hash", "Preserved existing result must equal observed bytes.")
+    elif outcome == "conflicted" and fork_status != "conflicted":
+        _validation_error("manifest-fork", "Conflicted outcome requires conflicted fork evidence.")
+    elif outcome == "retired" and hashes["result_after"] != hashes["observed_before"]:
+        _validation_error("manifest-hash", "Retired result must preserve observed bytes.")
+    installed = None
+    if component["installed_at"] is not None:
+        installed = _timestamp_key(component["installed_at"], "manifest-timestamp", "Component installed_at")
+    updated = _timestamp_key(component["updated_at"], "manifest-timestamp", "Component updated_at")
+    if installed is not None and installed > updated:
+        _validation_error("manifest-timestamp", "Component updated_at precedes installed_at.")
+    if _timestamp_key(provenance["fork"]["classified_at"], "manifest-timestamp", "Fork classified_at") > updated:
+        _validation_error("manifest-timestamp", "Fork classification postdates component update.")
+    if lifecycle["retirement"] is not None:
+        retirement = lifecycle["retirement"]
+        if _timestamp_key(retirement["detected_at"], "manifest-timestamp", "Retirement detected_at") > updated:
+            _validation_error("manifest-timestamp", "Retirement detection postdates component update.")
+        if retirement["pruned_at"] is not None and _timestamp_key(
+            retirement["pruned_at"], "manifest-timestamp", "Retirement pruned_at"
+        ) > updated:
+            _validation_error("manifest-timestamp", "Prune timestamp postdates component update.")
+    return component
+
+
+def _load_and_validate_production_schema(source_root: Path) -> Dict[str, Any]:
+    schema_path = source_root / PRODUCTION_MANIFEST_SCHEMA
+    try:
+        schema_bytes = schema_path.read_bytes()
+    except OSError:
+        _validation_error("schema-missing", f"Production Schema is unavailable: {schema_path}")
+    try:
+        schema = json.loads(schema_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        _validation_error("schema-json", "Production Schema is not valid UTF-8 JSON.")
+
+    def contains_proposal_marker(value: Any) -> bool:
+        if isinstance(value, dict):
+            return "proposal_status" in value or any(
+                contains_proposal_marker(item) for item in value.values()
+            )
+        if isinstance(value, list):
+            return any(contains_proposal_marker(item) for item in value)
+        return value == "proposal_status"
+
+    if contains_proposal_marker(schema):
+        _validation_error(
+            "schema-proposal-marker",
+            "Production Schema must not contain proposal_status markers.",
+        )
+    schema = _exact_object(
+        schema,
+        {
+            "$schema", "$id", "title", "description", "type",
+            "additionalProperties", "required", "properties", "$defs",
+        },
+        "schema-structure",
+        "Production Schema",
+    )
+    if (
+        schema["$schema"] != "https://json-schema.org/draft/2020-12/schema"
+        or schema["$id"] != "urn:ai-dev-workflow:manifest-schema:v3"
+    ):
+        _validation_error("schema-identity", "Production Schema identity is invalid.")
+    required = [
+        "schema_version", "written_at", "source_release", "last_transaction", "components"
+    ]
+    if (
+        schema["type"] != "object"
+        or schema["additionalProperties"] is not False
+        or schema["required"] != required
+        or not isinstance(schema["properties"], dict)
+        or set(schema["properties"]) != set(required)
+        or not isinstance(schema["$defs"], dict)
+    ):
+        _validation_error("schema-structure", "Production Schema root structure is invalid.")
+    properties = schema["properties"]
+    if (
+        not isinstance(properties["schema_version"], dict)
+        or type(properties["schema_version"].get("const")) is not int
+        or properties["schema_version"].get("const") != 3
+        or not isinstance(properties["components"], dict)
+        or type(properties["components"].get("maxItems")) is not int
+        or properties["components"].get("maxItems") != 10000
+    ):
+        _validation_error("schema-structure", "Production Schema constraints are invalid.")
+    required_defs = {
+        "timestamp", "hash", "componentId", "relativePath", "pathKey", "sourceRelease",
+        "componentCatalogBinding", "transaction", "identity", "link", "source", "fork",
+        "provenance", "hashes", "retirement", "lifecycle", "operation", "component",
+    }
+    if set(schema["$defs"]) != required_defs or any(
+        not isinstance(definition, dict) for definition in schema["$defs"].values()
+    ):
+        _validation_error("schema-structure", "Production Schema definitions are invalid.")
+    return schema
+
+
+def _validate_manifest_v3(
+    data: Dict[str, Any], source_root: Optional[Path]
+) -> Tuple[Dict[str, dict], bool, Optional[str]]:
+    manifest = _exact_object(
+        data,
+        {"schema_version", "written_at", "source_release", "last_transaction", "components"},
+        "manifest-schema",
+        "Manifest",
+    )
+    if manifest["schema_version"] != 3:
+        _validation_error("manifest-schema", "Manifest schema version is not 3.")
+    written_at = _timestamp_key(manifest["written_at"], "manifest-timestamp", "Manifest written_at")
+    source_release = _validate_v3_source_release(manifest["source_release"])
+    transaction = _validate_v3_transaction(manifest["last_transaction"])
+    if _timestamp_key(transaction["completed_at"], "manifest-timestamp", "Transaction completed_at") > written_at:
+        _validation_error("manifest-timestamp", "Manifest was written before its transaction completed.")
+    if not isinstance(manifest["components"], list) or len(manifest["components"]) > 10000:
+        _validation_error("manifest-schema", "Manifest components must be an array.")
+
+    records: Dict[str, Dict[str, Any]] = {}
+    ordered_ids: List[str] = []
+    for index, raw_component in enumerate(manifest["components"]):
+        component = _validate_v3_component(raw_component, index)
+        component_id = component["identity"]["id"]
+        if component_id in records:
+            _validation_error("manifest-schema", f"Manifest contains duplicate component ID: {component_id}")
+        if _timestamp_key(component["updated_at"], "manifest-timestamp", "Component updated_at") > written_at:
+            _validation_error("manifest-timestamp", "Component update postdates Manifest write.")
+        ordered_ids.append(component_id)
+        records[component_id] = component
+    if ordered_ids != sorted(ordered_ids):
+        _validation_error("manifest-schema", "Manifest components must be sorted by component ID.")
+
+    active_paths: Dict[str, str] = {}
+    terminal_paths: Dict[str, List[str]] = {}
+    for component_id, component in records.items():
+        identity = component["identity"]
+        lifecycle = component["lifecycle"]
+        path_key = identity["path_key"]
+        references = list(component["provenance"]["generated_from"])
+        if lifecycle["reintroduces_component_id"] is not None:
+            references.append(lifecycle["reintroduces_component_id"])
+        if lifecycle["retirement"] is not None and lifecycle["retirement"]["successor_component_id"] is not None:
+            references.append(lifecycle["retirement"]["successor_component_id"])
+        for reference in references:
+            if reference == component_id:
+                category = "manifest-reintroduction" if lifecycle["reintroduces_component_id"] == reference else "manifest-provenance"
+                _validation_error(category, f"Manifest component self-references: {component_id}")
+            if reference not in records:
+                category = "manifest-reintroduction" if lifecycle["reintroduces_component_id"] == reference else "manifest-provenance"
+                _validation_error(category, f"Manifest reference does not resolve: {reference}")
+        reintroduced = lifecycle["reintroduces_component_id"]
+        if reintroduced is not None and records[reintroduced]["lifecycle"]["state"] != "tombstoned":
+            _validation_error("manifest-reintroduction", "Manifest reintroduction must target a tombstone.")
+        if lifecycle["state"] == "active":
+            if path_key in active_paths:
+                _validation_error("manifest-path-collision", f"Duplicate active Manifest path: {identity['path']}")
+            active_paths[path_key] = component_id
+        else:
+            terminal_paths.setdefault(path_key, []).append(component_id)
+    for path_key, active_id in active_paths.items():
+        for terminal_id in terminal_paths.get(path_key, []):
+            active = records[active_id]
+            terminal = records[terminal_id]
+            if (
+                terminal["lifecycle"]["state"] != "tombstoned"
+                or active["lifecycle"]["reintroduces_component_id"] != terminal_id
+                or terminal["hashes"]["result_after"] is not None
+            ):
+                _validation_error("manifest-path-collision", "Manifest path collision lacks valid reintroduction evidence.")
+    provenance_only: Dict[str, Dict[str, Any]] = {}
+    for component_id, component in records.items():
+        projected = dict(component)
+        projected_lifecycle = dict(component["lifecycle"])
+        projected_lifecycle["reintroduces_component_id"] = None
+        if projected_lifecycle["retirement"] is not None:
+            projected_retirement = dict(projected_lifecycle["retirement"])
+            projected_retirement["successor_component_id"] = None
+            projected_lifecycle["retirement"] = projected_retirement
+        projected["lifecycle"] = projected_lifecycle
+        provenance_only[component_id] = projected
+    _reject_relationship_cycles(provenance_only, "manifest-provenance", catalog=False)
+    _reject_relationship_cycles(records, "manifest-reintroduction", catalog=False)
+
+    catalog_validated = False
+    detail: Optional[str] = None
+    if source_root is None:
+        inferred = Path(__file__).resolve().parent.parent
+        if (
+            (inferred / COMPONENT_CATALOG_PATH).is_file()
+            and (inferred / PRODUCTION_MANIFEST_SCHEMA).is_file()
+        ):
+            source_root = inferred
+        else:
+            detail = "Production Schema and Component Catalog validation are unavailable."
+    if source_root is not None:
+        _load_and_validate_production_schema(source_root)
+        catalog, catalog_records, catalog_bytes = _load_and_validate_component_catalog(source_root)
+        binding = source_release["component_catalog"]
+        observed_digest = hash_bytes(catalog_bytes)
+        if binding["sha256"] != observed_digest:
+            _validation_error("catalog-digest", "Manifest Component Catalog digest does not match exact Catalog bytes.")
+        if any(source_release[key] != catalog["source_release"][key] for key in ("release_id", "source_ref", "version")):
+            _validation_error("catalog-release", "Manifest source release does not match Component Catalog.")
+        for component_id, component in records.items():
+            catalog_component = catalog_records.get(component_id)
+            if catalog_component is None:
+                _validation_error("catalog-agreement", f"Manifest component is absent from Catalog: {component_id}")
+            identity = component["identity"]
+            lifecycle = component["lifecycle"]
+            if (
+                identity["path"] != catalog_component["canonical_source_path"]
+                or identity["role"] != catalog_component["role"]
+                or identity["kind"] != catalog_component["kind"]
+                or lifecycle["state"] != catalog_component["lifecycle_status"]
+                or lifecycle["previous_paths"] != catalog_component["previous_paths"]
+                or component["provenance"]["generated_from"] != catalog_component["generated_from"]
+                or lifecycle["reintroduces_component_id"] != catalog_component["reintroduces_component_id"]
+                or (
+                    lifecycle["retirement"] is not None
+                    and lifecycle["retirement"]["successor_component_id"] != catalog_component["successor_component_id"]
+                )
+                or (lifecycle["retirement"] is None and catalog_component["successor_component_id"] is not None)
+            ):
+                _validation_error("catalog-agreement", f"Manifest component disagrees with Catalog: {component_id}")
+            if component["provenance"]["source"]["release"] not in {None, source_release["release_id"]}:
+                _validation_error("catalog-agreement", f"Manifest component release disagrees with source release: {component_id}")
+        catalog_validated = True
+    return records, catalog_validated, detail
+
+
+def load_install_manifest(
+    target_root: Path, source_root: Optional[Path] = None
+) -> ManifestLoadResult:
     manifest_path = target_root / MANIFEST_FILENAME
     if not manifest_path.exists():
-        return ManifestLoadResult("missing", {}, None, None, manifest_path)
+        return ManifestLoadResult(
+            "missing", {}, None, None, manifest_path, "manifest-missing"
+        )
 
     try:
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -270,6 +1119,7 @@ def load_install_manifest(target_root: Path) -> ManifestLoadResult:
             None,
             "Manifest could not be read.",
             manifest_path,
+            "manifest-read",
         )
     except json.JSONDecodeError:
         return ManifestLoadResult(
@@ -278,11 +1128,13 @@ def load_install_manifest(target_root: Path) -> ManifestLoadResult:
             None,
             "Manifest contains invalid JSON syntax.",
             manifest_path,
+            "manifest-json",
         )
 
     if not isinstance(data, dict):
         return ManifestLoadResult(
-            "corrupt", {}, None, "Manifest top level must be an object.", manifest_path
+            "corrupt", {}, None, "Manifest top level must be an object.", manifest_path,
+            "manifest-schema",
         )
 
     schema_version = data.get("schema_version")
@@ -293,6 +1145,7 @@ def load_install_manifest(target_root: Path) -> ManifestLoadResult:
             None,
             "Manifest schema_version must be an integer.",
             manifest_path,
+            "manifest-schema",
         )
     if schema_version not in SUPPORTED_MANIFEST_SCHEMA_VERSIONS:
         return ManifestLoadResult(
@@ -301,6 +1154,34 @@ def load_install_manifest(target_root: Path) -> ManifestLoadResult:
             schema_version,
             f"Schema version {schema_version} is not supported.",
             manifest_path,
+            "manifest-version",
+        )
+
+    if schema_version == 3:
+        try:
+            entries, catalog_validated, detail = _validate_manifest_v3(data, source_root)
+        except ManifestValidationError as error:
+            return ManifestLoadResult(
+                "corrupt",
+                {},
+                schema_version,
+                error.detail,
+                manifest_path,
+                error.category,
+            )
+        if not catalog_validated:
+            return ManifestLoadResult(
+                "v3-validation-blocked",
+                {},
+                schema_version,
+                detail,
+                manifest_path,
+                "catalog-unavailable",
+                False,
+            )
+        return ManifestLoadResult(
+            "valid-v3", entries, schema_version, detail, manifest_path,
+            "manifest-valid-v3", True,
         )
 
     components = data.get("components")
@@ -311,6 +1192,7 @@ def load_install_manifest(target_root: Path) -> ManifestLoadResult:
             schema_version,
             "Manifest components must be an array.",
             manifest_path,
+            "manifest-schema",
         )
 
     manifest_entries: Dict[str, dict] = {}
@@ -322,6 +1204,7 @@ def load_install_manifest(target_root: Path) -> ManifestLoadResult:
                 schema_version,
                 "Every manifest component must be an object.",
                 manifest_path,
+                "manifest-schema",
             )
         name = component.get("name")
         if not isinstance(name, str) or not name.strip():
@@ -331,6 +1214,7 @@ def load_install_manifest(target_root: Path) -> ManifestLoadResult:
                 schema_version,
                 "Every manifest component must have a non-empty string name.",
                 manifest_path,
+                "manifest-schema",
             )
         if name in manifest_entries:
             return ManifestLoadResult(
@@ -339,16 +1223,27 @@ def load_install_manifest(target_root: Path) -> ManifestLoadResult:
                 schema_version,
                 f"Manifest contains duplicate component name: {name}",
                 manifest_path,
+                "manifest-schema",
             )
         manifest_entries[name] = component
     return ManifestLoadResult(
-        "valid", manifest_entries, schema_version, None, manifest_path
+        f"valid-v{schema_version}",
+        manifest_entries,
+        schema_version,
+        None,
+        manifest_path,
+        f"manifest-valid-v{schema_version}",
     )
 
 
 def enforce_update_manifest_safety(result: ManifestLoadResult) -> bool:
-    if result.state == "valid":
+    if result.state in {"valid-v1", "valid-v2"}:
         return True
+    if result.state == "valid-v3":
+        safe_print(f"❌ Manifest v3 writer/migration is not enabled: {result.manifest_path}")
+        print("   The v3 Manifest was recognized read-only and will not be downgraded or overwritten.")
+        print("   Operation aborted before backup, directory, file, link, temporary artifact, or Manifest mutation.")
+        raise SystemExit(1)
     if result.state == "missing":
         safe_print(
             f"⚠️  Legacy project manifest is missing: {result.manifest_path}"
@@ -1245,7 +2140,24 @@ def main() -> None:
     repo_root = Path(__file__).resolve().parent.parent
     current_path = Path.cwd()
     template_source = repo_root / ".github"
-    manifest_result = load_install_manifest(current_path)
+    catalog_source_root = repo_root if (repo_root / COMPONENT_CATALOG_PATH).is_file() else None
+    manifest_result = load_install_manifest(current_path, source_root=catalog_source_root)
+    if manifest_result.state == "v3-validation-blocked":
+        safe_print(f"❌ v3-validation-blocked: {manifest_result.manifest_path}")
+        print(f"   catalog-unavailable: {manifest_result.detail}")
+        print("   The Manifest cannot be classified as valid without the exact Production Schema and Component Catalog.")
+        print("   Operation aborted before backup, directory, file, link, temporary artifact, or Manifest mutation.")
+        raise SystemExit(1)
+    if manifest_result.state == "valid-v3":
+        safe_print(f"❌ manifest-v3-writer-disabled: {manifest_result.manifest_path}")
+        print("   Manifest v3 writer/migration is not enabled.")
+        print("   The v3 Manifest was recognized read-only and will not be downgraded or overwritten.")
+        if not manifest_result.catalog_validated and manifest_result.detail:
+            print(f"   {manifest_result.detail}")
+        print("   Operation aborted before backup, directory, file, link, temporary artifact, or Manifest mutation.")
+        raise SystemExit(1)
+    if manifest_result.state in {"corrupt", "unsupported"}:
+        enforce_update_manifest_safety(manifest_result)
     if args.update and not enforce_update_manifest_safety(manifest_result):
         return
     manifest_entries = manifest_result.entries

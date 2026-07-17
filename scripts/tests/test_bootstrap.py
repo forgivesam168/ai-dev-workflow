@@ -16,6 +16,19 @@ from scripts import bootstrap
 PHASE0B_REPO_ROOT = Path(bootstrap.__file__).resolve().parent.parent
 PHASE0B_SCRIPT = PHASE0B_REPO_ROOT / "scripts" / "bootstrap.sh"
 PHASE0C_PYTHON_SCRIPT = PHASE0B_REPO_ROOT / "scripts" / "bootstrap.py"
+PHASE4A_VECTORS = json.loads(
+    (PHASE0B_REPO_ROOT / "scripts" / "tests" / "manifest-v3-vectors.json").read_text(
+        encoding="utf-8"
+    )
+)
+PHASE4A_SIMPLE_MANIFEST_NAMES = {
+    "unknown-property", "invalid-enum", "invalid-hash", "path-traversal",
+    "path-absolute", "path-drive", "path-unc", "path-backslash", "path-ads",
+    "path-windows-reserved", "path-trailing-alias", "fork-mapping",
+    "source-locator-traversal", "hash-timepoint-mismatch", "generated-parent-order",
+    "timestamp-order", "component-timestamp-order",
+    "manifest-binding-schema-version-boolean",
+}
 
 
 def _find_phase0b_bash() -> str:
@@ -244,10 +257,10 @@ def _create_phase0a_constitution_fixture(
     ("manifest", "expected_state", "expected_version"),
     [
         (None, "missing", None),
-        ({"schema_version": 1, "components": [{"name": "agents/a.md"}]}, "valid", 1),
-        ({"schema_version": 2, "components": [{"name": "skills/a/"}]}, "valid", 2),
+        ({"schema_version": 1, "components": [{"name": "agents/a.md"}]}, "valid-v1", 1),
+        ({"schema_version": 2, "components": [{"name": "skills/a/"}]}, "valid-v2", 2),
         (b"{not-json", "corrupt", None),
-        ({"schema_version": 3, "components": []}, "unsupported", 3),
+        ({"schema_version": 4, "components": []}, "unsupported", 4),
         ({"schema_version": 2, "components": {}}, "corrupt", 2),
         ({"schema_version": 2, "components": [{"name": "  "}]}, "corrupt", 2),
         (
@@ -264,7 +277,7 @@ def _create_phase0a_constitution_fixture(
         "valid-v1",
         "valid-v2",
         "corrupt-json",
-        "unsupported-v3",
+        "unsupported-v4",
         "components-not-list",
         "invalid-component-name",
         "duplicate-component-name",
@@ -287,7 +300,7 @@ def test_phase0c_loader_returns_explicit_manifest_state(
 
     assert result.state == expected_state
     assert result.schema_version == expected_version
-    if expected_state == "valid":
+    if expected_state in {"valid-v1", "valid-v2"}:
         assert result.entries
         assert next(iter(result.entries.values()))["name"]
     else:
@@ -321,7 +334,7 @@ def test_phase0c_python_unsupported_update_hard_stops_without_write(
 ) -> None:
     target_root = tmp_path / "unsupported-update"
     target_root.mkdir()
-    manifest_bytes = json.dumps({"schema_version": 3, "components": []}).encode()
+    manifest_bytes = json.dumps({"schema_version": 4, "components": []}).encode()
     sentinel, secondary = _create_phase0c_target(target_root, manifest_bytes)
     before_files, before_directories = _snapshot_tree(target_root)
 
@@ -329,8 +342,8 @@ def test_phase0c_python_unsupported_update_hard_stops_without_write(
     output = _phase0c_output(result)
 
     assert result.returncode != 0
-    assert "Observed schema version: 3" in output
-    assert "Supported schema versions: 1, 2" in output
+    assert "Observed schema version: 4" in output
+    assert "Supported schema versions: 1, 2, 3" in output
     assert "before any changes" in output
     assert (target_root / bootstrap.MANIFEST_FILENAME).read_bytes() == manifest_bytes
     _assert_phase0c_no_write(
@@ -382,7 +395,7 @@ def test_phase0c_python_backup_cannot_bypass_unsupported_update_gate(
 ) -> None:
     target_root = tmp_path / "unsupported-backup"
     target_root.mkdir()
-    manifest_bytes = json.dumps({"schema_version": 3, "components": []}).encode()
+    manifest_bytes = json.dumps({"schema_version": 4, "components": []}).encode()
     sentinel, secondary = _create_phase0c_target(target_root, manifest_bytes)
     before_files, before_directories = _snapshot_tree(target_root)
 
@@ -393,6 +406,682 @@ def test_phase0c_python_backup_cannot_bypass_unsupported_update_gate(
     _assert_phase0c_no_write(
         target_root, before_files, before_directories, sentinel, secondary
     )
+
+
+def test_phase4a_reader_foundation_contract_artifacts_and_vectors_exist() -> None:
+    repo_root = Path(bootstrap.__file__).resolve().parent.parent
+    vectors_path = repo_root / "scripts" / "tests" / "manifest-v3-vectors.json"
+    vectors = json.loads(vectors_path.read_text(encoding="utf-8"))
+
+    assert (repo_root / vectors["production_schema"]["path"]).is_file()
+    assert (repo_root / vectors["catalog"]["path"]).is_file()
+    assert vectors["catalog"]["component_count"] == 253
+    assert len(vectors["parse_vectors"]) == 7
+    assert len(vectors["schema_negative_vectors"]) == 4
+    assert len(vectors["catalog_negative_vectors"]) == 11
+    assert len(vectors["manifest_negative_vectors"]) == 35
+    assert len(vectors["mutation_routes"]) == 4
+    for group in (
+        "parse_vectors",
+        "schema_negative_vectors",
+        "catalog_negative_vectors",
+        "manifest_negative_vectors",
+        "mutation_routes",
+    ):
+        names = [vector["name"] for vector in vectors[group]]
+        assert len(names) == len(set(names)), group
+
+
+def test_phase4a_reader_recognizes_v1_v2_with_explicit_states(tmp_path: Path) -> None:
+    for version in (1, 2):
+        manifest_path = tmp_path / bootstrap.MANIFEST_FILENAME
+        manifest_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": version,
+                    "components": [{"name": f"agents/v{version}.md"}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        before = manifest_path.read_bytes()
+        result = bootstrap.load_install_manifest(tmp_path)
+        assert result.state == f"valid-v{version}"
+        assert result.diagnostic_category == f"manifest-valid-v{version}"
+        assert manifest_path.read_bytes() == before
+
+
+def test_phase4a_parse_state_diagnostic_categories(tmp_path: Path) -> None:
+    missing = bootstrap.load_install_manifest(tmp_path)
+    assert (missing.state, missing.diagnostic_category) == ("missing", "manifest-missing")
+    path = tmp_path / bootstrap.MANIFEST_FILENAME
+    path.write_bytes(b"{broken")
+    corrupt = bootstrap.load_install_manifest(tmp_path)
+    assert (corrupt.state, corrupt.diagnostic_category) == ("corrupt", "manifest-json")
+    path.write_text(json.dumps({"schema_version": 4, "components": []}), encoding="utf-8")
+    unsupported = bootstrap.load_install_manifest(tmp_path)
+    assert (unsupported.state, unsupported.diagnostic_category) == ("unsupported", "manifest-version")
+
+
+@pytest.mark.parametrize(
+    "vector",
+    PHASE4A_VECTORS["parse_vectors"],
+    ids=[vector["name"] for vector in PHASE4A_VECTORS["parse_vectors"]],
+)
+def test_phase4a_correction2_python_consumes_every_parse_vector(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, vector: dict
+) -> None:
+    name = vector["name"]
+    source_root = None
+    if name == "missing":
+        pass
+    elif name in {"valid-v1", "valid-v2"}:
+        version = int(name[-1])
+        (tmp_path / bootstrap.MANIFEST_FILENAME).write_text(
+            json.dumps({"schema_version": version, "components": []}), encoding="utf-8"
+        )
+    elif name in {"valid-v3", "v3-source-unavailable"}:
+        _phase4a_write_manifest(tmp_path, _phase4a_valid_manifest())
+        if name == "valid-v3":
+            source_root = PHASE0B_REPO_ROOT
+        else:
+            standalone = tmp_path / "standalone" / "scripts" / "bootstrap.py"
+            monkeypatch.setattr(bootstrap, "__file__", str(standalone))
+    elif name == "corrupt-json":
+        (tmp_path / bootstrap.MANIFEST_FILENAME).write_bytes(b"{broken")
+    elif name == "unsupported-version":
+        (tmp_path / bootstrap.MANIFEST_FILENAME).write_text(
+            json.dumps({"schema_version": 4, "components": []}), encoding="utf-8"
+        )
+    else:
+        raise AssertionError(f"Unhandled parse vector: {name}")
+
+    result = bootstrap.load_install_manifest(tmp_path, source_root=source_root)
+
+    assert result.state == vector["state"], name
+    assert result.diagnostic_category == vector["category"], name
+    if name == "valid-v3":
+        assert result.catalog_validated
+    if name == "v3-source-unavailable":
+        assert not result.catalog_validated
+        assert not result.entries
+
+
+def test_phase4a_writer_contract_remains_schema_v2(tmp_path: Path) -> None:
+    bootstrap.write_install_manifest(tmp_path, tmp_path, {})
+    written = json.loads((tmp_path / bootstrap.MANIFEST_FILENAME).read_text(encoding="utf-8"))
+    assert written["schema_version"] == 2
+
+
+def _phase4a_catalog_bytes() -> bytes:
+    return (PHASE0B_REPO_ROOT / bootstrap.COMPONENT_CATALOG_PATH).read_bytes()
+
+
+def _phase4a_valid_manifest() -> dict:
+    digest = bootstrap.hash_bytes(_phase4a_catalog_bytes())
+    return {
+        "schema_version": 3,
+        "written_at": "2026-07-17T01:30:05Z",
+        "source_release": {
+            "release_id": bootstrap.COMPONENT_CATALOG_RELEASE_ID,
+            "source_ref": bootstrap.COMPONENT_CATALOG_PATH.as_posix(),
+            "version": bootstrap.COMPONENT_CATALOG_VERSION,
+            "component_catalog": {
+                "path": bootstrap.COMPONENT_CATALOG_PATH.as_posix(),
+                "schema_version": 1,
+                "sha256": digest,
+            },
+        },
+        "last_transaction": {
+            "id": "txn:phase4a-valid",
+            "mode": "update",
+            "writer": "python",
+            "started_at": "2026-07-17T01:30:00Z",
+            "completed_at": "2026-07-17T01:30:05Z",
+            "result": "committed",
+        },
+        "components": [
+            {
+                "identity": {
+                    "id": "cmp:canonical-coder-agent",
+                    "path": "agents/coder.agent.md",
+                    "path_key": "agents/coder.agent.md",
+                    "kind": "file",
+                    "role": "canonical",
+                    "link": None,
+                },
+                "provenance": {
+                    "ownership": "template-managed",
+                    "source": {
+                        "kind": "template",
+                        "locator": "template:agents/coder.agent.md",
+                        "release": bootstrap.COMPONENT_CATALOG_RELEASE_ID,
+                    },
+                    "generated_from": [],
+                    "fork": {
+                        "status": "untouched",
+                        "basis": "verified-managed-equality",
+                        "decision": "manage",
+                        "classified_at": "2026-07-17T01:30:01Z",
+                    },
+                },
+                "hashes": {
+                    "algorithm": "sha256",
+                    "content_basis": "exact-bytes",
+                    "baseline": "sha256:" + "a" * 64,
+                    "observed_before": "sha256:" + "a" * 64,
+                    "proposed_source": "sha256:" + "c" * 64,
+                    "result_after": "sha256:" + "c" * 64,
+                },
+                "lifecycle": {
+                    "state": "active",
+                    "previous_paths": [],
+                    "retirement": None,
+                    "reintroduces_component_id": None,
+                },
+                "last_operation": {
+                    "transaction_id": "txn:older-component-op",
+                    "outcome": "updated",
+                },
+                "installed_at": "2026-04-22T10:00:00Z",
+                "updated_at": "2026-07-17T01:30:05Z",
+            }
+        ],
+    }
+
+
+def _phase4a_write_manifest(root: Path, manifest: dict) -> bytes:
+    payload = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    (root / bootstrap.MANIFEST_FILENAME).write_bytes(payload)
+    return payload
+
+
+def test_phase4a_schema_transform_catalog_allocation_and_candidate_boundary() -> None:
+    package = PHASE0B_REPO_ROOT / "changes" / "workflow-agents-responsibility-alignment"
+    candidate_path = package / "phase-4-manifest-v3.schema.proposed.json"
+    candidate_bytes = candidate_path.read_bytes()
+    assert bootstrap.hash_bytes(candidate_bytes) == (
+        "sha256:c4623a55745d816494c1623eb242961b5ea0a458bd8f7cdabd9fcda73f6de886"
+    )
+    candidate = json.loads(candidate_bytes)
+    production = json.loads(
+        (PHASE0B_REPO_ROOT / bootstrap.PRODUCTION_MANIFEST_SCHEMA).read_text(encoding="utf-8")
+    )
+    candidate["$id"] = production["$id"]
+    candidate["title"] = production["title"]
+    candidate["description"] = production["description"]
+    candidate["required"].remove("proposal_status")
+    del candidate["properties"]["proposal_status"]
+    assert candidate == production
+
+    catalog = json.loads(_phase4a_catalog_bytes())
+    components = catalog["components"]
+    assert len(components) == 253
+    assert [item["id"] for item in components] == sorted(item["id"] for item in components)
+    assert {role: sum(item["role"] == role for item in components) for role in (
+        "canonical", "generated", "project-owned", "compatibility"
+    )} == {"canonical": 101, "generated": 110, "project-owned": 3, "compatibility": 39}
+    assert {kind: sum(item["kind"] == kind for item in components) for kind in (
+        "file", "directory", "mount"
+    )} == {"file": 249, "directory": 1, "mount": 3}
+    fingerprint_rows = [
+        {key: item[key] for key in ("id", "canonical_source_path", "role", "kind", "generated_from")}
+        for item in components
+    ]
+    fingerprint = bootstrap.hash_bytes(
+        json.dumps(fingerprint_rows, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    )
+    assert fingerprint == "sha256:4e68c7431da961b126748b2a3fb110e9dc52094cf1a958b64528337422800c66"
+    mounts = [item for item in components if item["kind"] == "mount"]
+    assert all(item["generated_from"] == ["cmp:canonical-skills-root"] for item in mounts)
+    assert "phase-4-manifest-v3.schema.proposed.json" not in PHASE0C_PYTHON_SCRIPT.read_text(encoding="utf-8")
+    assert "phase-4-manifest-v3.schema.proposed.json" not in (
+        PHASE0B_REPO_ROOT / "scripts" / "bootstrap.ps1"
+    ).read_text(encoding="utf-8")
+
+
+def test_phase4a_python_accepts_catalog_bound_v3_read_only_without_rewrite(tmp_path: Path) -> None:
+    before = _phase4a_write_manifest(tmp_path, _phase4a_valid_manifest())
+    result = bootstrap.load_install_manifest(tmp_path, source_root=PHASE0B_REPO_ROOT)
+    assert result.state == "valid-v3"
+    assert result.diagnostic_category == "manifest-valid-v3"
+    assert result.catalog_validated
+    assert list(result.entries) == ["cmp:canonical-coder-agent"]
+    assert (tmp_path / bootstrap.MANIFEST_FILENAME).read_bytes() == before
+
+
+def _phase4a_directory_mount_manifest() -> dict:
+    manifest = _phase4a_valid_manifest()
+    root = _phase4a_clone_component("cmp:canonical-skills-root", "skills")
+    root["identity"]["kind"] = "directory"
+    root["provenance"]["fork"] = {
+        "status": "not-applicable",
+        "basis": "hash-not-applicable",
+        "decision": "report-only",
+        "classified_at": "2026-07-17T01:30:01Z",
+    }
+    for key in ("baseline", "observed_before", "proposed_source", "result_after"):
+        root["hashes"][key] = None
+    root["last_operation"]["outcome"] = "reported"
+    mount = _phase4a_clone_component(
+        "cmp:generated-agent-skills-mount",
+        ".agent/skills",
+        generated_from=["cmp:canonical-skills-root"],
+    )
+    mount["identity"]["kind"] = "mount"
+    mount["identity"]["link"] = {
+        "target_path": "skills",
+        "target_path_key": "skills",
+        "mode": "symlink",
+    }
+    mount["provenance"]["fork"] = deepcopy(root["provenance"]["fork"])
+    for key in ("baseline", "observed_before", "proposed_source", "result_after"):
+        mount["hashes"][key] = None
+    mount["last_operation"]["outcome"] = "reported"
+    manifest["components"] = [root, mount]
+    return manifest
+
+
+def test_phase4a_python_accepts_directory_parent_and_mount_lineage(tmp_path: Path) -> None:
+    _phase4a_write_manifest(tmp_path, _phase4a_directory_mount_manifest())
+    result = bootstrap.load_install_manifest(tmp_path, source_root=PHASE0B_REPO_ROOT)
+    assert result.state == "valid-v3"
+    assert result.catalog_validated
+    assert list(result.entries) == [
+        "cmp:canonical-skills-root",
+        "cmp:generated-agent-skills-mount",
+    ]
+
+
+def _phase4a_apply_simple_manifest_mutation(name: str, manifest: dict) -> None:
+    component = manifest["components"][0]
+    mutations = {
+        "unknown-property": lambda: manifest.update({"unknown": True}),
+        "invalid-enum": lambda: manifest["last_transaction"].update({"mode": "prune"}),
+        "invalid-hash": lambda: component["hashes"].update({"baseline": "SHA256:BAD"}),
+        "path-traversal": lambda: component["identity"].update({"path": "../escape"}),
+        "path-absolute": lambda: component["identity"].update({"path": "/escape"}),
+        "path-drive": lambda: component["identity"].update({"path": "C:/escape"}),
+        "path-unc": lambda: component["identity"].update({"path": "//server/share"}),
+        "path-backslash": lambda: component["identity"].update({"path": "agents\\coder.md"}),
+        "path-ads": lambda: component["identity"].update({"path": "agents/coder.md:ads"}),
+        "path-windows-reserved": lambda: component["identity"].update({"path": "agents/CON.md"}),
+        "path-trailing-alias": lambda: component["identity"].update({"path": "agents/coder."}),
+        "fork-mapping": lambda: component["provenance"]["fork"].update({"decision": "preserve"}),
+        "source-locator-traversal": lambda: component["provenance"]["source"].update({"locator": "template:../secret"}),
+        "hash-timepoint-mismatch": lambda: component["hashes"].update({"result_after": "sha256:" + "d" * 64}),
+        "generated-parent-order": lambda: component["provenance"].update({"generated_from": ["cmp:z-parent", "cmp:a-parent"]}),
+        "timestamp-order": lambda: manifest["last_transaction"].update({"completed_at": "2026-07-17T01:29:59Z"}),
+        "component-timestamp-order": lambda: component.update({"installed_at": "2026-07-18T00:00:00Z"}),
+        "manifest-binding-schema-version-boolean": lambda: manifest["source_release"]["component_catalog"].update({"schema_version": True}),
+    }
+    if name not in mutations:
+        raise AssertionError(f"Unhandled simple Manifest vector: {name}")
+    mutations[name]()
+
+
+@pytest.mark.parametrize(
+    ("name", "category"),
+    [
+        (vector["name"], vector["category"])
+        for vector in PHASE4A_VECTORS["manifest_negative_vectors"]
+        if vector["name"] in PHASE4A_SIMPLE_MANIFEST_NAMES
+    ],
+)
+def test_phase4a_python_rejects_v3_semantic_vectors(
+    tmp_path: Path, name: str, category: str
+) -> None:
+    manifest = _phase4a_valid_manifest()
+    _phase4a_apply_simple_manifest_mutation(name, manifest)
+    _phase4a_write_manifest(tmp_path, manifest)
+    result = bootstrap.load_install_manifest(tmp_path, source_root=PHASE0B_REPO_ROOT)
+    assert result.state == "corrupt", name
+    assert result.diagnostic_category == category, name
+
+
+def _phase4a_clone_component(
+    component_id: str, path: str, *, generated_from: Optional[list] = None
+) -> dict:
+    component = deepcopy(_phase4a_valid_manifest()["components"][0])
+    component["identity"]["id"] = component_id
+    component["identity"]["path"] = path
+    component["identity"]["path_key"] = path.lower()
+    if generated_from is not None:
+        component["identity"]["role"] = "generated"
+        component["provenance"]["ownership"] = "derived-runtime"
+        component["provenance"]["source"] = {
+            "kind": "generated",
+            "locator": f"generated:{path}",
+            "release": bootstrap.COMPONENT_CATALOG_RELEASE_ID,
+        }
+        component["provenance"]["generated_from"] = generated_from
+    else:
+        component["provenance"]["source"]["locator"] = f"template:{path}"
+    return component
+
+
+def _phase4a_make_tombstone(component: dict, successor: Optional[str] = None) -> None:
+    component["hashes"]["proposed_source"] = None
+    component["hashes"]["result_after"] = None
+    component["lifecycle"] = {
+        "state": "tombstoned",
+        "previous_paths": [],
+        "retirement": {
+            "reason": "deleted",
+            "detected_at": "2026-07-17T01:30:02Z",
+            "source_evidence": {
+                "type": "component-absent-in-source",
+                "locator": "template:release-retirement",
+            },
+            "successor_component_id": successor,
+            "pruned_at": "2026-07-17T01:30:04Z",
+        },
+        "reintroduces_component_id": None,
+    }
+    component["last_operation"]["outcome"] = "tombstoned"
+
+
+def _phase4a_complex_manifest_vector(name: str) -> dict:
+    manifest = _phase4a_valid_manifest()
+    coder = manifest["components"][0]
+    if name == "path-case-collision":
+        second = _phase4a_clone_component("cmp:canonical-pm-agent", "Agents/Coder.Agent.md")
+        second["identity"]["path_key"] = "agents/coder.agent.md"
+        manifest["components"].append(second)
+    elif name == "generated-parent-duplicate":
+        coder["identity"]["role"] = "generated"
+        coder["provenance"]["ownership"] = "derived-runtime"
+        coder["provenance"]["source"]["kind"] = "generated"
+        coder["provenance"]["source"]["locator"] = "generated:agents/coder.agent.md"
+        coder["provenance"]["generated_from"] = ["cmp:canonical-pm-agent", "cmp:canonical-pm-agent"]
+    elif name == "generated-parent-missing":
+        manifest["components"] = [
+            _phase4a_clone_component(
+                "cmp:generated-github-coder-agent",
+                ".github/agents/coder.agent.md",
+                generated_from=["cmp:canonical-missing-agent"],
+            )
+        ]
+    elif name == "generated-parent-cycle":
+        manifest["components"] = sorted(
+            [
+                _phase4a_clone_component(
+                    "cmp:generated-github-coder-agent",
+                    ".github/agents/coder.agent.md",
+                    generated_from=["cmp:generated-github-pm-agent"],
+                ),
+                _phase4a_clone_component(
+                    "cmp:generated-github-pm-agent",
+                    ".github/agents/pm.agent.md",
+                    generated_from=["cmp:generated-github-coder-agent"],
+                ),
+            ],
+            key=lambda item: item["identity"]["id"],
+        )
+    elif name == "retired-invalid":
+        coder["lifecycle"]["state"] = "retired"
+    elif name == "tombstone-invalid":
+        _phase4a_make_tombstone(coder)
+        coder["hashes"]["result_after"] = "sha256:" + "c" * 64
+    elif name == "reintroduction-self":
+        coder["lifecycle"]["reintroduces_component_id"] = coder["identity"]["id"]
+    elif name == "reintroduction-missing":
+        coder["lifecycle"]["reintroduces_component_id"] = "cmp:canonical-missing-agent"
+    elif name == "reintroduction-non-tombstone":
+        coder["lifecycle"]["reintroduces_component_id"] = "cmp:canonical-pm-agent"
+        manifest["components"].append(
+            _phase4a_clone_component("cmp:canonical-pm-agent", "agents/pm.agent.md")
+        )
+    elif name == "reintroduction-cycle":
+        _phase4a_make_tombstone(coder, "cmp:canonical-pm-agent")
+        replacement = _phase4a_clone_component("cmp:canonical-pm-agent", "agents/pm.agent.md")
+        replacement["lifecycle"]["reintroduces_component_id"] = "cmp:canonical-coder-agent"
+        manifest["components"].append(replacement)
+    elif name == "duplicate-active-path":
+        manifest["components"].append(
+            _phase4a_clone_component("cmp:canonical-pm-agent", "agents/coder.agent.md")
+        )
+    elif name == "catalog-component-mismatch":
+        coder["identity"]["path"] = "agents/renamed-coder.agent.md"
+        coder["identity"]["path_key"] = "agents/renamed-coder.agent.md"
+        coder["provenance"]["source"]["locator"] = "template:agents/renamed-coder.agent.md"
+    elif name in {"link-target-escape", "mount-target-escape"}:
+        coder["identity"]["kind"] = "link" if name.startswith("link") else "mount"
+        coder["identity"]["role"] = "generated"
+        coder["identity"]["link"] = {
+            "target_path": "../outside",
+            "target_path_key": "../outside",
+            "mode": "symlink",
+        }
+    elif name == "retirement-detected-after-updated":
+        _phase4a_make_tombstone(coder)
+        coder["lifecycle"]["retirement"]["detected_at"] = "2026-07-18T00:00:00Z"
+    elif name == "retirement-pruned-after-updated":
+        _phase4a_make_tombstone(coder)
+        coder["lifecycle"]["retirement"]["pruned_at"] = "2026-07-18T00:00:00Z"
+    elif name == "manifest-role-kind-mismatch":
+        coder["identity"]["kind"] = "mount"
+        coder["identity"]["link"] = {
+            "target_path": "skills",
+            "target_path_key": "skills",
+            "mode": "symlink",
+        }
+    else:
+        raise AssertionError(f"Unknown vector: {name}")
+    manifest["components"] = sorted(manifest["components"], key=lambda item: item["identity"]["id"])
+    return manifest
+
+
+@pytest.mark.parametrize(
+    ("name", "category"),
+    [
+        (vector["name"], vector["category"])
+        for vector in PHASE4A_VECTORS["manifest_negative_vectors"]
+        if vector["name"] not in PHASE4A_SIMPLE_MANIFEST_NAMES
+    ],
+)
+def test_phase4a_python_rejects_cross_record_and_link_vectors(
+    tmp_path: Path, name: str, category: str
+) -> None:
+    _phase4a_write_manifest(tmp_path, _phase4a_complex_manifest_vector(name))
+    result = bootstrap.load_install_manifest(tmp_path, source_root=PHASE0B_REPO_ROOT)
+    assert result.state == "corrupt", name
+    assert result.diagnostic_category == category, name
+
+
+def _phase4a_write_catalog_source(root: Path, catalog: dict) -> bytes:
+    schema_path = root / bootstrap.PRODUCTION_MANIFEST_SCHEMA
+    schema_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(PHASE0B_REPO_ROOT / bootstrap.PRODUCTION_MANIFEST_SCHEMA, schema_path)
+    path = root / bootstrap.COMPONENT_CATALOG_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = (json.dumps(catalog, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    path.write_bytes(payload)
+    return payload
+
+
+@pytest.mark.parametrize(
+    "vector",
+    PHASE4A_VECTORS["schema_negative_vectors"],
+    ids=[vector["name"] for vector in PHASE4A_VECTORS["schema_negative_vectors"]],
+)
+def test_phase4a_correction2_python_requires_exact_production_schema(
+    tmp_path: Path, vector: dict
+) -> None:
+    source = tmp_path / "source"
+    catalog = json.loads(_phase4a_catalog_bytes())
+    catalog_bytes = _phase4a_write_catalog_source(source, catalog)
+    schema_path = source / bootstrap.PRODUCTION_MANIFEST_SCHEMA
+    if vector["name"] == "schema-missing":
+        schema_path.unlink()
+    elif vector["name"] == "schema-invalid-json":
+        schema_path.write_bytes(b"{broken")
+    else:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        if vector["name"] == "schema-wrong-id":
+            schema["$id"] = "urn:unexpected"
+        elif vector["name"] == "schema-proposal-marker":
+            schema["properties"]["proposal_status"] = {"const": "proposed"}
+            schema["required"].append("proposal_status")
+        else:
+            raise AssertionError(f"Unhandled Schema vector: {vector['name']}")
+        schema_path.write_text(json.dumps(schema), encoding="utf-8")
+    manifest = _phase4a_valid_manifest()
+    manifest["source_release"]["component_catalog"]["sha256"] = bootstrap.hash_bytes(
+        catalog_bytes
+    )
+    target = tmp_path / "target"
+    target.mkdir()
+    _phase4a_write_manifest(target, manifest)
+
+    result = bootstrap.load_install_manifest(target, source_root=source)
+
+    assert result.state == "corrupt", vector["name"]
+    assert result.diagnostic_category == vector["category"], vector["name"]
+
+
+def test_phase4a_correction2_python_catalog_generated_from_allows_more_than_64_items(
+    tmp_path: Path,
+) -> None:
+    catalog = json.loads(_phase4a_catalog_bytes())
+    component = next(
+        item for item in catalog["components"] if item["id"] == "cmp:generated-github-coder-agent"
+    )
+    component["generated_from"] = [f"cmp:canonical-missing-{index:03d}" for index in range(65)]
+    _phase4a_write_catalog_source(tmp_path, catalog)
+
+    with pytest.raises(bootstrap.ManifestValidationError) as error:
+        bootstrap._load_and_validate_component_catalog(tmp_path)
+
+    assert error.value.category == "catalog-reference"
+
+
+@pytest.mark.parametrize(
+    ("name", "category"),
+    [(vector["name"], vector["category"]) for vector in PHASE4A_VECTORS["catalog_negative_vectors"]],
+)
+def test_phase4a_python_rejects_catalog_vectors(
+    tmp_path: Path, name: str, category: str
+) -> None:
+    catalog = json.loads(_phase4a_catalog_bytes())
+    by_id = {item["id"]: item for item in catalog["components"]}
+    if name == "catalog-duplicate-id":
+        catalog["components"].append(deepcopy(by_id["cmp:canonical-coder-agent"]))
+        catalog["components"].sort(key=lambda item: item["id"])
+    elif name == "catalog-duplicate-active-path":
+        by_id["cmp:canonical-pm-agent"]["canonical_source_path"] = "agents/coder.agent.md"
+    elif name == "catalog-unknown-parent":
+        by_id["cmp:generated-github-coder-agent"]["generated_from"] = ["cmp:canonical-missing-agent"]
+    elif name == "catalog-cycle":
+        by_id["cmp:generated-github-coder-agent"]["generated_from"] = ["cmp:generated-github-pm-agent"]
+        by_id["cmp:generated-github-pm-agent"]["generated_from"] = ["cmp:generated-github-coder-agent"]
+    elif name == "catalog-self-reference":
+        by_id["cmp:generated-github-coder-agent"]["generated_from"] = ["cmp:generated-github-coder-agent"]
+    elif name == "catalog-terminal-id-reuse":
+        by_id["cmp:canonical-coder-agent"]["lifecycle_status"] = "tombstoned"
+    elif name == "catalog-role-kind-mismatch":
+        by_id["cmp:canonical-coder-agent"]["kind"] = "mount"
+    elif name == "catalog-schema-version-boolean":
+        catalog["catalog_schema_version"] = True
+    elif name not in {"catalog-missing", "catalog-digest-mismatch", "catalog-release-mismatch"}:
+        raise AssertionError(f"Unhandled Catalog vector: {name}")
+    source = tmp_path / "source"
+    if name == "catalog-missing":
+        schema_path = source / bootstrap.PRODUCTION_MANIFEST_SCHEMA
+        schema_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(PHASE0B_REPO_ROOT / bootstrap.PRODUCTION_MANIFEST_SCHEMA, schema_path)
+        catalog_bytes = _phase4a_catalog_bytes()
+    else:
+        catalog_bytes = _phase4a_write_catalog_source(source, catalog)
+    manifest = _phase4a_valid_manifest()
+    manifest["source_release"]["component_catalog"]["sha256"] = bootstrap.hash_bytes(catalog_bytes)
+    if name == "catalog-digest-mismatch":
+        manifest["source_release"]["component_catalog"]["sha256"] = "sha256:" + "0" * 64
+    if name == "catalog-release-mismatch":
+        manifest["source_release"]["release_id"] = "unexpected-release"
+    target = tmp_path / "target"
+    target.mkdir()
+    _phase4a_write_manifest(target, manifest)
+    result = bootstrap.load_install_manifest(target, source_root=source)
+    assert result.state == "corrupt", name
+    assert result.diagnostic_category == category, name
+
+
+@pytest.mark.parametrize(
+    "route",
+    PHASE4A_VECTORS["mutation_routes"],
+    ids=[route["name"] for route in PHASE4A_VECTORS["mutation_routes"]],
+)
+def test_phase4a_python_valid_v3_blocks_every_mutation_route_before_write(
+    tmp_path: Path, route: dict
+) -> None:
+    target = tmp_path / "adopter"
+    target.mkdir()
+    manifest_bytes = (json.dumps(_phase4a_valid_manifest(), ensure_ascii=False) + "\n").encode("utf-8")
+    sentinel, secondary = _create_phase0c_target(target, manifest_bytes)
+    before_files, before_directories = _snapshot_tree(target)
+    result = _run_phase0c_python(target, *tuple(route["python_arguments"]))
+    output = _phase0c_output(result)
+    assert result.returncode != 0
+    assert route["category"] in output
+    assert "writer/migration is not enabled" in output
+    assert "before backup, directory, file, link, temporary artifact, or Manifest mutation" in output
+    _assert_phase0c_no_write(target, before_files, before_directories, sentinel, secondary)
+
+
+@pytest.mark.parametrize(
+    "route",
+    PHASE4A_VECTORS["mutation_routes"],
+    ids=[route["name"] for route in PHASE4A_VECTORS["mutation_routes"]],
+)
+@pytest.mark.parametrize("manifest_kind", ["corrupt-json", "unsupported-version"])
+def test_phase4a_correction2_python_corrupt_and_unsupported_block_every_route(
+    tmp_path: Path, route: dict, manifest_kind: str
+) -> None:
+    target = tmp_path / f"{manifest_kind}-{route['name']}"
+    target.mkdir()
+    manifest_bytes = (
+        b"{broken"
+        if manifest_kind == "corrupt-json"
+        else json.dumps({"schema_version": 4, "components": []}).encode("utf-8")
+    )
+    sentinel, secondary = _create_phase0c_target(target, manifest_bytes)
+    before_files, before_directories = _snapshot_tree(target)
+
+    result = _run_phase0c_python(target, *tuple(route["python_arguments"]))
+
+    assert result.returncode != 0
+    assert manifest_kind.split("-")[0].capitalize() in _phase0c_output(result)
+    _assert_phase0c_no_write(target, before_files, before_directories, sentinel, secondary)
+
+
+def test_phase4a_correction2_python_standalone_labels_v3_validation_blocked_before_write(
+    tmp_path: Path,
+) -> None:
+    standalone_script = tmp_path / "standalone" / "scripts" / "bootstrap.py"
+    standalone_script.parent.mkdir(parents=True)
+    shutil.copyfile(PHASE0C_PYTHON_SCRIPT, standalone_script)
+    target = tmp_path / "adopter"
+    target.mkdir()
+    manifest_bytes = (json.dumps(_phase4a_valid_manifest(), ensure_ascii=False) + "\n").encode("utf-8")
+    sentinel, secondary = _create_phase0c_target(target, manifest_bytes)
+    before_files, before_directories = _snapshot_tree(target)
+    result = subprocess.run(
+        [sys.executable, str(standalone_script)],
+        cwd=target,
+        capture_output=True,
+        check=False,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    output = _phase0c_output(result)
+    assert result.returncode != 0
+    assert "v3-validation-blocked" in output
+    assert "catalog-unavailable" in output
+    assert "valid-v3" not in output
+    assert "下載" not in output
+    _assert_phase0c_no_write(target, before_files, before_directories, sentinel, secondary)
 
 
 def test_phase0a_new_adopter_uses_adopter_constitution_without_maintainer_policy(

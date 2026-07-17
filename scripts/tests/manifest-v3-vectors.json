@@ -1,0 +1,110 @@
+{
+  "vector_schema_version": 1,
+  "candidate_schema_sha256": "sha256:c4623a55745d816494c1623eb242961b5ea0a458bd8f7cdabd9fcda73f6de886",
+  "production_schema": {
+    "path": "schemas/ai-workflow-install-manifest-v3.schema.json",
+    "id": "urn:ai-dev-workflow:manifest-schema:v3",
+    "draft": "https://json-schema.org/draft/2020-12/schema"
+  },
+  "catalog": {
+    "path": "manifest/component-catalog.json",
+    "catalog_schema_version": 1,
+    "catalog_version": "1",
+    "release_id": "ai-dev-workflow:component-catalog:1",
+    "source_ref": "manifest/component-catalog.json",
+    "version": "1",
+    "component_count": 253,
+    "allocation_fingerprint": "sha256:4e68c7431da961b126748b2a3fb110e9dc52094cf1a958b64528337422800c66",
+    "role_counts": {
+      "canonical": 101,
+      "generated": 110,
+      "project-owned": 3,
+      "compatibility": 39
+    },
+    "kind_counts": {
+      "file": 249,
+      "directory": 1,
+      "mount": 3
+    }
+  },
+  "parse_vectors": [
+    { "name": "missing", "state": "missing", "category": "manifest-missing" },
+    { "name": "valid-v1", "state": "valid-v1", "category": "manifest-valid-v1" },
+    { "name": "valid-v2", "state": "valid-v2", "category": "manifest-valid-v2" },
+    { "name": "valid-v3", "state": "valid-v3", "category": "manifest-valid-v3" },
+    { "name": "v3-source-unavailable", "state": "v3-validation-blocked", "category": "catalog-unavailable" },
+    { "name": "corrupt-json", "state": "corrupt", "category": "manifest-json" },
+    { "name": "unsupported-version", "state": "unsupported", "category": "manifest-version" }
+  ],
+  "schema_negative_vectors": [
+    { "name": "schema-missing", "category": "schema-missing" },
+    { "name": "schema-invalid-json", "category": "schema-json" },
+    { "name": "schema-wrong-id", "category": "schema-identity" },
+    { "name": "schema-proposal-marker", "category": "schema-proposal-marker" }
+  ],
+  "catalog_negative_vectors": [
+    { "name": "catalog-missing", "category": "catalog-missing" },
+    { "name": "catalog-duplicate-id", "category": "catalog-duplicate-id" },
+    { "name": "catalog-duplicate-active-path", "category": "catalog-duplicate-active-path" },
+    { "name": "catalog-unknown-parent", "category": "catalog-reference" },
+    { "name": "catalog-cycle", "category": "catalog-cycle" },
+    { "name": "catalog-self-reference", "category": "catalog-self-reference" },
+    { "name": "catalog-terminal-id-reuse", "category": "catalog-lifecycle" },
+    { "name": "catalog-digest-mismatch", "category": "catalog-digest" },
+    { "name": "catalog-release-mismatch", "category": "catalog-release" },
+    { "name": "catalog-role-kind-mismatch", "category": "catalog-role-kind" },
+    { "name": "catalog-schema-version-boolean", "category": "catalog-schema" }
+  ],
+  "manifest_negative_vectors": [
+    { "name": "unknown-property", "category": "manifest-schema" },
+    { "name": "invalid-enum", "category": "manifest-schema" },
+    { "name": "invalid-hash", "category": "manifest-hash" },
+    { "name": "path-traversal", "category": "manifest-path" },
+    { "name": "path-absolute", "category": "manifest-path" },
+    { "name": "path-drive", "category": "manifest-path" },
+    { "name": "path-unc", "category": "manifest-path" },
+    { "name": "path-backslash", "category": "manifest-path" },
+    { "name": "path-ads", "category": "manifest-path" },
+    { "name": "path-windows-reserved", "category": "manifest-path" },
+    { "name": "path-trailing-alias", "category": "manifest-path" },
+    { "name": "path-case-collision", "category": "manifest-path-collision" },
+    { "name": "fork-mapping", "category": "manifest-fork" },
+    { "name": "source-locator-traversal", "category": "manifest-provenance" },
+    { "name": "hash-timepoint-mismatch", "category": "manifest-hash" },
+    { "name": "generated-parent-order", "category": "manifest-provenance" },
+    { "name": "generated-parent-duplicate", "category": "manifest-provenance" },
+    { "name": "generated-parent-missing", "category": "manifest-provenance" },
+    { "name": "generated-parent-cycle", "category": "manifest-provenance" },
+    { "name": "retired-invalid", "category": "manifest-lifecycle" },
+    { "name": "tombstone-invalid", "category": "manifest-lifecycle" },
+    { "name": "reintroduction-self", "category": "manifest-reintroduction" },
+    { "name": "reintroduction-missing", "category": "manifest-reintroduction" },
+    { "name": "reintroduction-non-tombstone", "category": "manifest-reintroduction" },
+    { "name": "reintroduction-cycle", "category": "manifest-reintroduction" },
+    { "name": "duplicate-active-path", "category": "manifest-path-collision" },
+    { "name": "catalog-component-mismatch", "category": "catalog-agreement" },
+    { "name": "timestamp-order", "category": "manifest-timestamp" },
+    { "name": "component-timestamp-order", "category": "manifest-timestamp" },
+    { "name": "retirement-detected-after-updated", "category": "manifest-timestamp" },
+    { "name": "retirement-pruned-after-updated", "category": "manifest-timestamp" },
+    { "name": "manifest-role-kind-mismatch", "category": "manifest-role-kind" },
+    { "name": "manifest-binding-schema-version-boolean", "category": "catalog-release" },
+    { "name": "link-target-escape", "category": "manifest-link" },
+    { "name": "mount-target-escape", "category": "manifest-link" }
+  ],
+  "mutation_routes": [
+    { "name": "install", "python_arguments": [], "powershell_arguments": [], "category": "manifest-v3-writer-disabled" },
+    { "name": "update", "python_arguments": ["--update"], "powershell_arguments": ["-Update"], "category": "manifest-v3-writer-disabled" },
+    { "name": "force", "python_arguments": ["--force"], "powershell_arguments": ["-Force"], "category": "manifest-v3-writer-disabled" },
+    { "name": "update-force", "python_arguments": ["--update", "--force"], "powershell_arguments": ["-Update", "-Force"], "category": "manifest-v3-writer-disabled" }
+  ],
+  "invariants": [
+    "candidate-schema-bytes-immutable",
+    "candidate-not-runtime-dependency",
+    "production-schema-allowlisted-transform-only",
+    "writer-schema-version-2",
+    "legacy-read-only-no-rewrite",
+    "valid-v3-zero-write-before-source-download-or-adopter-mutation",
+    "component-last-operation-may-predate-top-transaction"
+  ]
+}

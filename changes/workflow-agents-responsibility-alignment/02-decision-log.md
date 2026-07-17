@@ -227,3 +227,21 @@ These amendments preserve the approved architecture directions above. They corre
 - **Check**: Final status-only Schema approval diff before Proposal PR #11 delivery and guarded merge.
 - **Finding**: The complete repository gate passed every required check and returned `GATE PASSED WITH NOTES`. `agents/pm.agent.md` and `agents/spec.agent.md` remain at 29 non-empty lines and produced only the already-approved `LINE_COUNT` soft warnings; no Agent or generated file changed. The historical `05-review.md` compatibility warning and pre-existing `pytest-asyncio` deprecation warning also remained nonblocking.
 - **Decision**: Proceed after rerunning the full gate on this final recorded diff. These warnings do not match an approved blocking condition and cannot override any deterministic failure.
+
+### Amendment A-08 — Phase 4A Reader-First Foundation Authorized
+
+- **Approval source**: Explicit current-task instruction, "Phase 4A — Manifest v3 Reader-First Foundation".
+- **Approved baseline**: Amendment A-07 and Proposal PR #11 squash merge `5300d56c9ef9594f9bb3007b22824a644e06ee62`; OD-01 through OD-17 remain unchanged and approved.
+- **Production Schema**: Phase 4A may create Draft 2020-12 `schemas/ai-workflow-install-manifest-v3.schema.json` with stable `$id` `urn:ai-dev-workflow:manifest-schema:v3` only through the approved deterministic candidate-to-production transform. Candidate artifacts remain byte-identical non-runtime evidence.
+- **Stable Component Identity**: Phase 4A may create canonical Catalog `manifest/component-catalog.json`, catalog schema version 1, with initial logical release identity `ai-dev-workflow:component-catalog:1`, source ref `manifest/component-catalog.json`, and version `1`. Exact-byte SHA-256 is integrity evidence only, never authenticity or authorization.
+- **Reader capability**: Python and PowerShell may strictly recognize and validate valid v3 as `valid-v3`, including Production Schema, exact Catalog binding, path, hash, provenance, fork, lifecycle, transaction, and cross-record semantics. Existing v1/v2 read compatibility and no-read-time-rewrite behavior must remain intact.
+- **Mutation boundary**: Every current install/update/force path that observes valid v3 must stop before backup, directory, file, link, temporary production artifact, or Manifest mutation, report that writer/migration is not enabled, and must never downgrade or overwrite v3 with v2.
+- **Writer boundary**: Production writers remain schema version 2. Phase 4A does not authorize conversion planning, writer enablement, migration, tombstone mutation, prune/delete, real-adopter execution, deployment, or production operation.
+- **Phase boundary**: Phase 4A is one reader-first implementation tranche. Phase 4 remains incomplete; Phase 4B and later tranches plus Phase 5 remain separately unauthorized.
+- **Architecture direction changed**: No.
+
+### Gate-Check Note — 2026-07-17 (Phase 4A Reader-First Foundation)
+
+- **Check**: Phase 4A local product diff after two bounded Luna correction rounds and Sol independent review.
+- **Finding**: The complete repository gate passed every deterministic check and returned `GATE PASSED WITH NOTES`. `agents/pm.agent.md` and `agents/spec.agent.md` remain at 29 non-empty lines and produced only the approved `LINE_COUNT` soft warnings; neither Agent nor any generated representation changed in Phase 4A. The direct Change Package check also retained one nonblocking historical compatibility warning for `changes/2026-02-09-bootstrap-installer/05-review.md`. The Python environment emitted the pre-existing `pytest-asyncio` deprecation warning.
+- **Decision**: Record these findings as warning-only and rerun the complete repository gate on the final governance/status diff before commit. They do not satisfy an approved blocking condition, do not override deterministic checks, and do not authorize any scope expansion.
