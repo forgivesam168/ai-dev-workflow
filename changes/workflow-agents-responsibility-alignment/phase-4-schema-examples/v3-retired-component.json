@@ -1,0 +1,79 @@
+{
+  "proposal_status": "PROPOSED — NOT APPROVED — NOT IMPLEMENTED",
+  "schema_version": 3,
+  "written_at": "2026-07-17T01:20:05Z",
+  "source_release": {
+    "release_id": "example-release-3",
+    "source_ref": "refs/tags/example-v3",
+    "version": "3.0.0-proposed",
+    "component_catalog": {
+      "path": "manifest/component-catalog.json",
+      "schema_version": 1,
+      "sha256": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+    }
+  },
+  "last_transaction": {
+    "id": "txn:retired-example",
+    "mode": "update",
+    "writer": "python",
+    "started_at": "2026-07-17T01:20:00Z",
+    "completed_at": "2026-07-17T01:20:05Z",
+    "result": "committed"
+  },
+  "components": [
+    {
+      "identity": {
+        "id": "cmp:canonical-old-prompt",
+        "path": "prompts/old.prompt.md",
+        "path_key": "prompts/old.prompt.md",
+        "kind": "file",
+        "role": "canonical",
+        "link": null
+      },
+      "provenance": {
+        "ownership": "template-managed",
+        "source": {
+          "kind": "template",
+          "locator": "template:prompts/old.prompt.md",
+          "release": "example-release-2"
+        },
+        "generated_from": [],
+        "fork": {
+          "status": "untouched",
+          "basis": "verified-managed-equality",
+          "decision": "manage",
+          "classified_at": "2026-07-17T01:20:01Z"
+        }
+      },
+      "hashes": {
+        "algorithm": "sha256",
+        "content_basis": "exact-bytes",
+        "baseline": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "observed_before": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "proposed_source": null,
+        "result_after": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "lifecycle": {
+        "state": "retired",
+        "previous_paths": [],
+        "retirement": {
+          "reason": "deleted",
+          "detected_at": "2026-07-17T01:20:02Z",
+          "source_evidence": {
+            "type": "component-absent-in-source",
+            "locator": "release:example-release-3#components"
+          },
+          "successor_component_id": null,
+          "pruned_at": null
+        },
+        "reintroduces_component_id": null
+      },
+      "last_operation": {
+        "transaction_id": "txn:retired-example",
+        "outcome": "retired"
+      },
+      "installed_at": "2026-04-22T10:00:00Z",
+      "updated_at": "2026-07-17T01:20:05Z"
+    }
+  ]
+}

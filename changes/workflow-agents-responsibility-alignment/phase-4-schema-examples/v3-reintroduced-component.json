@@ -1,0 +1,124 @@
+{
+  "proposal_status": "PROPOSED — NOT APPROVED — NOT IMPLEMENTED",
+  "schema_version": 3,
+  "written_at": "2026-07-17T03:30:05Z",
+  "source_release": {
+    "release_id": "example-release-4",
+    "source_ref": "refs/tags/example-v4",
+    "version": "4.0.0-proposed",
+    "component_catalog": {
+      "path": "manifest/component-catalog.json",
+      "schema_version": 1,
+      "sha256": "sha256:32d8c6de2094683e3c156cee8928d83da714ef46b8fda4543eb74cc5bf13722f"
+    }
+  },
+  "last_transaction": {
+    "id": "txn:post-reinstall-verification",
+    "mode": "update",
+    "writer": "python",
+    "started_at": "2026-07-17T03:30:00Z",
+    "completed_at": "2026-07-17T03:30:05Z",
+    "result": "committed"
+  },
+  "components": [
+    {
+      "identity": {
+        "id": "cmp:canonical-reintroduced-agent-v1",
+        "path": "agents/reintroduced.agent.md",
+        "path_key": "agents/reintroduced.agent.md",
+        "kind": "file",
+        "role": "canonical",
+        "link": null
+      },
+      "provenance": {
+        "ownership": "template-managed",
+        "source": {
+          "kind": "template",
+          "locator": "template:agents/reintroduced.agent.md",
+          "release": "example-release-2"
+        },
+        "generated_from": [],
+        "fork": {
+          "status": "untouched",
+          "basis": "verified-managed-equality",
+          "decision": "manage",
+          "classified_at": "2026-07-17T02:30:01Z"
+        }
+      },
+      "hashes": {
+        "algorithm": "sha256",
+        "content_basis": "exact-bytes",
+        "baseline": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "observed_before": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "proposed_source": null,
+        "result_after": null
+      },
+      "lifecycle": {
+        "state": "tombstoned",
+        "previous_paths": [],
+        "retirement": {
+          "reason": "source-retired",
+          "detected_at": "2026-07-17T02:20:00Z",
+          "source_evidence": {
+            "type": "release-retirement-record",
+            "locator": "release:example-release-3#reintroduced-agent"
+          },
+          "successor_component_id": null,
+          "pruned_at": "2026-07-17T02:30:04Z"
+        },
+        "reintroduces_component_id": null
+      },
+      "last_operation": {
+        "transaction_id": "txn:old-prune-example",
+        "outcome": "tombstoned"
+      },
+      "installed_at": "2026-04-22T10:00:00Z",
+      "updated_at": "2026-07-17T02:30:05Z"
+    },
+    {
+      "identity": {
+        "id": "cmp:canonical-reintroduced-agent-v2",
+        "path": "agents/reintroduced.agent.md",
+        "path_key": "agents/reintroduced.agent.md",
+        "kind": "file",
+        "role": "canonical",
+        "link": null
+      },
+      "provenance": {
+        "ownership": "template-managed",
+        "source": {
+          "kind": "template",
+          "locator": "template:agents/reintroduced.agent.md",
+          "release": "example-release-4"
+        },
+        "generated_from": [],
+        "fork": {
+          "status": "untouched",
+          "basis": "verified-managed-equality",
+          "decision": "manage",
+          "classified_at": "2026-07-17T03:30:01Z"
+        }
+      },
+      "hashes": {
+        "algorithm": "sha256",
+        "content_basis": "exact-bytes",
+        "baseline": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "observed_before": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "proposed_source": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "result_after": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+      },
+      "lifecycle": {
+        "state": "active",
+        "previous_paths": [],
+        "retirement": null,
+        "reintroduces_component_id": "cmp:canonical-reintroduced-agent-v1"
+      },
+      "last_operation": {
+        "transaction_id": "txn:post-reinstall-verification",
+        "outcome": "updated"
+      },
+      "installed_at": "2026-07-17T03:00:00Z",
+      "updated_at": "2026-07-17T03:30:05Z"
+    }
+  ]
+}

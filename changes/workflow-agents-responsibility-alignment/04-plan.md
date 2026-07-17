@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Phase 3 local implementation verified; PR pending
+- **Status**: Phase 4 Schema Design approved; Proposal PR #11 merge pending; product implementation, migration, prune, and real-adopter execution not authorized
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 3 — Change Package / Review / Archive Semantics
+- **Current active phase**: Phase 4 — Manifest Schema approval evidence and Proposal PR #11 merge only; product implementation not authorized
 
 ## Phase Status Summary
 
@@ -18,8 +18,8 @@
 | 0D — Archive authorization containment | Merged | Required | Required |
 | 1 — AGENTS / WORKFLOW / risk contract | Merged | Required | Required |
 | 2 — Agent / Skill / Prompt / Instruction alignment | Merged | Required | Required |
-| 3 — Change Package / Review / Archive semantics | Local implementation verified; PR pending | Required | Required |
-| 4 — Manifest / provenance / stale-derived migration | Pending | Required | Required |
+| 3 — Change Package / Review / Archive semantics | Merged | Required | Required |
+| 4 — Manifest / provenance / stale-derived migration | Schema Design approved; Proposal PR #11 merge pending; product implementation, migration, prune, and real-adopter execution not authorized | Required | Required |
 | 5 — Cross-CLI evidence and adapter proposal | Pending | Required | Evidence PR before implementation PR |
 | 6 — Bash deprecation completion | Pending | Required | Required |
 
@@ -915,8 +915,92 @@ Separate approval and separate PR required; naming decision must be recorded bef
 - Sol independent audit: 0 Critical, 0 High, 0 unresolved Medium, 0 Low product findings after two bounded correction rounds. The first round resolved 3 High and 2 Medium findings; the second and final round resolved 2 High and 1 Medium findings.
 - Rule-based High-Risk gates: Architecture Decision Exit — pass; Pre-Implementation Readiness — pass; Pre-Delivery Verification — pass; Migration / Deployment Readiness — `N/A — no migration or deployment execution is authorized in this Phase.`
 - Coverage: N/A — Phase 3 behavior is covered through deterministic PowerShell semantic/contract fixtures plus Python and PowerShell bootstrap parity; a line-coverage percentage is not the meaningful acceptance boundary for these repository tools and Markdown contracts.
+- Remote delivery: PR #10 (`https://github.com/forgivesam168/ai-dev-workflow/pull/10`) merged to `main`; final feature head `08e4fe7febc5743141ed2b237fae025a05adbd2c`; squash merge SHA `f8a0116ce4af0b463c838150350a9ccfa7c2cac6`.
+- Remote shape: 1 commit, 36 changed files, no submitted reviews, and no review threads.
+- Remote CI: `Verify Change Package / verify`, `verify-sync / baseline (ubuntu-latest)`, and `verify-sync / baseline (windows-latest)` all completed successfully.
 
 ## Phase 4 — Manifest / Provenance / Stale-Derived Migration
+
+### Schema Proposal Status
+
+- **Status**: `SCHEMA APPROVED — NOT IMPLEMENTED`; Proposal PR #11 merge pending; Phase 4 product implementation is not authorized.
+- **Authorization boundary**: This branch may update approval/status evidence and merge the approved Proposal PR only. Candidate schema/examples must remain byte-identical to approved head `16aa063139431cbd07cba147d81be1d2cb3da609`; installers, runtime readers/writers, production schema/gates/tests, migration, prune, and real-adopter behavior remain unchanged.
+- **Proposal branch**: `design/phase-4-manifest-schema-proposal` from merged Phase 3 `main` at `f8a0116ce4af0b463c838150350a9ccfa7c2cac6`.
+- **Approval evidence**: Amendment A-07 records explicit current-task approval of OD-01 through OD-17 and the complete Manifest v3 Schema Design at exact head `16aa063139431cbd07cba147d81be1d2cb3da609`.
+- **Delivery boundary**: Proposal PR #11 is approved for guarded squash merge after the status-only commit and latest CI pass. Product implementation, writer enablement, migration, prune, and real-adopter execution remain separate future decisions.
+
+### Validated Current-State Inventory for the Proposal
+
+Facts verified once from the current Python/PowerShell implementations, tests, and tracked v1 artifact:
+
+- Both readers support exactly schema versions 1 and 2. Both writers currently emit schema version 2.
+- The tracked v1 artifact has top-level `schema_version`, `installed_at`, `source_ref`, and `components`; all 58 observed components have `name`, `installed_at`, and `source_hash`. Twenty-seven hashes are present and 31 are null.
+- The current v2 writer emits the same four top-level fields. A writer-produced component contains `name`, `installed_at`, `updated_at`, `source_hash`, `managed_hash`, `observed_hash`, `ownership`, `kind`, `source`, and `status`.
+- Both readers validate the top-level object, integer/supported schema version, component array, component object, non-empty string `name`, and exact case-sensitive duplicate `name`. They do not enforce version-specific component shapes, normalize reader identities, reject traversal/case-colliding identities, validate hash syntax, or reject unknown fields.
+- Current writers normalize separators and leading `./` only when recording a path; the normalization functions explicitly do not sanitize parent traversal. Reader keys retain the persisted spelling.
+- Current hash production is SHA-256 over exact bytes with a lowercase `sha256:` prefix. The tracked v1 artifact contains uppercase digest text, which both readers accept because neither validates hash encoding. No text normalization occurs inside the hash functions; selected text sources are normalized before bytes are passed to them.
+- On new, in-sync, or approved current update writes, `source_hash` and `managed_hash` are both set to the desired managed hash and `observed_hash` is set to the resulting target hash. On preserved customization or conflict, the managed/source hash retains the previous baseline while `observed_hash` records current target content. A successful update replaces the old baseline, so the present schema cannot preserve baseline, pre-operation observation, proposed source, and result as distinct time points.
+- Observed ownership values are `template-managed`, `project-owned`, `derived-runtime`, and `legacy-compat`; observed kinds are `file` and `mount`; observed statuses are `managed`, `in-sync`, `preserved-existing`, `preserved-customization`, `conflicted`, `project-owned`, and `derived-runtime`. These are writer conventions, not reader-enforced enums.
+- Derived Agent/Skill files record `derived-runtime` plus a `project:` source label. Skill mounts record kind `mount` with null hashes. Directories are not independently recorded as current v2 components.
+- Loader outcomes are runtime-only `valid`, `missing`, `corrupt`, or `unsupported`. Missing update is warning/report-only; corrupt and unsupported update hard-stop before managed writes. Any invalid component makes the whole manifest corrupt with empty entries; neither loader rewrites the manifest to record failure.
+- Valid v1 and v2 are normalized only into an in-memory exact-name entry map. A later successful update may write v2; read-only loading does not migrate or rewrite.
+- Canonical rename/delete currently has no reconciliation pass. Old manifest entries and attributable derived files can remain; there is no `generated_from`, fork classification, source-release provenance beyond top-level `source_ref`, retirement/tombstone, stale report, or safe-prune proof model.
+- Python and PowerShell agree on the supported versions, required loader checks, state classes, writer version, top/component field names, hash algorithm, main ownership/kind/status conventions, and update containment. Their JSON formatting, timestamp rendering, and file-writing mechanisms differ; neither writer is atomic or fsync-backed.
+- Fixture sufficiency: the tracked repository manifest is direct v1 evidence; equivalent Python/Pester tests prove minimal v1/v2 readability and failure states; the complete v2 shape is directly reconstructable from both current production writers. The proposed v2 example must be labeled writer-derived non-runtime evidence, not a captured real-adopter artifact.
+
+### Exact Proposal Allowlist
+
+Sol alone may update:
+
+- `changes/workflow-agents-responsibility-alignment/02-decision-log.md` (proposal pointer and required gate note only; no approved Amendment)
+- `changes/workflow-agents-responsibility-alignment/04-plan.md`
+
+Luna may create or modify only:
+
+- `changes/workflow-agents-responsibility-alignment/phase-4-manifest-schema-proposal.md`
+- `changes/workflow-agents-responsibility-alignment/phase-4-manifest-v3.schema.proposed.json`
+- `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/valid-v1-observed.json`
+- `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/valid-v2-observed.json`
+- `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/valid-v3-proposed.json`
+- `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/v3-customized-component.json`
+- `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/v3-derived-component.json`
+- `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/v3-retired-component.json`
+- `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/v3-stale-but-modified.json`
+- `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/v3-prune-eligible-proposed.json`
+- `changes/workflow-agents-responsibility-alignment/phase-4-schema-examples/v3-reintroduced-component.json`
+
+If this exact allowlist cannot express a complete, internally consistent proposal, Luna must stop and report the missing path and contract reason. No production path, test, gate, installer, generated mirror, decision-log amendment, or additional artifact is implicitly allowed.
+
+### Approval-Blocking Correction Scope
+
+- **Baseline**: PR #11 remains open and non-Draft at expected head `5bf032b4747839541d201dc86b96d2ddd18a805b`; local/remote proposal branch match; local/origin `main` remain `f8a0116ce4af0b463c838150350a9ccfa7c2cac6`; existing CI is successful; reviews and review threads are empty.
+- **Tombstone identity**: Tombstoned component IDs are terminal and permanently reserved. A separately authorized future reintroduction receives a new ID and uses a non-authorizing relationship to the unchanged tombstoned component.
+- **Stable-ID catalog**: The proposal must define `manifest/component-catalog.json` as the single version-controlled source-side allocation SSOT; neither runtime may independently derive IDs, and legacy ambiguity remains report-only.
+- **Production schema boundary**: The proposal must define `schemas/ai-workflow-install-manifest-v3.schema.json` with stable `$id` `urn:ai-dev-workflow:manifest-schema:v3` as the future production artifact while retaining the Change Package candidate, proposal marker, and `example.invalid` identity in this PR.
+- **Delivery boundary**: Luna is the only Proposal product writer. Sol owns governance, audit, one non-amended follow-up commit, normal push, PR/CI verification, and the mandatory stop with PR #11 still open. No production reader/writer/test/gate, schema emission, migration, prune, real-adopter operation, merge, or Phase 5 work is authorized.
+
+### Approval-Blocking Correction Evidence
+
+- Luna used the existing built-in `worker` as the only Proposal product writer; requested model GPT-5.6 and reasoning effort medium; observed model/effort unknown; no configuration change. Luna changed exactly the Proposal, candidate schema, six existing candidate-v3 examples, and new `v3-reintroduced-component.json`; v1/v2 examples and all production/test/gate paths remained unchanged.
+- Luna recorded RED evidence for the absent terminal-tombstone/new-ID relationship, absent fixed component-catalog SSOT/binding, and absent production schema identity/transformation contract. GREEN added `lifecycle.reintroduces_component_id`, catalog binding on all seven candidate-v3 examples, the reintroduction example, exact catalog allocation rules, future production path/URN, and updated OD-02/OD-03/OD-07 while retaining `PROPOSED — NOT APPROVED — NOT IMPLEMENTED`.
+- Sol independently reviewed the actual Proposal/schema/example diffs. Two Medium ambiguities were returned to the same Luna and resolved: component `last_operation` may predate top-level `last_transaction`, and marker-free production vectors remove only top-level `proposal_status` before applying the same scenario/negative mutations. Current audit: 0 Critical, 0 High, 0 unresolved Medium.
+- Sol JSON/schema validation parsed the candidate plus seven candidate-v3 examples and accepted all 7/7 examples. Focused validation rejected 5/5 structural schema negatives, 8/8 Manifest semantic negatives, and 4/4 catalog semantic negatives; two positive semantic models and the candidate/production boundary passed.
+- The final intended correction scope is exactly nine Luna product paths plus Sol-owned `02-decision-log.md` and `04-plan.md`. Candidate Draft 2020-12 remains under `example.invalid` with its proposal marker; no `manifest/component-catalog.json` or `schemas/ai-workflow-install-manifest-v3.schema.json` production artifact is created in this PR.
+- Existing Python regression passed 92 tests; full Pester 5.6.1 passed 181 tests with 0 failed/skipped/not-run; direct sync, catalog, lifecycle, Change Package, and Agent checks passed; `git diff --check` passed. The stable-diff full repository gate returned `GATE PASSED WITH NOTES`, limited to the recorded Agent line-count warnings, and preserved branch, HEAD, status, path, byte length, and SHA-256 invariance for all 11 changed paths.
+- Rule-based gates: Architecture Decision Exit — pass for proposal correction review; Pre-Implementation Readiness — `N/A — this task contains proposal correction only; Phase 4 implementation is not authorized`; Pre-Delivery Verification — pass; Migration / Deployment Readiness — `N/A — no migration or deployment execution is authorized in this task.` Deterministic failure remains blocking and cannot be overridden by this review evidence or `agentic-eval`.
+
+### Local Proposal Verification Evidence
+
+- Luna used the built-in `worker` as the sole proposal writer, with requested model GPT-5.6 and reasoning effort medium; observed model and effort are unknown because the runtime exposes no auditable value. No configuration was changed.
+- Luna created exactly the ten proposal/schema/example paths in the allowlist. One bounded correction round resolved three High, five Medium, and one Low proposal findings; Luna performed no Git, remote, governance, production-code, test, installer, or gate change.
+- Sol independently inspected the current Python and PowerShell implementations, v1 artifact, v2 writer contract, complete proposal, machine-readable candidate, and all eight examples. Current unresolved findings are 0 Critical, 0 High, and 0 Medium; residual Low notes are limited to future semantic checks that JSON Schema alone cannot express and use of existing standard parsers because no new validation dependency is authorized.
+- Proposal validation parsed the candidate schema and all eight examples as JSON; accepted all six candidate-v3 examples; rejected five representative invalid vectors; confirmed eight exact fork-classification evidence mappings, 18 required proposal sections, eight proposal markers, normalized/sorted unique component identities, valid references, and required transaction relationships.
+- Python regression: 92 passed. Full Pester 5.6.1 regression: 181 passed, 0 failed, 0 skipped, 0 not run. The existing `pytest-asyncio` future-default warning remained nonblocking.
+- Direct repository checks passed: sync; catalog (9 Agents, 10 Prompts, 35 Skills, 34 adopter Skills, one maintainer-only gate Skill, and 9 templates); lifecycle (19 root markers, 19 projection markers, 9 templates); Change Package verification for 8 packages; and Agent structure with no hard finding. The historical legacy `05-review.md` and two soft Agent line-count findings remained warning-only.
+- `git diff --check` passed. The full repository gate returned `GATE PASSED WITH NOTES`; every required Python, Pester, sync, catalog, lifecycle, package, Agent-structure, and diff check passed. The gate note is recorded in `02-decision-log.md`; this governance record does not replace the required final stable-diff rerun before commit.
+- Pre-gate and post-gate worktree inventories were identical by branch, HEAD, status, path, byte length, and SHA-256 for all then-changed paths. Final scope is restricted to the ten proposal artifacts plus Sol-owned `02-decision-log.md` and `04-plan.md`; production code, tests, runtime schema acceptance/emission, migration, prune, real-adopter operations, and Phase 5 remain unchanged.
+- Rule-based gates: Architecture Decision Exit — pass for proposal delivery; Pre-Implementation Readiness — `N/A — this Phase contains a schema proposal only; product implementation is not authorized`; Pre-Delivery Verification — pass subject to the final stable-diff rerun; Migration / Deployment Readiness — `N/A — no migration or deployment execution is authorized in this Phase.`
+- `agentic-eval` is a Tier 1 self-evaluation scheduled only after deterministic checks; it cannot serve as independent review or override any failure. Sol's direct audit of Luna's artifacts is the independent proposal review.
 
 ### Objective
 
