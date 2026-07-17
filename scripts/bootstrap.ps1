@@ -61,7 +61,12 @@ $script:PortableSkillLinks = @(
     '.claude/skills',
     '.agent/skills'
 )
-$script:SupportedManifestSchemaVersions = @(1, 2)
+$script:SupportedManifestSchemaVersions = @(1, 2, 3)
+$script:ProductionManifestSchema = 'schemas/ai-workflow-install-manifest-v3.schema.json'
+$script:ComponentCatalogPath = 'manifest/component-catalog.json'
+$script:ComponentCatalogSchemaVersion = 1
+$script:ComponentCatalogReleaseId = 'ai-dev-workflow:component-catalog:1'
+$script:ComponentCatalogVersion = '1'
 $script:LegacyRuntimeExcludes = @(
     'workflows',
     'CODEOWNERS',
@@ -379,7 +384,7 @@ function Get-RemoteTemplate {
         Push-Location $tempPath
         try {
             git sparse-checkout init --cone 2>&1 | Out-Null
-            git sparse-checkout set .github agents skills docs .gitattributes .editorconfig 2>&1 | Out-Null
+            git sparse-checkout set .github agents skills docs manifest schemas .gitattributes .editorconfig 2>&1 | Out-Null
             git checkout 2>&1 | Out-Null
             
             if ($LASTEXITCODE -ne 0) {
@@ -1032,10 +1037,498 @@ function Get-PathHash {
     return "sha256:$($hash.ToLowerInvariant())"
 }
 
+function Throw-ManifestValidation {
+    param([string]$Category, [string]$Detail)
+    $exception = [Exception]::new($Detail)
+    $exception.Data['Category'] = $Category
+    throw $exception
+}
+
+function Assert-ExactObject {
+    param(
+        [object]$Value,
+        [string[]]$ExpectedKeys,
+        [string]$Category,
+        [string]$Label
+    )
+    if ($Value -isnot [System.Collections.IDictionary]) {
+        Throw-ManifestValidation $Category "$Label must be an object."
+    }
+    $observed = @($Value.Keys | ForEach-Object { [string]$_ } | Sort-Object)
+    $expected = @($ExpectedKeys | Sort-Object)
+    if (@(Compare-Object -ReferenceObject $expected -DifferenceObject $observed -CaseSensitive).Count -ne 0) {
+        Throw-ManifestValidation $Category "$Label has invalid properties."
+    }
+    return $Value
+}
+
+function Assert-ComponentId {
+    param([object]$Value, [string]$Category, [string]$Label)
+    if ($Value -isnot [string] -or $Value -notmatch '^cmp:[a-z0-9][a-z0-9._-]{2,127}$') {
+        Throw-ManifestValidation $Category "$Label is not a valid component ID."
+    }
+}
+
+function Assert-OptionalComponentId {
+    param([object]$Value, [string]$Category, [string]$Label)
+    if ($null -ne $Value) { Assert-ComponentId $Value $Category $Label }
+}
+
+function Assert-RelativeManifestPath {
+    param([object]$Value, [string]$Category, [string]$Label)
+    if ($Value -isnot [string] -or [string]::IsNullOrEmpty($Value) -or $Value.Length -gt 512 -or
+        $Value -notmatch '^[A-Za-z0-9@+_.-]+(?:/[A-Za-z0-9@+_.-]+)*$' -or
+        $Value.StartsWith('/') -or $Value.Contains('\') -or $Value.Contains(':') -or $Value.Contains('//')) {
+        Throw-ManifestValidation $Category "$Label contains unsafe path syntax."
+    }
+    $reserved = @('con', 'prn', 'aux', 'nul', 'com1', 'com2', 'com3', 'com4', 'com5', 'com6', 'com7', 'com8', 'com9', 'lpt1', 'lpt2', 'lpt3', 'lpt4', 'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9')
+    foreach ($segment in $Value.Split('/')) {
+        $baseName = $segment.Split('.')[0].ToLowerInvariant()
+        if ($segment -in @('.', '..') -or $segment.EndsWith('.') -or $segment.EndsWith(' ') -or $baseName -in $reserved) {
+            Throw-ManifestValidation $Category "$Label contains an unsafe path segment."
+        }
+    }
+}
+
+function Assert-ManifestHash {
+    param([object]$Value, [string]$Category, [string]$Label)
+    if ($null -ne $Value -and ($Value -isnot [string] -or $Value -notmatch '^sha256:[0-9a-f]{64}$')) {
+        Throw-ManifestValidation $Category "$Label must be null or a lowercase SHA-256 digest."
+    }
+}
+
+function Get-ManifestTimestampKey {
+    param([object]$Value, [string]$Category, [string]$Label)
+    if ($Value -isnot [string] -or $Value -notmatch '^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?Z$') {
+        Throw-ManifestValidation $Category "$Label must use canonical UTC Z syntax."
+    }
+    try {
+        $base = [datetime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3], [int]$Matches[4], [int]$Matches[5], [int]$Matches[6], [DateTimeKind]::Utc)
+    } catch {
+        Throw-ManifestValidation $Category "$Label is not a real calendar timestamp."
+    }
+    $fraction = if ($Matches[7]) { $Matches[7].PadRight(9, '0') } else { '000000000' }
+    return ([decimal]$base.Ticks * 100) + [decimal]$fraction
+}
+
+function Assert-SortedUniqueStrings {
+    param(
+        [object]$Value,
+        [string]$Category,
+        [string]$Label,
+        [switch]$ComponentIds,
+        [switch]$Paths,
+        [int]$MaxItems = 64
+    )
+    if ($Value -isnot [System.Array] -or $Value.Count -gt $MaxItems) {
+        Throw-ManifestValidation $Category "$Label must be an array with at most $MaxItems items."
+    }
+    $strings = @($Value | ForEach-Object {
+        if ($_ -isnot [string]) { Throw-ManifestValidation $Category "$Label must contain only strings." }
+        [string]$_
+    })
+    if (@(Compare-Object -ReferenceObject $strings -DifferenceObject @($strings | Sort-Object) -CaseSensitive).Count -ne 0 -or
+        @($strings | Select-Object -Unique).Count -ne $strings.Count) {
+        Throw-ManifestValidation $Category "$Label must be sorted and duplicate-free."
+    }
+    foreach ($item in $strings) {
+        if ($ComponentIds) { Assert-ComponentId $item $Category $Label }
+        if ($Paths) { Assert-RelativeManifestPath $item $Category $Label }
+    }
+}
+
+function Get-Sha256ForBytes {
+    param([byte[]]$Bytes)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { $digest = $sha.ComputeHash($Bytes) } finally { $sha.Dispose() }
+    return 'sha256:' + ([BitConverter]::ToString($digest)).Replace('-', '').ToLowerInvariant()
+}
+
+function Assert-NoRelationshipCycles {
+    param([hashtable]$Graph, [string]$Category)
+    $state = @{}
+    $visit = $null
+    $visit = {
+        param([string]$Node)
+        if ($state[$Node] -eq 1) { Throw-ManifestValidation $Category 'Component relationship graph contains a cycle.' }
+        if ($state[$Node] -eq 2) { return }
+        $state[$Node] = 1
+        foreach ($child in @($Graph[$Node])) { & $visit $child }
+        $state[$Node] = 2
+    }
+    foreach ($node in @($Graph.Keys | Sort-Object)) { & $visit $node }
+}
+
+function Get-ValidatedProductionManifestSchema {
+    param([Parameter(Mandatory = $true)][string]$SourceRoot)
+    $schemaPath = Join-Path $SourceRoot $script:ProductionManifestSchema
+    if (-not (Test-Path -LiteralPath $schemaPath -PathType Leaf)) {
+        Throw-ManifestValidation 'schema-missing' "Production Schema is unavailable: $schemaPath"
+    }
+    try {
+        $bytes = [IO.File]::ReadAllBytes($schemaPath)
+        $text = [Text.UTF8Encoding]::new($false, $true).GetString($bytes)
+        $jsonParameters = @{ AsHashtable = $true }
+        if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $jsonParameters['DateKind'] = 'String' }
+        $schema = $text | ConvertFrom-Json @jsonParameters
+    } catch {
+        Throw-ManifestValidation 'schema-json' 'Production Schema is not valid UTF-8 JSON.'
+    }
+    if ($text -match '"proposal_status"') {
+        Throw-ManifestValidation 'schema-proposal-marker' 'Production Schema must not contain proposal_status markers.'
+    }
+    $schema = Assert-ExactObject $schema @('$schema', '$id', 'title', 'description', 'type', 'additionalProperties', 'required', 'properties', '$defs') 'schema-structure' 'Production Schema'
+    if ($schema['$schema'] -ne 'https://json-schema.org/draft/2020-12/schema' -or $schema['$id'] -ne 'urn:ai-dev-workflow:manifest-schema:v3') {
+        Throw-ManifestValidation 'schema-identity' 'Production Schema identity is invalid.'
+    }
+    $required = @('schema_version', 'written_at', 'source_release', 'last_transaction', 'components')
+    if ($schema.type -ne 'object' -or $schema.additionalProperties -ne $false -or
+        @((Compare-Object @($schema.required) $required -SyncWindow 0 -CaseSensitive)).Count -ne 0 -or
+        $schema.properties -isnot [System.Collections.IDictionary] -or
+        @((Compare-Object @($schema.properties.Keys | Sort-Object) @($required | Sort-Object) -CaseSensitive)).Count -ne 0 -or
+        $schema['$defs'] -isnot [System.Collections.IDictionary]) {
+        Throw-ManifestValidation 'schema-structure' 'Production Schema root structure is invalid.'
+    }
+    $integerTypes = @([byte], [sbyte], [int16], [uint16], [int32], [uint32], [int64], [uint64])
+    if ($schema.properties.schema_version -isnot [System.Collections.IDictionary] -or
+        $null -eq $schema.properties.schema_version.const -or
+        $integerTypes -notcontains $schema.properties.schema_version.const.GetType() -or
+        $schema.properties.schema_version.const -ne 3 -or
+        $schema.properties.components -isnot [System.Collections.IDictionary] -or
+        $null -eq $schema.properties.components.maxItems -or
+        $integerTypes -notcontains $schema.properties.components.maxItems.GetType() -or
+        $schema.properties.components.maxItems -ne 10000) {
+        Throw-ManifestValidation 'schema-structure' 'Production Schema constraints are invalid.'
+    }
+    $requiredDefs = @('timestamp', 'hash', 'componentId', 'relativePath', 'pathKey', 'sourceRelease', 'componentCatalogBinding', 'transaction', 'identity', 'link', 'source', 'fork', 'provenance', 'hashes', 'retirement', 'lifecycle', 'operation', 'component')
+    if (@((Compare-Object @($schema['$defs'].Keys | Sort-Object) @($requiredDefs | Sort-Object) -CaseSensitive)).Count -ne 0) {
+        Throw-ManifestValidation 'schema-structure' 'Production Schema definitions are invalid.'
+    }
+    foreach ($definition in $schema['$defs'].Values) {
+        if ($definition -isnot [System.Collections.IDictionary]) { Throw-ManifestValidation 'schema-structure' 'Production Schema definitions are invalid.' }
+    }
+    return [PSCustomObject]@{ Schema = $schema; Path = $schemaPath; Text = $text; Bytes = $bytes }
+}
+
+function Get-ValidatedComponentCatalog {
+    param([Parameter(Mandatory = $true)][string]$SourceRoot)
+    $catalogPath = Join-Path $SourceRoot $script:ComponentCatalogPath
+    if (-not (Test-Path -LiteralPath $catalogPath -PathType Leaf)) {
+        Throw-ManifestValidation 'catalog-missing' "Component Catalog is unavailable: $catalogPath"
+    }
+    try {
+        $bytes = [IO.File]::ReadAllBytes($catalogPath)
+        $text = [Text.UTF8Encoding]::new($false, $true).GetString($bytes)
+        $jsonParameters = @{ AsHashtable = $true }
+        if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $jsonParameters['DateKind'] = 'String' }
+        $catalog = $text | ConvertFrom-Json @jsonParameters
+    } catch {
+        Throw-ManifestValidation 'catalog-json' "Component Catalog is not valid UTF-8 JSON: $catalogPath"
+    }
+    $catalog = Assert-ExactObject $catalog @('catalog_schema_version', 'catalog_version', 'source_release', 'components') 'catalog-schema' 'Component Catalog'
+    $integerTypes = @([byte], [sbyte], [int16], [uint16], [int32], [uint32], [int64], [uint64])
+    if ($null -eq $catalog.catalog_schema_version -or $integerTypes -notcontains $catalog.catalog_schema_version.GetType() -or $catalog.catalog_schema_version -ne 1) { Throw-ManifestValidation 'catalog-schema' 'Unsupported Component Catalog schema version.' }
+    if ($catalog.catalog_version -ne $script:ComponentCatalogVersion) { Throw-ManifestValidation 'catalog-release' 'Unexpected Component Catalog version.' }
+    $release = Assert-ExactObject $catalog.source_release @('release_id', 'source_ref', 'version') 'catalog-schema' 'Component Catalog source_release'
+    if ($release.release_id -ne $script:ComponentCatalogReleaseId -or $release.source_ref -ne $script:ComponentCatalogPath -or $release.version -ne $script:ComponentCatalogVersion) {
+        Throw-ManifestValidation 'catalog-release' 'Unexpected Component Catalog release identity.'
+    }
+    if ($catalog.components -isnot [System.Array] -or $catalog.components.Count -gt 10000) {
+        Throw-ManifestValidation 'catalog-schema' 'Component Catalog components must be an array.'
+    }
+    $records = @{}
+    $order = @()
+    $activePaths = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $required = @('id', 'canonical_source_path', 'role', 'kind', 'lifecycle_status', 'previous_paths', 'generated_from', 'successor_component_id', 'reintroduces_component_id', 'introduced_release', 'retired_release')
+    foreach ($raw in $catalog.components) {
+        $component = Assert-ExactObject $raw $required 'catalog-schema' 'Catalog component'
+        Assert-ComponentId $component.id 'catalog-schema' 'Catalog component ID'
+        if ($records.ContainsKey($component.id)) { Throw-ManifestValidation 'catalog-duplicate-id' "Duplicate Catalog ID: $($component.id)" }
+        $order += $component.id
+        Assert-RelativeManifestPath $component.canonical_source_path 'catalog-schema' 'Catalog canonical_source_path'
+        if ($component.role -notin @('canonical', 'generated', 'project-owned', 'compatibility')) { Throw-ManifestValidation 'catalog-schema' 'Catalog role is invalid.' }
+        if ($component.kind -notin @('file', 'directory', 'mount', 'link')) { Throw-ManifestValidation 'catalog-schema' 'Catalog kind is invalid.' }
+        if ($component.lifecycle_status -notin @('active', 'retired', 'tombstoned')) { Throw-ManifestValidation 'catalog-lifecycle' 'Catalog lifecycle is invalid.' }
+        Assert-SortedUniqueStrings $component.previous_paths 'catalog-schema' 'Catalog previous_paths' -Paths
+        Assert-SortedUniqueStrings $component.generated_from 'catalog-schema' 'Catalog generated_from' -ComponentIds -MaxItems 10000
+        Assert-OptionalComponentId $component.successor_component_id 'catalog-reference' 'Catalog successor_component_id'
+        Assert-OptionalComponentId $component.reintroduces_component_id 'catalog-reference' 'Catalog reintroduces_component_id'
+        if ($component.introduced_release -ne $script:ComponentCatalogReleaseId) { Throw-ManifestValidation 'catalog-release' 'Catalog introduced_release is invalid.' }
+        if ($component.lifecycle_status -eq 'active') {
+            if ($null -ne $component.retired_release) { Throw-ManifestValidation 'catalog-lifecycle' 'Active Catalog identity cannot be retired.' }
+            if ($null -ne $component.successor_component_id) { Throw-ManifestValidation 'catalog-lifecycle' 'Active Catalog identity cannot declare a successor.' }
+            if (-not $activePaths.Add($component.canonical_source_path.ToLowerInvariant())) { Throw-ManifestValidation 'catalog-duplicate-active-path' 'Duplicate active Catalog path.' }
+        } elseif ([string]::IsNullOrWhiteSpace([string]$component.retired_release)) {
+            Throw-ManifestValidation 'catalog-lifecycle' 'Retired Catalog identity needs retired_release.'
+        }
+        if ($component.lifecycle_status -ne 'active' -and $null -ne $component.reintroduces_component_id) { Throw-ManifestValidation 'catalog-lifecycle' 'Terminal Catalog identity cannot reintroduce another ID.' }
+        if ($component.role -eq 'generated') {
+            if ($component.generated_from.Count -eq 0) { Throw-ManifestValidation 'catalog-reference' 'Generated Catalog identity needs a parent.' }
+        } elseif ($component.generated_from.Count -ne 0) {
+            Throw-ManifestValidation 'catalog-reference' 'Non-generated Catalog identity cannot have parents.'
+        }
+        if ($component.kind -in @('mount', 'link') -and $component.role -ne 'generated') {
+            Throw-ManifestValidation 'catalog-role-kind' 'Catalog mount/link identities must be generated and parent-bound.'
+        }
+        $records[$component.id] = $component
+    }
+    if (@(Compare-Object -ReferenceObject $order -DifferenceObject @($order | Sort-Object) -CaseSensitive).Count -ne 0) {
+        Throw-ManifestValidation 'catalog-schema' 'Component Catalog records must be sorted by ID.'
+    }
+    $graph = @{}
+    foreach ($id in $records.Keys) {
+        $component = $records[$id]
+        $references = @($component.generated_from) + @($component.successor_component_id, $component.reintroduces_component_id | Where-Object { $null -ne $_ })
+        $graph[$id] = @($references)
+        foreach ($reference in $references) {
+            if ($reference -eq $id) { Throw-ManifestValidation 'catalog-self-reference' "Catalog ID self-references: $id" }
+            if (-not $records.ContainsKey($reference)) { Throw-ManifestValidation 'catalog-reference' "Unknown Catalog reference: $reference" }
+        }
+        if ($component.reintroduces_component_id -and ($component.lifecycle_status -ne 'active' -or $records[$component.reintroduces_component_id].lifecycle_status -ne 'tombstoned')) {
+            Throw-ManifestValidation 'catalog-lifecycle' 'Catalog reintroduction must target a tombstone.'
+        }
+    }
+    Assert-NoRelationshipCycles $graph 'catalog-cycle'
+    return [PSCustomObject]@{ Catalog = $catalog; Records = $records; Bytes = $bytes }
+}
+
+function Assert-V3Fork {
+    param([object]$Value)
+    $fork = Assert-ExactObject $Value @('status', 'basis', 'decision', 'classified_at') 'manifest-schema' 'Manifest provenance.fork'
+    $mapping = @{
+        untouched = @('verified-managed-equality', 'manage')
+        customized = @('hash-divergence', 'preserve')
+        'project-owned' = @('explicit-project-ownership', 'preserve')
+        legacy = @('legacy-import', 'report-only')
+        unknown = @('missing-lineage', 'report-only')
+        'derived-customized' = @('derived-hash-divergence', 'preserve')
+        conflicted = @('conflicting-evidence', 'block')
+        'not-applicable' = @('hash-not-applicable', 'report-only')
+    }
+    if (-not $mapping.ContainsKey($fork.status) -or $fork.basis -ne $mapping[$fork.status][0] -or $fork.decision -ne $mapping[$fork.status][1]) {
+        Throw-ManifestValidation 'manifest-fork' 'Manifest fork status/basis/decision mapping is invalid.'
+    }
+    [void](Get-ManifestTimestampKey $fork.classified_at 'manifest-timestamp' 'Fork classified_at')
+    return $fork
+}
+
+function Assert-V3Retirement {
+    param([object]$Value)
+    $retirement = Assert-ExactObject $Value @('reason', 'detected_at', 'source_evidence', 'successor_component_id', 'pruned_at') 'manifest-schema' 'Manifest retirement'
+    if ($retirement.reason -notin @('renamed', 'deleted', 'source-retired', 'superseded')) { Throw-ManifestValidation 'manifest-lifecycle' 'Manifest retirement reason is invalid.' }
+    [void](Get-ManifestTimestampKey $retirement.detected_at 'manifest-timestamp' 'Retirement detected_at')
+    $evidence = Assert-ExactObject $retirement.source_evidence @('type', 'locator') 'manifest-schema' 'Manifest retirement source_evidence'
+    if ($evidence.type -notin @('rename-map', 'component-absent-in-source', 'release-retirement-record') -or $evidence.locator -isnot [string] -or $evidence.locator -notmatch '^(?:template|release):[A-Za-z0-9@+_.:/#-]+$') {
+        Throw-ManifestValidation 'manifest-lifecycle' 'Manifest retirement evidence is invalid.'
+    }
+    Assert-OptionalComponentId $retirement.successor_component_id 'manifest-lifecycle' 'Retirement successor_component_id'
+    if ($null -ne $retirement.pruned_at) { [void](Get-ManifestTimestampKey $retirement.pruned_at 'manifest-timestamp' 'Retirement pruned_at') }
+    return $retirement
+}
+
+function Assert-V3Manifest {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Manifest,
+        [string]$SourceRoot
+    )
+    $manifest = Assert-ExactObject $Manifest @('schema_version', 'written_at', 'source_release', 'last_transaction', 'components') 'manifest-schema' 'Manifest'
+    if ($manifest.schema_version -ne 3) { Throw-ManifestValidation 'manifest-schema' 'Manifest schema version is not 3.' }
+
+    $writtenAt = Get-ManifestTimestampKey $manifest.written_at 'manifest-timestamp' 'Manifest written_at'
+    $sourceRelease = Assert-ExactObject $manifest.source_release @('release_id', 'source_ref', 'version', 'component_catalog') 'manifest-schema' 'Manifest source_release'
+    foreach ($key in @('release_id', 'source_ref', 'version')) {
+        if ($sourceRelease[$key] -isnot [string] -or [string]::IsNullOrWhiteSpace($sourceRelease[$key])) { Throw-ManifestValidation 'manifest-schema' "Manifest source_release.$key is invalid." }
+    }
+    $binding = Assert-ExactObject $sourceRelease.component_catalog @('path', 'schema_version', 'sha256') 'manifest-schema' 'Manifest component_catalog binding'
+    $integerTypes = @([byte], [sbyte], [int16], [uint16], [int32], [uint32], [int64], [uint64])
+    if ($binding.path -ne $script:ComponentCatalogPath -or $null -eq $binding.schema_version -or $integerTypes -notcontains $binding.schema_version.GetType() -or $binding.schema_version -ne 1) { Throw-ManifestValidation 'catalog-release' 'Manifest binds an unexpected Component Catalog.' }
+    Assert-ManifestHash $binding.sha256 'catalog-digest' 'Manifest Component Catalog digest'
+
+    $transaction = Assert-ExactObject $manifest.last_transaction @('id', 'mode', 'writer', 'started_at', 'completed_at', 'result') 'manifest-schema' 'Manifest last_transaction'
+    if ($transaction.id -isnot [string] -or $transaction.id -notmatch '^txn:[a-z0-9][a-z0-9._-]{2,127}$' -or
+        $transaction.mode -notin @('install', 'update', 'migration') -or $transaction.writer -notin @('python', 'powershell') -or $transaction.result -ne 'committed') {
+        Throw-ManifestValidation 'manifest-schema' 'Manifest transaction is invalid.'
+    }
+    $startedAt = Get-ManifestTimestampKey $transaction.started_at 'manifest-timestamp' 'Transaction started_at'
+    $completedAt = Get-ManifestTimestampKey $transaction.completed_at 'manifest-timestamp' 'Transaction completed_at'
+    if ($startedAt -gt $completedAt -or $completedAt -gt $writtenAt) { Throw-ManifestValidation 'manifest-timestamp' 'Manifest transaction timestamps are out of order.' }
+    if ($manifest.components -isnot [System.Array] -or $manifest.components.Count -gt 10000) { Throw-ManifestValidation 'manifest-schema' 'Manifest components must be an array.' }
+
+    $records = @{}
+    $order = @()
+    $roleOwnership = @{ canonical = 'template-managed'; generated = 'derived-runtime'; 'project-owned' = 'project-owned'; compatibility = 'legacy-compat' }
+    $roleSource = @{ canonical = 'template'; generated = 'generated'; 'project-owned' = 'project'; compatibility = 'legacy' }
+    foreach ($raw in $manifest.components) {
+        $component = Assert-ExactObject $raw @('identity', 'provenance', 'hashes', 'lifecycle', 'last_operation', 'installed_at', 'updated_at') 'manifest-schema' 'Manifest component'
+        $identity = Assert-ExactObject $component.identity @('id', 'path', 'path_key', 'kind', 'role', 'link') 'manifest-schema' 'Manifest identity'
+        Assert-ComponentId $identity.id 'manifest-schema' 'Manifest component ID'
+        if ($records.ContainsKey($identity.id)) { Throw-ManifestValidation 'manifest-schema' "Manifest contains duplicate component ID: $($identity.id)" }
+        $order += $identity.id
+        Assert-RelativeManifestPath $identity.path 'manifest-path' 'Manifest identity.path'
+        if ($identity.path_key -ne $identity.path.ToLowerInvariant()) { Throw-ManifestValidation 'manifest-path' 'Manifest identity.path_key does not match identity.path.' }
+        if ($identity.kind -notin @('file', 'directory', 'mount', 'link') -or -not $roleOwnership.ContainsKey($identity.role)) { Throw-ManifestValidation 'manifest-schema' 'Manifest identity kind or role is invalid.' }
+        if ($identity.kind -in @('mount', 'link') -and $identity.role -ne 'generated') {
+            Throw-ManifestValidation 'manifest-role-kind' 'Manifest mount/link identities must be generated and parent-bound.'
+        }
+        if ($identity.kind -in @('mount', 'link')) {
+            $link = Assert-ExactObject $identity.link @('target_path', 'target_path_key', 'mode') 'manifest-link' 'Manifest identity.link'
+            Assert-RelativeManifestPath $link.target_path 'manifest-link' 'Manifest link target_path'
+            if ($link.target_path_key -ne $link.target_path.ToLowerInvariant() -or $link.mode -notin @('symlink', 'junction', 'copy-fallback') -or ($identity.kind -eq 'link' -and $link.mode -ne 'symlink')) {
+                Throw-ManifestValidation 'manifest-link' 'Manifest link metadata is invalid.'
+            }
+        } elseif ($null -ne $identity.link) { Throw-ManifestValidation 'manifest-link' 'Only mount/link identities may contain link metadata.' }
+
+        $provenance = Assert-ExactObject $component.provenance @('ownership', 'source', 'generated_from', 'fork') 'manifest-schema' 'Manifest provenance'
+        if ($provenance.ownership -ne $roleOwnership[$identity.role]) { Throw-ManifestValidation 'manifest-provenance' 'Manifest role and ownership disagree.' }
+        $source = Assert-ExactObject $provenance.source @('kind', 'locator', 'release') 'manifest-schema' 'Manifest provenance.source'
+        $locatorTail = if ($source.locator -is [string] -and $source.locator.Contains(':')) { $source.locator.Split(':', 2)[1] } else { '' }
+        if ($source.kind -ne $roleSource[$identity.role] -or $source.locator -isnot [string] -or $source.locator -notmatch '^(?:template|project|generated|legacy|unknown):[A-Za-z0-9@+_.:/#-]+$' -or -not $source.locator.StartsWith("$($source.kind):") -or $source.locator.Contains('\') -or $locatorTail.StartsWith('/') -or $locatorTail -match '^[A-Za-z]:/' -or $locatorTail.Contains('://') -or @($locatorTail.Split('/') | Where-Object { $_ -in @('.', '..') }).Count -ne 0) {
+            Throw-ManifestValidation 'manifest-provenance' 'Manifest source locator is unsafe or inconsistent.'
+        }
+        if ($null -ne $source.release -and ($source.release -isnot [string] -or [string]::IsNullOrWhiteSpace($source.release))) { Throw-ManifestValidation 'manifest-schema' 'Manifest source release is invalid.' }
+        Assert-SortedUniqueStrings $provenance.generated_from 'manifest-provenance' 'Manifest generated_from' -ComponentIds
+        if (($identity.role -eq 'generated' -and $provenance.generated_from.Count -eq 0) -or ($identity.role -ne 'generated' -and $provenance.generated_from.Count -ne 0)) {
+            Throw-ManifestValidation 'manifest-provenance' 'Manifest generated_from is inconsistent with role.'
+        }
+        $fork = Assert-V3Fork $provenance.fork
+        if (($fork.status -eq 'project-owned' -and $identity.role -ne 'project-owned') -or ($fork.status -eq 'legacy' -and $identity.role -ne 'compatibility') -or
+            ($fork.status -eq 'derived-customized' -and $identity.role -ne 'generated') -or ($fork.status -eq 'customized' -and $identity.role -ne 'canonical') -or
+            ($fork.status -eq 'not-applicable' -and $identity.kind -eq 'file')) { Throw-ManifestValidation 'manifest-fork' 'Manifest fork classification disagrees with identity.' }
+
+        $hashes = Assert-ExactObject $component.hashes @('algorithm', 'content_basis', 'baseline', 'observed_before', 'proposed_source', 'result_after') 'manifest-schema' 'Manifest hashes'
+        if ($hashes.algorithm -ne 'sha256' -or $hashes.content_basis -ne 'exact-bytes') { Throw-ManifestValidation 'manifest-hash' 'Manifest hash algorithm/content basis is invalid.' }
+        foreach ($key in @('baseline', 'observed_before', 'proposed_source', 'result_after')) { Assert-ManifestHash $hashes[$key] 'manifest-hash' "Manifest hashes.$key" }
+        if ($fork.status -eq 'untouched' -and ($null -eq $hashes.baseline -or $hashes.baseline -ne $hashes.observed_before)) { Throw-ManifestValidation 'manifest-fork' 'Untouched classification needs equal known hashes.' }
+        if ($fork.status -in @('customized', 'derived-customized') -and ($null -eq $hashes.baseline -or $null -eq $hashes.observed_before -or $hashes.baseline -eq $hashes.observed_before)) { Throw-ManifestValidation 'manifest-fork' 'Customization needs divergent known hashes.' }
+
+        $operation = Assert-ExactObject $component.last_operation @('transaction_id', 'outcome') 'manifest-schema' 'Manifest last_operation'
+        if ($operation.transaction_id -isnot [string] -or $operation.transaction_id -notmatch '^txn:[a-z0-9][a-z0-9._-]{2,127}$' -or $operation.outcome -notin @('installed', 'updated', 'preserved-existing', 'preserved-customization', 'conflicted', 'reported', 'retired', 'tombstoned')) {
+            Throw-ManifestValidation 'manifest-schema' 'Manifest component operation is invalid.'
+        }
+        $lifecycle = Assert-ExactObject $component.lifecycle @('state', 'previous_paths', 'retirement', 'reintroduces_component_id') 'manifest-schema' 'Manifest lifecycle'
+        if ($lifecycle.state -notin @('active', 'retired', 'tombstoned')) { Throw-ManifestValidation 'manifest-lifecycle' 'Manifest lifecycle state is invalid.' }
+        Assert-SortedUniqueStrings $lifecycle.previous_paths 'manifest-path' 'Manifest previous_paths' -Paths
+        Assert-OptionalComponentId $lifecycle.reintroduces_component_id 'manifest-reintroduction' 'Manifest reintroduces_component_id'
+        if ($lifecycle.state -eq 'active') {
+            if ($null -ne $lifecycle.retirement) { Throw-ManifestValidation 'manifest-lifecycle' 'Active Manifest component cannot have retirement data.' }
+        } else {
+            if ($lifecycle.retirement -isnot [System.Collections.IDictionary]) { Throw-ManifestValidation 'manifest-lifecycle' 'Terminal Manifest component needs retirement data.' }
+            $retirement = Assert-V3Retirement $lifecycle.retirement
+            if ($lifecycle.reintroduces_component_id -or $null -ne $hashes.proposed_source) { Throw-ManifestValidation 'manifest-lifecycle' 'Terminal Manifest component has active evidence.' }
+            if ($lifecycle.state -eq 'retired' -and ($null -ne $retirement.pruned_at -or $operation.outcome -ne 'retired')) { Throw-ManifestValidation 'manifest-lifecycle' 'Retired Manifest evidence is invalid.' }
+            if ($lifecycle.state -eq 'tombstoned' -and ($null -eq $retirement.pruned_at -or $null -ne $hashes.result_after -or $operation.outcome -ne 'tombstoned')) { Throw-ManifestValidation 'manifest-lifecycle' 'Tombstoned Manifest evidence is invalid.' }
+        }
+        if ($operation.outcome -in @('installed', 'updated')) {
+            if ($null -eq $hashes.proposed_source -or $hashes.result_after -ne $hashes.proposed_source) { Throw-ManifestValidation 'manifest-hash' 'Installed/updated result must equal proposed source bytes.' }
+        } elseif ($operation.outcome -eq 'preserved-customization') {
+            if ($fork.status -notin @('customized', 'derived-customized') -or $hashes.result_after -ne $hashes.observed_before) { Throw-ManifestValidation 'manifest-fork' 'Preserved customization evidence is inconsistent.' }
+        } elseif ($operation.outcome -eq 'preserved-existing') {
+            if ($hashes.result_after -ne $hashes.observed_before) { Throw-ManifestValidation 'manifest-hash' 'Preserved existing result must equal observed bytes.' }
+        } elseif ($operation.outcome -eq 'conflicted' -and $fork.status -ne 'conflicted') {
+            Throw-ManifestValidation 'manifest-fork' 'Conflicted outcome requires conflicted fork evidence.'
+        } elseif ($operation.outcome -eq 'retired' -and $hashes.result_after -ne $hashes.observed_before) {
+            Throw-ManifestValidation 'manifest-hash' 'Retired result must preserve observed bytes.'
+        }
+        $installedAt = if ($null -ne $component.installed_at) { Get-ManifestTimestampKey $component.installed_at 'manifest-timestamp' 'Component installed_at' } else { $null }
+        $updatedAt = Get-ManifestTimestampKey $component.updated_at 'manifest-timestamp' 'Component updated_at'
+        if (($null -ne $installedAt -and $installedAt -gt $updatedAt) -or $updatedAt -gt $writtenAt) { Throw-ManifestValidation 'manifest-timestamp' 'Component timestamps are out of order.' }
+        if ((Get-ManifestTimestampKey $fork.classified_at 'manifest-timestamp' 'Fork classified_at') -gt $updatedAt) { Throw-ManifestValidation 'manifest-timestamp' 'Fork classification postdates component update.' }
+        if ($null -ne $lifecycle.retirement) {
+            if ((Get-ManifestTimestampKey $lifecycle.retirement.detected_at 'manifest-timestamp' 'Retirement detected_at') -gt $updatedAt) {
+                Throw-ManifestValidation 'manifest-timestamp' 'Retirement detection postdates component update.'
+            }
+            if ($null -ne $lifecycle.retirement.pruned_at -and (Get-ManifestTimestampKey $lifecycle.retirement.pruned_at 'manifest-timestamp' 'Retirement pruned_at') -gt $updatedAt) {
+                Throw-ManifestValidation 'manifest-timestamp' 'Prune timestamp postdates component update.'
+            }
+        }
+        $records[$identity.id] = $component
+    }
+    if (@(Compare-Object -ReferenceObject $order -DifferenceObject @($order | Sort-Object) -CaseSensitive).Count -ne 0) { Throw-ManifestValidation 'manifest-schema' 'Manifest components must be sorted by ID.' }
+
+    $activePaths = @{}
+    $terminalPaths = @{}
+    $graph = @{}
+    foreach ($id in $records.Keys) {
+        $component = $records[$id]
+        $lifecycle = $component.lifecycle
+        $references = @($component.provenance.generated_from)
+        if ($lifecycle.reintroduces_component_id) { $references += $lifecycle.reintroduces_component_id }
+        if ($lifecycle.retirement -and $lifecycle.retirement.successor_component_id) { $references += $lifecycle.retirement.successor_component_id }
+        $graph[$id] = @($references)
+        foreach ($reference in $references) {
+            if ($reference -eq $id) { Throw-ManifestValidation ($(if ($lifecycle.reintroduces_component_id -eq $reference) { 'manifest-reintroduction' } else { 'manifest-provenance' })) 'Manifest component self-references.' }
+            if (-not $records.ContainsKey($reference)) { Throw-ManifestValidation ($(if ($lifecycle.reintroduces_component_id -eq $reference) { 'manifest-reintroduction' } else { 'manifest-provenance' })) "Manifest reference does not resolve: $reference" }
+        }
+        if ($lifecycle.reintroduces_component_id -and $records[$lifecycle.reintroduces_component_id].lifecycle.state -ne 'tombstoned') { Throw-ManifestValidation 'manifest-reintroduction' 'Manifest reintroduction must target a tombstone.' }
+        $pathKey = $component.identity.path_key
+        if ($lifecycle.state -eq 'active') {
+            if ($activePaths.ContainsKey($pathKey)) { Throw-ManifestValidation 'manifest-path-collision' 'Duplicate active Manifest path.' }
+            $activePaths[$pathKey] = $id
+        } else {
+            if (-not $terminalPaths.ContainsKey($pathKey)) { $terminalPaths[$pathKey] = @() }
+            $terminalPaths[$pathKey] += $id
+        }
+    }
+    foreach ($pathKey in $activePaths.Keys) {
+        if (-not $terminalPaths.ContainsKey($pathKey)) { continue }
+        foreach ($terminalId in @($terminalPaths[$pathKey])) {
+            $active = $records[$activePaths[$pathKey]]
+            $terminal = $records[$terminalId]
+            if ($terminal.lifecycle.state -ne 'tombstoned' -or $active.lifecycle.reintroduces_component_id -ne $terminalId -or $null -ne $terminal.hashes.result_after) {
+                Throw-ManifestValidation 'manifest-path-collision' 'Manifest path collision lacks valid reintroduction evidence.'
+            }
+        }
+    }
+    $provenanceGraph = @{}
+    foreach ($id in $records.Keys) { $provenanceGraph[$id] = @($records[$id].provenance.generated_from) }
+    Assert-NoRelationshipCycles $provenanceGraph 'manifest-provenance'
+    Assert-NoRelationshipCycles $graph 'manifest-reintroduction'
+
+    $catalogValidated = $false
+    $detail = $null
+    if (-not $SourceRoot) {
+        $candidateRoot = $script:RepoRoot
+        if ((Test-Path -LiteralPath (Join-Path $candidateRoot $script:ComponentCatalogPath) -PathType Leaf) -and
+            (Test-Path -LiteralPath (Join-Path $candidateRoot $script:ProductionManifestSchema) -PathType Leaf)) { $SourceRoot = $candidateRoot }
+        else { $detail = 'Production Schema and Component Catalog validation are unavailable.' }
+    }
+    if ($SourceRoot) {
+        $schemaResult = Get-ValidatedProductionManifestSchema $SourceRoot
+        if (Get-Command Test-Json -ErrorAction SilentlyContinue) {
+            $schemaJson = $manifest | ConvertTo-Json -Depth 100 -Compress
+            if (-not ($schemaJson | Test-Json -SchemaFile $schemaResult.Path -ErrorAction SilentlyContinue)) {
+                Throw-ManifestValidation 'manifest-schema' 'Manifest does not conform to the Production Schema.'
+            }
+        }
+        $catalogResult = Get-ValidatedComponentCatalog $SourceRoot
+        if ($binding.sha256 -ne (Get-Sha256ForBytes $catalogResult.Bytes)) { Throw-ManifestValidation 'catalog-digest' 'Manifest Component Catalog digest does not match exact Catalog bytes.' }
+        if ($sourceRelease.release_id -ne $catalogResult.Catalog.source_release.release_id -or $sourceRelease.source_ref -ne $catalogResult.Catalog.source_release.source_ref -or $sourceRelease.version -ne $catalogResult.Catalog.source_release.version) {
+            Throw-ManifestValidation 'catalog-release' 'Manifest source release does not match Component Catalog.'
+        }
+        foreach ($id in $records.Keys) {
+            if (-not $catalogResult.Records.ContainsKey($id)) { Throw-ManifestValidation 'catalog-agreement' "Manifest component is absent from Catalog: $id" }
+            $component = $records[$id]
+            $catalogComponent = $catalogResult.Records[$id]
+            $successor = if ($component.lifecycle.retirement) { $component.lifecycle.retirement.successor_component_id } else { $null }
+            if ($component.identity.path -ne $catalogComponent.canonical_source_path -or $component.identity.role -ne $catalogComponent.role -or $component.identity.kind -ne $catalogComponent.kind -or
+                $component.lifecycle.state -ne $catalogComponent.lifecycle_status -or
+                @((Compare-Object @($component.lifecycle.previous_paths) @($catalogComponent.previous_paths) -CaseSensitive)).Count -ne 0 -or
+                @((Compare-Object @($component.provenance.generated_from) @($catalogComponent.generated_from) -CaseSensitive)).Count -ne 0 -or
+                $component.lifecycle.reintroduces_component_id -ne $catalogComponent.reintroduces_component_id -or $successor -ne $catalogComponent.successor_component_id) {
+                Throw-ManifestValidation 'catalog-agreement' "Manifest component disagrees with Catalog: $id"
+            }
+            if ($null -ne $component.provenance.source.release -and $component.provenance.source.release -ne $sourceRelease.release_id) { Throw-ManifestValidation 'catalog-agreement' 'Manifest component release disagrees with source release.' }
+        }
+        $catalogValidated = $true
+    }
+    return [PSCustomObject]@{ Entries = $records; CatalogValidated = $catalogValidated; Detail = $detail }
+}
+
 function Get-InstallManifest {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$TargetPath
+        [string]$TargetPath,
+        [string]$SourceRoot
     )
 
     $manifestPath = Join-Path $TargetPath '.ai-workflow-install.json'
@@ -1048,11 +1541,15 @@ function Get-InstallManifest {
             SchemaVersion = $null
             Detail        = $null
             ManifestPath  = $manifestPath
+            DiagnosticCategory = 'manifest-missing'
+            CatalogValidated = $false
         }
     }
 
     try {
-        $manifest = Get-Content -Raw $manifestPath | ConvertFrom-Json -AsHashtable
+        $jsonParameters = @{ AsHashtable = $true }
+        if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $jsonParameters['DateKind'] = 'String' }
+        $manifest = Get-Content -Raw $manifestPath | ConvertFrom-Json @jsonParameters
     } catch {
         return [PSCustomObject]@{
             State         = 'corrupt'
@@ -1060,6 +1557,8 @@ function Get-InstallManifest {
             SchemaVersion = $null
             Detail        = 'Manifest could not be read or parsed as JSON.'
             ManifestPath  = $manifestPath
+            DiagnosticCategory = 'manifest-json'
+            CatalogValidated = $false
         }
     }
 
@@ -1070,6 +1569,8 @@ function Get-InstallManifest {
             SchemaVersion = $null
             Detail        = 'Manifest top level must be an object.'
             ManifestPath  = $manifestPath
+            DiagnosticCategory = 'manifest-schema'
+            CatalogValidated = $false
         }
     }
 
@@ -1082,6 +1583,8 @@ function Get-InstallManifest {
             SchemaVersion = $null
             Detail        = 'Manifest schema_version must be an integer.'
             ManifestPath  = $manifestPath
+            DiagnosticCategory = 'manifest-schema'
+            CatalogValidated = $false
         }
     }
 
@@ -1092,6 +1595,30 @@ function Get-InstallManifest {
             SchemaVersion = $schemaVersion
             Detail        = "Schema version $schemaVersion is not supported."
             ManifestPath  = $manifestPath
+            DiagnosticCategory = 'manifest-version'
+            CatalogValidated = $false
+        }
+    }
+
+    if ($schemaVersion -eq 3) {
+        try {
+            $validated = Assert-V3Manifest -Manifest $manifest -SourceRoot $SourceRoot
+        } catch {
+            $category = if ($_.Exception.Data.Contains('Category')) { [string]$_.Exception.Data['Category'] } else { 'manifest-schema' }
+            return [PSCustomObject]@{
+                State = 'corrupt'; Entries = @{}; SchemaVersion = 3; Detail = $_.Exception.Message
+                ManifestPath = $manifestPath; DiagnosticCategory = $category; CatalogValidated = $false
+            }
+        }
+        if (-not $validated.CatalogValidated) {
+            return [PSCustomObject]@{
+                State = 'v3-validation-blocked'; Entries = @{}; SchemaVersion = 3; Detail = $validated.Detail
+                ManifestPath = $manifestPath; DiagnosticCategory = 'catalog-unavailable'; CatalogValidated = $false
+            }
+        }
+        return [PSCustomObject]@{
+            State = 'valid-v3'; Entries = $validated.Entries; SchemaVersion = 3; Detail = $validated.Detail
+            ManifestPath = $manifestPath; DiagnosticCategory = 'manifest-valid-v3'; CatalogValidated = $true
         }
     }
 
@@ -1106,6 +1633,8 @@ function Get-InstallManifest {
             SchemaVersion = $schemaVersion
             Detail        = 'Manifest components must be an array.'
             ManifestPath  = $manifestPath
+            DiagnosticCategory = 'manifest-schema'
+            CatalogValidated = $false
         }
     }
 
@@ -1118,6 +1647,8 @@ function Get-InstallManifest {
                 SchemaVersion = $schemaVersion
                 Detail        = 'Every manifest component must be an object.'
                 ManifestPath  = $manifestPath
+                DiagnosticCategory = 'manifest-schema'
+                CatalogValidated = $false
             }
         }
         $name = if ($component.Contains('name')) { $component['name'] } else { $null }
@@ -1128,6 +1659,8 @@ function Get-InstallManifest {
                 SchemaVersion = $schemaVersion
                 Detail        = 'Every manifest component must have a non-empty string name.'
                 ManifestPath  = $manifestPath
+                DiagnosticCategory = 'manifest-schema'
+                CatalogValidated = $false
             }
         }
         if (-not $componentNames.Add($name)) {
@@ -1137,17 +1670,21 @@ function Get-InstallManifest {
                 SchemaVersion = $schemaVersion
                 Detail        = "Manifest contains duplicate component name: $name"
                 ManifestPath  = $manifestPath
+                DiagnosticCategory = 'manifest-schema'
+                CatalogValidated = $false
             }
         }
         $entries[$name] = $component
     }
 
     return [PSCustomObject]@{
-        State         = 'valid'
+        State         = "valid-v$schemaVersion"
         Entries       = $entries
         SchemaVersion = $schemaVersion
         Detail        = $null
         ManifestPath  = $manifestPath
+        DiagnosticCategory = "manifest-valid-v$schemaVersion"
+        CatalogValidated = $false
     }
 }
 
@@ -1999,28 +2536,38 @@ function Initialize-AgentsGuide {
 
 function Main {
     $targetProjectPath = if ($TargetPath) { $TargetPath } else { (Get-Location).Path }
-    $manifestResult = Get-InstallManifest -TargetPath $targetProjectPath
-    if ($Update) {
-        if ($manifestResult.State -eq 'missing') {
-            Write-Warning "Legacy project manifest is missing: $($manifestResult.ManifestPath)"
-            Write-Warning 'Update is report-only because managed-file provenance is unavailable.'
-            Write-Warning 'No files changed; no ownership was inferred and no manifest was created.'
-            return
-        }
-        if ($manifestResult.State -eq 'unsupported') {
-            Write-Error "Unsupported install manifest: $($manifestResult.ManifestPath)" -ErrorAction Continue
-            Write-Error "Observed schema version: $($manifestResult.SchemaVersion)" -ErrorAction Continue
-            Write-Error "Supported schema versions: $($script:SupportedManifestSchemaVersions -join ', ')" -ErrorAction Continue
-            Write-Error 'Update aborted before any changes; the manifest was not downgraded or rebuilt.' -ErrorAction Continue
-            exit 1
-        }
-        if ($manifestResult.State -eq 'corrupt') {
-            Write-Error "Corrupt install manifest: $($manifestResult.ManifestPath)" -ErrorAction Continue
-            Write-Error $manifestResult.Detail -ErrorAction Continue
-            Write-Error 'Update aborted before any changes; the manifest was not deleted or rebuilt.' -ErrorAction Continue
-            Write-Error 'Inspect the manifest manually or restore it from a trusted backup.' -ErrorAction Continue
-            exit 1
-        }
+    $catalogSourceRoot = if (
+        (Test-Path -LiteralPath (Join-Path $script:RepoRoot $script:ComponentCatalogPath) -PathType Leaf) -and
+        (Test-Path -LiteralPath (Join-Path $script:RepoRoot $script:ProductionManifestSchema) -PathType Leaf)
+    ) { $script:RepoRoot } else { $null }
+    $manifestResult = Get-InstallManifest -TargetPath $targetProjectPath -SourceRoot $catalogSourceRoot
+    $pendingV3Validation = $manifestResult.State -eq 'v3-validation-blocked'
+    if ($manifestResult.State -eq 'valid-v3') {
+        Write-Error "manifest-v3-writer-disabled: $($manifestResult.ManifestPath)" -ErrorAction Continue
+        Write-Error 'Manifest v3 writer/migration is not enabled.' -ErrorAction Continue
+        Write-Error 'The v3 Manifest was recognized read-only and will not be downgraded or overwritten.' -ErrorAction Continue
+        Write-Error 'Operation aborted before backup, directory, file, link, temporary artifact, or Manifest mutation.' -ErrorAction Continue
+        exit 1
+    }
+    if ($manifestResult.State -eq 'unsupported') {
+        Write-Error "Unsupported install manifest: $($manifestResult.ManifestPath)" -ErrorAction Continue
+        Write-Error "Observed schema version: $($manifestResult.SchemaVersion)" -ErrorAction Continue
+        Write-Error "Supported schema versions: $($script:SupportedManifestSchemaVersions -join ', ')" -ErrorAction Continue
+        Write-Error 'Operation aborted before any changes or target mutation; the manifest was not downgraded or rebuilt.' -ErrorAction Continue
+        exit 1
+    }
+    if ($manifestResult.State -eq 'corrupt') {
+        Write-Error "Corrupt install manifest: $($manifestResult.ManifestPath)" -ErrorAction Continue
+        Write-Error $manifestResult.Detail -ErrorAction Continue
+        Write-Error 'Operation aborted before any changes or target mutation; the manifest was not deleted or rebuilt.' -ErrorAction Continue
+        Write-Error 'Inspect the manifest manually or restore it from a trusted backup.' -ErrorAction Continue
+        exit 1
+    }
+    if ($Update -and $manifestResult.State -eq 'missing') {
+        Write-Warning "Legacy project manifest is missing: $($manifestResult.ManifestPath)"
+        Write-Warning 'Update is report-only because managed-file provenance is unavailable.'
+        Write-Warning 'No files changed; no ownership was inferred and no manifest was created.'
+        return
     }
     $manifestEntries = $manifestResult.Entries
 
@@ -2159,6 +2706,25 @@ function Main {
             Remove-TempDirectory -Path $script:TempClonePath
             exit 1
         }
+    }
+
+    if ($pendingV3Validation) {
+        $revalidatedManifest = Get-InstallManifest -TargetPath $targetProjectPath -SourceRoot $script:RepoRoot
+        if ($revalidatedManifest.State -eq 'valid-v3') {
+            Write-Error "manifest-v3-writer-disabled: $($revalidatedManifest.ManifestPath)" -ErrorAction Continue
+            Write-Error 'Manifest v3 writer/migration is not enabled.' -ErrorAction Continue
+            Write-Error 'The v3 Manifest was recognized read-only after exact Production Schema and Component Catalog validation.' -ErrorAction Continue
+        } elseif ($revalidatedManifest.State -eq 'v3-validation-blocked') {
+            Write-Error "v3-validation-blocked: $($revalidatedManifest.ManifestPath)" -ErrorAction Continue
+            Write-Error "catalog-unavailable: $($revalidatedManifest.Detail)" -ErrorAction Continue
+            Write-Error 'The Manifest cannot be classified as valid without the exact Production Schema and Component Catalog.' -ErrorAction Continue
+        } else {
+            Write-Error "V3 validation failed: $($revalidatedManifest.ManifestPath)" -ErrorAction Continue
+            Write-Error "$($revalidatedManifest.DiagnosticCategory): $($revalidatedManifest.Detail)" -ErrorAction Continue
+        }
+        Write-Error 'Operation aborted before backup, adopter directory, file, link, or Manifest mutation.' -ErrorAction Continue
+        if ($script:TempClonePath) { Remove-TempDirectory -Path $script:TempClonePath; $script:TempClonePath = $null }
+        exit 1
     }
     
     # ========================================================================

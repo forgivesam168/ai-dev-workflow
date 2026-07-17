@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Phase 4 Schema Design approved; Proposal PR #11 merge pending; product implementation, migration, prune, and real-adopter execution not authorized
+- **Status**: Phase 4A local implementation verified; PR pending; Phase 4 overall partially implemented; writer enablement, migration, prune, and real-adopter execution not authorized
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 4 — Manifest Schema approval evidence and Proposal PR #11 merge only; product implementation not authorized
+- **Current active phase**: Phase 4A — Manifest v3 Reader-First Foundation
 
 ## Phase Status Summary
 
@@ -19,7 +19,7 @@
 | 1 — AGENTS / WORKFLOW / risk contract | Merged | Required | Required |
 | 2 — Agent / Skill / Prompt / Instruction alignment | Merged | Required | Required |
 | 3 — Change Package / Review / Archive semantics | Merged | Required | Required |
-| 4 — Manifest / provenance / stale-derived migration | Schema Design approved; Proposal PR #11 merge pending; product implementation, migration, prune, and real-adopter execution not authorized | Required | Required |
+| 4 — Manifest / provenance / stale-derived migration | In progress / partially implemented: Schema approved and Proposal PR #11 merged; Phase 4A local implementation verified and PR pending; Phase 4B, writer enablement, migration, and prune not authorized | Required | Required |
 | 5 — Cross-CLI evidence and adapter proposal | Pending | Required | Evidence PR before implementation PR |
 | 6 — Bash deprecation completion | Pending | Required | Required |
 
@@ -923,11 +923,336 @@ Separate approval and separate PR required; naming decision must be recorded bef
 
 ### Schema Proposal Status
 
-- **Status**: `SCHEMA APPROVED — NOT IMPLEMENTED`; Proposal PR #11 merge pending; Phase 4 product implementation is not authorized.
-- **Authorization boundary**: This branch may update approval/status evidence and merge the approved Proposal PR only. Candidate schema/examples must remain byte-identical to approved head `16aa063139431cbd07cba147d81be1d2cb3da609`; installers, runtime readers/writers, production schema/gates/tests, migration, prune, and real-adopter behavior remain unchanged.
+- **Status**: Schema Design approved; Proposal PR #11 merged; Phase 4A Reader-First Foundation in progress; Phase 4 overall remains incomplete.
+- **Authorization boundary**: Phase 4A may create the approved Production Schema and Component Catalog, add read-only v3 validation to both runtimes, preserve v1/v2 reading, and block every v3 mutation path before writes. Candidate schema/examples must remain byte-identical to approved head `16aa063139431cbd07cba147d81be1d2cb3da609`; writer enablement, conversion planning, migration, tombstone mutation, prune, and real-adopter behavior remain unauthorized.
 - **Proposal branch**: `design/phase-4-manifest-schema-proposal` from merged Phase 3 `main` at `f8a0116ce4af0b463c838150350a9ccfa7c2cac6`.
 - **Approval evidence**: Amendment A-07 records explicit current-task approval of OD-01 through OD-17 and the complete Manifest v3 Schema Design at exact head `16aa063139431cbd07cba147d81be1d2cb3da609`.
-- **Delivery boundary**: Proposal PR #11 is approved for guarded squash merge after the status-only commit and latest CI pass. Product implementation, writer enablement, migration, prune, and real-adopter execution remain separate future decisions.
+- **Remote evidence**: PR #11 was merged from final status head `fa0471d8139e288fcf856af7a160f0e2d1335627` as squash merge `5300d56c9ef9594f9bb3007b22824a644e06ee62`; three commits and 13 files; latest Verify Change Package, verify-sync Ubuntu, and verify-sync Windows completed successfully; no reviews or unresolved review threads.
+- **Delivery boundary**: Phase 4A uses its own branch and PR. Phase 4B, writer enablement, migration, tombstone mutation, prune, and real-adopter execution remain separate future decisions.
+
+### Phase 4A — Reader-First Foundation
+
+- **Status**: Local implementation verified; PR pending under Amendment A-08. Phase 4 overall remains in progress / partially implemented.
+- **Starting main**: local `main` = `origin/main` = `5300d56c9ef9594f9bb3007b22824a644e06ee62`; working tree clean before branch creation.
+- **Branch**: `feat/phase-4a-manifest-reader-foundation`.
+- **Approved product boundary**: Production Manifest v3 Schema; Stable Component ID Catalog v1; strict read-only v3 parsing and semantic validation in Python and PowerShell; preserved v1/v2 reading; valid-v3 zero-write mutation blocking; shared vectors and parity/regression evidence. Production writers remain v2.
+- **Hard exclusions**: no conversion or stale planner, v3 writer, migration, tombstone write, prune/delete, real-adopter operation, deployment/production, Phase 4B/4C/4D, or Phase 5.
+- **Worker**: existing built-in `worker` Luna is the sole product writer; requested GPT-5.6 / medium; observed model and effort are unknown because the runtime exposes no auditable value; no configuration change is permitted.
+
+#### One-Time Current Distribution Inventory and Stable-ID Mapping
+
+Sol inspected the actual Python and PowerShell distribution paths before delegation. The corrected exact active Catalog inventory is 253 components: 101 canonical, 110 generated, 3 project-owned, and 39 compatibility; 249 files, one directory, and 3 mounts. The reviewed mapping has zero duplicate IDs, zero ASCII-lower path-key collisions, and a maximum ID length of 96. Its read-only canonical inventory fingerprint is `sha256:4e68c7431da961b126748b2a3fb110e9dc52094cf1a958b64528337422800c66`; this is audit evidence for the reviewed mapping, not authenticity, authorization, or a runtime ID generator.
+
+The initial 252-entry allocation incorrectly listed all 80 Skill files as direct parents of each Skill mount, conflicting with the approved Schema limit of 64 `generated_from` entries. Correction round 1 uses the already-approved `directory` kind and parent-component semantics: `cmp:canonical-skills-root` represents canonical `skills`, and every Skill mount has that one directory parent. The 80 file identities remain independently allocated. No Schema field, limit, enum, lifecycle rule, or approved technical decision changes.
+
+| Component class | Count | Exact mapping and lineage |
+|---|---:|---|
+| Canonical Skill root and files | 81 | `skills` → `cmp:canonical-skills-root` with kind `directory`; plus every tracked adopter Skill file except `skills/gate-check/**` using `cmp:canonical-skill-<skill>` for `SKILL.md` and `cmp:canonical-skill-<skill>-<artifact-kind>-<logical-name>` for reviewed references/scripts/templates/assets. |
+| Canonical Agent files | 9 | `agents/<name>.agent.md` → `cmp:canonical-<name>-agent`. |
+| Canonical adopter lifecycle / constitution | 11 | `.github/copilot-instructions.md` → `cmp:canonical-adopter-copilot-instructions`; `WORKFLOW.md` → `cmp:canonical-adopter-workflow`; nine `changes/_template/*.md` files → `cmp:canonical-change-template-<filename-stem>`. |
+| Project-owned guides | 3 | `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` → `cmp:project-<surface>-guide`. |
+| Compatibility files | 39 | The 37 installer-distributed `.github/**` files outside workflows, Agents, Skills, CODEOWNERS, dependabot, and adopter constitution, plus `.gitattributes` and `.editorconfig`; each has an explicit `cmp:compat-*` logical ID and no generated parent. |
+| Generated Skill mirrors | 80 | `.github/skills/<relative>` → `cmp:generated-github-<canonical-skill-ID-suffix>`, with the exact corresponding canonical Skill file as its only parent. |
+| Generated Agent representations | 27 | For every canonical Agent: `.github/agents/<name>.agent.md`, `.claude/agents/<name>.md`, and `.codex/agents/<name>.toml` → `cmp:generated-<surface>-<name>-agent`, each with that canonical Agent as its only parent. |
+| Generated Skill mounts | 3 | `.agent/skills`, `.agents/skills`, and `.claude/skills` → fixed IDs `cmp:generated-agent-skills-mount`, `cmp:generated-agents-skills-mount`, and `cmp:generated-claude-skills-mount`; each records only `cmp:canonical-skills-root` as its direct parent. |
+
+Every entry uses its adopter-relative logical target as `canonical_source_path`, is active in initial release `ai-dev-workflow:component-catalog:1`, has empty `previous_paths`, null successor/reintroduction/retired release, and is sorted by stable ID. IDs are explicitly allocated in the version-controlled Catalog and are never recomputed from path, hash, time, adopter content, randomness, or runtime state. Rename must preserve the existing ID; retirement/tombstone permanently reserves it.
+
+#### Exact Stable-ID Allocation
+
+The following table is the complete one-time Sol allocation. It is normative for Phase 4A: Luna must transcribe it into the Catalog and must not choose, shorten, regenerate, or infer another ID. The fingerprint above is SHA-256 over UTF-8 bytes of a compact JSON array sorted by `id`, with each object in property order `id`, `canonical_source_path`, `role`, `kind`, `generated_from`; every `generated_from` array is sorted. This serialization definition is audit-only and must not become runtime allocation logic.
+
+| Stable ID | Canonical source path | Role | Kind | Generated from |
+|---|---|---|---|---|
+| `cmp:canonical-adopter-copilot-instructions` | `.github/copilot-instructions.md` | canonical | file | — |
+| `cmp:canonical-adopter-workflow` | `WORKFLOW.md` | canonical | file | — |
+| `cmp:canonical-architect-agent` | `agents/architect.agent.md` | canonical | file | — |
+| `cmp:canonical-brainstorm-agent` | `agents/brainstorm.agent.md` | canonical | file | — |
+| `cmp:canonical-change-template-00-intake` | `changes/_template/00-intake.md` | canonical | file | — |
+| `cmp:canonical-change-template-01-brainstorm` | `changes/_template/01-brainstorm.md` | canonical | file | — |
+| `cmp:canonical-change-template-02-decision-log` | `changes/_template/02-decision-log.md` | canonical | file | — |
+| `cmp:canonical-change-template-03-spec` | `changes/_template/03-spec.md` | canonical | file | — |
+| `cmp:canonical-change-template-04-plan` | `changes/_template/04-plan.md` | canonical | file | — |
+| `cmp:canonical-change-template-05-test-plan` | `changes/_template/05-test-plan.md` | canonical | file | — |
+| `cmp:canonical-change-template-06-impact-analysis` | `changes/_template/06-impact-analysis.md` | canonical | file | — |
+| `cmp:canonical-change-template-07-review` | `changes/_template/07-review.md` | canonical | file | — |
+| `cmp:canonical-change-template-99-archive` | `changes/_template/99-archive.md` | canonical | file | — |
+| `cmp:canonical-code-reviewer-agent` | `agents/code-reviewer.agent.md` | canonical | file | — |
+| `cmp:canonical-coder-agent` | `agents/coder.agent.md` | canonical | file | — |
+| `cmp:canonical-dba-agent` | `agents/dba.agent.md` | canonical | file | — |
+| `cmp:canonical-frontend-designer-agent` | `agents/frontend-designer.agent.md` | canonical | file | — |
+| `cmp:canonical-plan-agent` | `agents/plan.agent.md` | canonical | file | — |
+| `cmp:canonical-pm-agent` | `agents/pm.agent.md` | canonical | file | — |
+| `cmp:canonical-skill-agentic-eval` | `skills/agentic-eval/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-agentic-eval-reference-cli-evaluation-workflow` | `skills/agentic-eval/references/cli-evaluation-workflow.md` | canonical | file | — |
+| `cmp:canonical-skill-agentic-eval-reference-python-patterns` | `skills/agentic-eval/references/python-patterns.md` | canonical | file | — |
+| `cmp:canonical-skill-agentic-eval-reference-stage-rubrics` | `skills/agentic-eval/references/stage-rubrics.md` | canonical | file | — |
+| `cmp:canonical-skill-backend-patterns` | `skills/backend-patterns/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-brainstorming` | `skills/brainstorming/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-brainstorming-template-decision-log` | `skills/brainstorming/templates/decision-log.md` | canonical | file | — |
+| `cmp:canonical-skill-brainstorming-template-proposal` | `skills/brainstorming/templates/proposal.md` | canonical | file | — |
+| `cmp:canonical-skill-brainstorming-template-tasks` | `skills/brainstorming/templates/tasks.md` | canonical | file | — |
+| `cmp:canonical-skill-chrome-devtools` | `skills/chrome-devtools/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-ci-cd-and-automation` | `skills/ci-cd-and-automation/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-code-security-review` | `skills/code-security-review/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-coding-standards` | `skills/coding-standards/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-context-engineering` | `skills/context-engineering/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-copilot-sdk` | `skills/copilot-sdk/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-debug` | `skills/debug/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator` | `skills/excalidraw-diagram-generator/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-reference-element-types` | `skills/excalidraw-diagram-generator/references/element-types.md` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-reference-excalidraw-schema` | `skills/excalidraw-diagram-generator/references/excalidraw-schema.md` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-script-` | `skills/excalidraw-diagram-generator/scripts/.gitignore` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-script-add-arrow` | `skills/excalidraw-diagram-generator/scripts/add-arrow.py` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-script-add-icon-to-diagram` | `skills/excalidraw-diagram-generator/scripts/add-icon-to-diagram.py` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-script-readme` | `skills/excalidraw-diagram-generator/scripts/README.md` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-script-split-excalidraw-library` | `skills/excalidraw-diagram-generator/scripts/split-excalidraw-library.py` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-template-business-flow-swimlane-template` | `skills/excalidraw-diagram-generator/templates/business-flow-swimlane-template.excalidraw` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-template-class-diagram-template` | `skills/excalidraw-diagram-generator/templates/class-diagram-template.excalidraw` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-template-data-flow-diagram-template` | `skills/excalidraw-diagram-generator/templates/data-flow-diagram-template.excalidraw` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-template-er-diagram-template` | `skills/excalidraw-diagram-generator/templates/er-diagram-template.excalidraw` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-template-flowchart-template` | `skills/excalidraw-diagram-generator/templates/flowchart-template.excalidraw` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-template-mindmap-template` | `skills/excalidraw-diagram-generator/templates/mindmap-template.excalidraw` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-template-relationship-template` | `skills/excalidraw-diagram-generator/templates/relationship-template.excalidraw` | canonical | file | — |
+| `cmp:canonical-skill-excalidraw-diagram-generator-template-sequence-diagram-template` | `skills/excalidraw-diagram-generator/templates/sequence-diagram-template.excalidraw` | canonical | file | — |
+| `cmp:canonical-skill-execution-guardrails` | `skills/execution-guardrails/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-execution-guardrails-reference-anti-patterns` | `skills/execution-guardrails/references/anti-patterns.md` | canonical | file | — |
+| `cmp:canonical-skill-execution-guardrails-reference-stage-usage` | `skills/execution-guardrails/references/stage-usage.md` | canonical | file | — |
+| `cmp:canonical-skill-explore` | `skills/explore/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-frontend-patterns` | `skills/frontend-patterns/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-gh-cli` | `skills/gh-cli/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-git-commit` | `skills/git-commit/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-github-issues` | `skills/github-issues/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-github-issues-reference-templates` | `skills/github-issues/references/templates.md` | canonical | file | — |
+| `cmp:canonical-skill-implementation-planning` | `skills/implementation-planning/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-make-skill-template` | `skills/make-skill-template/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html` | `skills/markdown-to-html/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-basic-markdown` | `skills/markdown-to-html/references/basic-markdown.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-basic-markdown-to-html` | `skills/markdown-to-html/references/basic-markdown-to-html.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-code-blocks` | `skills/markdown-to-html/references/code-blocks.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-code-blocks-to-html` | `skills/markdown-to-html/references/code-blocks-to-html.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-collapsed-sections` | `skills/markdown-to-html/references/collapsed-sections.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-collapsed-sections-to-html` | `skills/markdown-to-html/references/collapsed-sections-to-html.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-gomarkdown` | `skills/markdown-to-html/references/gomarkdown.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-hugo` | `skills/markdown-to-html/references/hugo.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-jekyll` | `skills/markdown-to-html/references/jekyll.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-marked` | `skills/markdown-to-html/references/marked.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-pandoc` | `skills/markdown-to-html/references/pandoc.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-tables` | `skills/markdown-to-html/references/tables.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-tables-to-html` | `skills/markdown-to-html/references/tables-to-html.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-writing-mathematical-expressions` | `skills/markdown-to-html/references/writing-mathematical-expressions.md` | canonical | file | — |
+| `cmp:canonical-skill-markdown-to-html-reference-writing-mathematical-expressions-to-html` | `skills/markdown-to-html/references/writing-mathematical-expressions-to-html.md` | canonical | file | — |
+| `cmp:canonical-skill-microsoft-code-reference` | `skills/microsoft-code-reference/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-microsoft-docs` | `skills/microsoft-docs/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-prd` | `skills/prd/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-python-patterns` | `skills/python-patterns/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-refactor` | `skills/refactor/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-scoutqa-test` | `skills/scoutqa-test/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-security-review` | `skills/security-review/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-security-review-asset-cloud-infrastructure-security` | `skills/security-review/cloud-infrastructure-security.md` | canonical | file | — |
+| `cmp:canonical-skill-shipping-and-launch` | `skills/shipping-and-launch/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-specification` | `skills/specification/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-specification-reference-ac-format-guide` | `skills/specification/references/ac-format-guide.md` | canonical | file | — |
+| `cmp:canonical-skill-specification-reference-consult-review-protocol` | `skills/specification/references/consult-review-protocol.md` | canonical | file | — |
+| `cmp:canonical-skill-specification-reference-specialist-lens-review` | `skills/specification/references/specialist-lens-review.md` | canonical | file | — |
+| `cmp:canonical-skill-tdd-workflow` | `skills/tdd-workflow/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-web-design-reviewer` | `skills/web-design-reviewer/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-web-design-reviewer-reference-framework-fixes` | `skills/web-design-reviewer/references/framework-fixes.md` | canonical | file | — |
+| `cmp:canonical-skill-web-design-reviewer-reference-visual-checklist` | `skills/web-design-reviewer/references/visual-checklist.md` | canonical | file | — |
+| `cmp:canonical-skill-webapp-testing` | `skills/webapp-testing/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-webapp-testing-asset-test-helper` | `skills/webapp-testing/test-helper.js` | canonical | file | — |
+| `cmp:canonical-skill-work-archiving` | `skills/work-archiving/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skill-workflow-orchestrator` | `skills/workflow-orchestrator/SKILL.md` | canonical | file | — |
+| `cmp:canonical-skills-root` | `skills` | canonical | directory | — |
+| `cmp:canonical-spec-agent` | `agents/spec.agent.md` | canonical | file | — |
+| `cmp:compat-editorconfig` | `.editorconfig` | compatibility | file | — |
+| `cmp:compat-gitattributes` | `.gitattributes` | compatibility | file | — |
+| `cmp:compat-hook-post-tool-use-powershell` | `.github/hooks/post-tool-use.ps1` | compatibility | file | — |
+| `cmp:compat-hook-post-tool-use-shell` | `.github/hooks/post-tool-use.sh` | compatibility | file | — |
+| `cmp:compat-hook-pre-tool-use-powershell` | `.github/hooks/pre-tool-use.ps1` | compatibility | file | — |
+| `cmp:compat-hook-pre-tool-use-shell` | `.github/hooks/pre-tool-use.sh` | compatibility | file | — |
+| `cmp:compat-hook-session-start-powershell` | `.github/hooks/session-start.ps1` | compatibility | file | — |
+| `cmp:compat-hook-session-start-shell` | `.github/hooks/session-start.sh` | compatibility | file | — |
+| `cmp:compat-hooks-copilot-hooks` | `.github/hooks/copilot-hooks.json` | compatibility | file | — |
+| `cmp:compat-instruction-agent-skills` | `.github/instructions/agent-skills.instructions.md` | compatibility | file | — |
+| `cmp:compat-instruction-api-design` | `.github/instructions/api-design.instructions.md` | compatibility | file | — |
+| `cmp:compat-instruction-architect` | `.github/instructions/playbooks/architect.md` | compatibility | file | — |
+| `cmp:compat-instruction-aspnet-rest-apis` | `.github/instructions/aspnet-rest-apis.instructions.md` | compatibility | file | — |
+| `cmp:compat-instruction-changes` | `.github/instructions/changes.instructions.md` | compatibility | file | — |
+| `cmp:compat-instruction-code-review` | `.github/instructions/code-review.instructions.md` | compatibility | file | — |
+| `cmp:compat-instruction-csharp` | `.github/instructions/csharp.instructions.md` | compatibility | file | — |
+| `cmp:compat-instruction-database-reviewer` | `.github/instructions/playbooks/database-reviewer.md` | compatibility | file | — |
+| `cmp:compat-instruction-dotnet-architecture-good-practices` | `.github/instructions/dotnet-architecture-good-practices.instructions.md` | compatibility | file | — |
+| `cmp:compat-instruction-openspec` | `.github/instructions/openspec.instructions.md` | compatibility | file | — |
+| `cmp:compat-instruction-planner` | `.github/instructions/playbooks/planner.md` | compatibility | file | — |
+| `cmp:compat-instruction-python` | `.github/instructions/python.instructions.md` | compatibility | file | — |
+| `cmp:compat-instruction-security-reviewer` | `.github/instructions/playbooks/security-reviewer.md` | compatibility | file | — |
+| `cmp:compat-instruction-sql` | `.github/instructions/sql.instructions.md` | compatibility | file | — |
+| `cmp:compat-instruction-tdd-guide` | `.github/instructions/playbooks/tdd-guide.md` | compatibility | file | — |
+| `cmp:compat-issue-template-bug-report` | `.github/ISSUE_TEMPLATE/bug_report.md` | compatibility | file | — |
+| `cmp:compat-issue-template-feature-request` | `.github/ISSUE_TEMPLATE/feature_request.md` | compatibility | file | — |
+| `cmp:compat-issue-template-task` | `.github/ISSUE_TEMPLATE/task.md` | compatibility | file | — |
+| `cmp:compat-mcp` | `.github/mcp.json` | compatibility | file | — |
+| `cmp:compat-prompt-archive` | `.github/prompts/archive.prompt.md` | compatibility | file | — |
+| `cmp:compat-prompt-brainstorm` | `.github/prompts/brainstorm.prompt.md` | compatibility | file | — |
+| `cmp:compat-prompt-code-review` | `.github/prompts/code-review.prompt.md` | compatibility | file | — |
+| `cmp:compat-prompt-commit-gen` | `.github/prompts/commit-gen.prompt.md` | compatibility | file | — |
+| `cmp:compat-prompt-create-plan` | `.github/prompts/create-plan.prompt.md` | compatibility | file | — |
+| `cmp:compat-prompt-create-readme` | `.github/prompts/create-readme.prompt.md` | compatibility | file | — |
+| `cmp:compat-prompt-learn` | `.github/prompts/learn.prompt.md` | compatibility | file | — |
+| `cmp:compat-prompt-spec` | `.github/prompts/spec.prompt.md` | compatibility | file | — |
+| `cmp:compat-prompt-tdd` | `.github/prompts/tdd.prompt.md` | compatibility | file | — |
+| `cmp:compat-prompt-workflow` | `.github/prompts/workflow.prompt.md` | compatibility | file | — |
+| `cmp:compat-pull-request-template` | `.github/PULL_REQUEST_TEMPLATE.md` | compatibility | file | — |
+| `cmp:generated-agent-skills-mount` | `.agent/skills` | generated | mount | `cmp:canonical-skills-root` |
+| `cmp:generated-agents-skills-mount` | `.agents/skills` | generated | mount | `cmp:canonical-skills-root` |
+| `cmp:generated-claude-architect-agent` | `.claude/agents/architect.md` | generated | file | `cmp:canonical-architect-agent` |
+| `cmp:generated-claude-brainstorm-agent` | `.claude/agents/brainstorm.md` | generated | file | `cmp:canonical-brainstorm-agent` |
+| `cmp:generated-claude-code-reviewer-agent` | `.claude/agents/code-reviewer.md` | generated | file | `cmp:canonical-code-reviewer-agent` |
+| `cmp:generated-claude-coder-agent` | `.claude/agents/coder.md` | generated | file | `cmp:canonical-coder-agent` |
+| `cmp:generated-claude-dba-agent` | `.claude/agents/dba.md` | generated | file | `cmp:canonical-dba-agent` |
+| `cmp:generated-claude-frontend-designer-agent` | `.claude/agents/frontend-designer.md` | generated | file | `cmp:canonical-frontend-designer-agent` |
+| `cmp:generated-claude-plan-agent` | `.claude/agents/plan.md` | generated | file | `cmp:canonical-plan-agent` |
+| `cmp:generated-claude-pm-agent` | `.claude/agents/pm.md` | generated | file | `cmp:canonical-pm-agent` |
+| `cmp:generated-claude-skills-mount` | `.claude/skills` | generated | mount | `cmp:canonical-skills-root` |
+| `cmp:generated-claude-spec-agent` | `.claude/agents/spec.md` | generated | file | `cmp:canonical-spec-agent` |
+| `cmp:generated-codex-architect-agent` | `.codex/agents/architect.toml` | generated | file | `cmp:canonical-architect-agent` |
+| `cmp:generated-codex-brainstorm-agent` | `.codex/agents/brainstorm.toml` | generated | file | `cmp:canonical-brainstorm-agent` |
+| `cmp:generated-codex-code-reviewer-agent` | `.codex/agents/code-reviewer.toml` | generated | file | `cmp:canonical-code-reviewer-agent` |
+| `cmp:generated-codex-coder-agent` | `.codex/agents/coder.toml` | generated | file | `cmp:canonical-coder-agent` |
+| `cmp:generated-codex-dba-agent` | `.codex/agents/dba.toml` | generated | file | `cmp:canonical-dba-agent` |
+| `cmp:generated-codex-frontend-designer-agent` | `.codex/agents/frontend-designer.toml` | generated | file | `cmp:canonical-frontend-designer-agent` |
+| `cmp:generated-codex-plan-agent` | `.codex/agents/plan.toml` | generated | file | `cmp:canonical-plan-agent` |
+| `cmp:generated-codex-pm-agent` | `.codex/agents/pm.toml` | generated | file | `cmp:canonical-pm-agent` |
+| `cmp:generated-codex-spec-agent` | `.codex/agents/spec.toml` | generated | file | `cmp:canonical-spec-agent` |
+| `cmp:generated-github-architect-agent` | `.github/agents/architect.agent.md` | generated | file | `cmp:canonical-architect-agent` |
+| `cmp:generated-github-brainstorm-agent` | `.github/agents/brainstorm.agent.md` | generated | file | `cmp:canonical-brainstorm-agent` |
+| `cmp:generated-github-code-reviewer-agent` | `.github/agents/code-reviewer.agent.md` | generated | file | `cmp:canonical-code-reviewer-agent` |
+| `cmp:generated-github-coder-agent` | `.github/agents/coder.agent.md` | generated | file | `cmp:canonical-coder-agent` |
+| `cmp:generated-github-dba-agent` | `.github/agents/dba.agent.md` | generated | file | `cmp:canonical-dba-agent` |
+| `cmp:generated-github-frontend-designer-agent` | `.github/agents/frontend-designer.agent.md` | generated | file | `cmp:canonical-frontend-designer-agent` |
+| `cmp:generated-github-plan-agent` | `.github/agents/plan.agent.md` | generated | file | `cmp:canonical-plan-agent` |
+| `cmp:generated-github-pm-agent` | `.github/agents/pm.agent.md` | generated | file | `cmp:canonical-pm-agent` |
+| `cmp:generated-github-skill-agentic-eval` | `.github/skills/agentic-eval/SKILL.md` | generated | file | `cmp:canonical-skill-agentic-eval` |
+| `cmp:generated-github-skill-agentic-eval-reference-cli-evaluation-workflow` | `.github/skills/agentic-eval/references/cli-evaluation-workflow.md` | generated | file | `cmp:canonical-skill-agentic-eval-reference-cli-evaluation-workflow` |
+| `cmp:generated-github-skill-agentic-eval-reference-python-patterns` | `.github/skills/agentic-eval/references/python-patterns.md` | generated | file | `cmp:canonical-skill-agentic-eval-reference-python-patterns` |
+| `cmp:generated-github-skill-agentic-eval-reference-stage-rubrics` | `.github/skills/agentic-eval/references/stage-rubrics.md` | generated | file | `cmp:canonical-skill-agentic-eval-reference-stage-rubrics` |
+| `cmp:generated-github-skill-backend-patterns` | `.github/skills/backend-patterns/SKILL.md` | generated | file | `cmp:canonical-skill-backend-patterns` |
+| `cmp:generated-github-skill-brainstorming` | `.github/skills/brainstorming/SKILL.md` | generated | file | `cmp:canonical-skill-brainstorming` |
+| `cmp:generated-github-skill-brainstorming-template-decision-log` | `.github/skills/brainstorming/templates/decision-log.md` | generated | file | `cmp:canonical-skill-brainstorming-template-decision-log` |
+| `cmp:generated-github-skill-brainstorming-template-proposal` | `.github/skills/brainstorming/templates/proposal.md` | generated | file | `cmp:canonical-skill-brainstorming-template-proposal` |
+| `cmp:generated-github-skill-brainstorming-template-tasks` | `.github/skills/brainstorming/templates/tasks.md` | generated | file | `cmp:canonical-skill-brainstorming-template-tasks` |
+| `cmp:generated-github-skill-chrome-devtools` | `.github/skills/chrome-devtools/SKILL.md` | generated | file | `cmp:canonical-skill-chrome-devtools` |
+| `cmp:generated-github-skill-ci-cd-and-automation` | `.github/skills/ci-cd-and-automation/SKILL.md` | generated | file | `cmp:canonical-skill-ci-cd-and-automation` |
+| `cmp:generated-github-skill-code-security-review` | `.github/skills/code-security-review/SKILL.md` | generated | file | `cmp:canonical-skill-code-security-review` |
+| `cmp:generated-github-skill-coding-standards` | `.github/skills/coding-standards/SKILL.md` | generated | file | `cmp:canonical-skill-coding-standards` |
+| `cmp:generated-github-skill-context-engineering` | `.github/skills/context-engineering/SKILL.md` | generated | file | `cmp:canonical-skill-context-engineering` |
+| `cmp:generated-github-skill-copilot-sdk` | `.github/skills/copilot-sdk/SKILL.md` | generated | file | `cmp:canonical-skill-copilot-sdk` |
+| `cmp:generated-github-skill-debug` | `.github/skills/debug/SKILL.md` | generated | file | `cmp:canonical-skill-debug` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator` | `.github/skills/excalidraw-diagram-generator/SKILL.md` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-reference-element-types` | `.github/skills/excalidraw-diagram-generator/references/element-types.md` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-reference-element-types` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-reference-excalidraw-schema` | `.github/skills/excalidraw-diagram-generator/references/excalidraw-schema.md` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-reference-excalidraw-schema` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-script-` | `.github/skills/excalidraw-diagram-generator/scripts/.gitignore` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-script-` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-script-add-arrow` | `.github/skills/excalidraw-diagram-generator/scripts/add-arrow.py` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-script-add-arrow` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-script-add-icon-to-diagram` | `.github/skills/excalidraw-diagram-generator/scripts/add-icon-to-diagram.py` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-script-add-icon-to-diagram` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-script-readme` | `.github/skills/excalidraw-diagram-generator/scripts/README.md` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-script-readme` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-script-split-excalidraw-library` | `.github/skills/excalidraw-diagram-generator/scripts/split-excalidraw-library.py` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-script-split-excalidraw-library` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-template-business-flow-swimlane-template` | `.github/skills/excalidraw-diagram-generator/templates/business-flow-swimlane-template.excalidraw` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-template-business-flow-swimlane-template` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-template-class-diagram-template` | `.github/skills/excalidraw-diagram-generator/templates/class-diagram-template.excalidraw` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-template-class-diagram-template` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-template-data-flow-diagram-template` | `.github/skills/excalidraw-diagram-generator/templates/data-flow-diagram-template.excalidraw` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-template-data-flow-diagram-template` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-template-er-diagram-template` | `.github/skills/excalidraw-diagram-generator/templates/er-diagram-template.excalidraw` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-template-er-diagram-template` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-template-flowchart-template` | `.github/skills/excalidraw-diagram-generator/templates/flowchart-template.excalidraw` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-template-flowchart-template` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-template-mindmap-template` | `.github/skills/excalidraw-diagram-generator/templates/mindmap-template.excalidraw` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-template-mindmap-template` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-template-relationship-template` | `.github/skills/excalidraw-diagram-generator/templates/relationship-template.excalidraw` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-template-relationship-template` |
+| `cmp:generated-github-skill-excalidraw-diagram-generator-template-sequence-diagram-template` | `.github/skills/excalidraw-diagram-generator/templates/sequence-diagram-template.excalidraw` | generated | file | `cmp:canonical-skill-excalidraw-diagram-generator-template-sequence-diagram-template` |
+| `cmp:generated-github-skill-execution-guardrails` | `.github/skills/execution-guardrails/SKILL.md` | generated | file | `cmp:canonical-skill-execution-guardrails` |
+| `cmp:generated-github-skill-execution-guardrails-reference-anti-patterns` | `.github/skills/execution-guardrails/references/anti-patterns.md` | generated | file | `cmp:canonical-skill-execution-guardrails-reference-anti-patterns` |
+| `cmp:generated-github-skill-execution-guardrails-reference-stage-usage` | `.github/skills/execution-guardrails/references/stage-usage.md` | generated | file | `cmp:canonical-skill-execution-guardrails-reference-stage-usage` |
+| `cmp:generated-github-skill-explore` | `.github/skills/explore/SKILL.md` | generated | file | `cmp:canonical-skill-explore` |
+| `cmp:generated-github-skill-frontend-patterns` | `.github/skills/frontend-patterns/SKILL.md` | generated | file | `cmp:canonical-skill-frontend-patterns` |
+| `cmp:generated-github-skill-gh-cli` | `.github/skills/gh-cli/SKILL.md` | generated | file | `cmp:canonical-skill-gh-cli` |
+| `cmp:generated-github-skill-git-commit` | `.github/skills/git-commit/SKILL.md` | generated | file | `cmp:canonical-skill-git-commit` |
+| `cmp:generated-github-skill-github-issues` | `.github/skills/github-issues/SKILL.md` | generated | file | `cmp:canonical-skill-github-issues` |
+| `cmp:generated-github-skill-github-issues-reference-templates` | `.github/skills/github-issues/references/templates.md` | generated | file | `cmp:canonical-skill-github-issues-reference-templates` |
+| `cmp:generated-github-skill-implementation-planning` | `.github/skills/implementation-planning/SKILL.md` | generated | file | `cmp:canonical-skill-implementation-planning` |
+| `cmp:generated-github-skill-make-skill-template` | `.github/skills/make-skill-template/SKILL.md` | generated | file | `cmp:canonical-skill-make-skill-template` |
+| `cmp:generated-github-skill-markdown-to-html` | `.github/skills/markdown-to-html/SKILL.md` | generated | file | `cmp:canonical-skill-markdown-to-html` |
+| `cmp:generated-github-skill-markdown-to-html-reference-basic-markdown` | `.github/skills/markdown-to-html/references/basic-markdown.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-basic-markdown` |
+| `cmp:generated-github-skill-markdown-to-html-reference-basic-markdown-to-html` | `.github/skills/markdown-to-html/references/basic-markdown-to-html.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-basic-markdown-to-html` |
+| `cmp:generated-github-skill-markdown-to-html-reference-code-blocks` | `.github/skills/markdown-to-html/references/code-blocks.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-code-blocks` |
+| `cmp:generated-github-skill-markdown-to-html-reference-code-blocks-to-html` | `.github/skills/markdown-to-html/references/code-blocks-to-html.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-code-blocks-to-html` |
+| `cmp:generated-github-skill-markdown-to-html-reference-collapsed-sections` | `.github/skills/markdown-to-html/references/collapsed-sections.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-collapsed-sections` |
+| `cmp:generated-github-skill-markdown-to-html-reference-collapsed-sections-to-html` | `.github/skills/markdown-to-html/references/collapsed-sections-to-html.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-collapsed-sections-to-html` |
+| `cmp:generated-github-skill-markdown-to-html-reference-gomarkdown` | `.github/skills/markdown-to-html/references/gomarkdown.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-gomarkdown` |
+| `cmp:generated-github-skill-markdown-to-html-reference-hugo` | `.github/skills/markdown-to-html/references/hugo.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-hugo` |
+| `cmp:generated-github-skill-markdown-to-html-reference-jekyll` | `.github/skills/markdown-to-html/references/jekyll.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-jekyll` |
+| `cmp:generated-github-skill-markdown-to-html-reference-marked` | `.github/skills/markdown-to-html/references/marked.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-marked` |
+| `cmp:generated-github-skill-markdown-to-html-reference-pandoc` | `.github/skills/markdown-to-html/references/pandoc.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-pandoc` |
+| `cmp:generated-github-skill-markdown-to-html-reference-tables` | `.github/skills/markdown-to-html/references/tables.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-tables` |
+| `cmp:generated-github-skill-markdown-to-html-reference-tables-to-html` | `.github/skills/markdown-to-html/references/tables-to-html.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-tables-to-html` |
+| `cmp:generated-github-skill-markdown-to-html-reference-writing-mathematical-expressions` | `.github/skills/markdown-to-html/references/writing-mathematical-expressions.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-writing-mathematical-expressions` |
+| `cmp:generated-github-skill-markdown-to-html-reference-writing-mathematical-expressions-to-html` | `.github/skills/markdown-to-html/references/writing-mathematical-expressions-to-html.md` | generated | file | `cmp:canonical-skill-markdown-to-html-reference-writing-mathematical-expressions-to-html` |
+| `cmp:generated-github-skill-microsoft-code-reference` | `.github/skills/microsoft-code-reference/SKILL.md` | generated | file | `cmp:canonical-skill-microsoft-code-reference` |
+| `cmp:generated-github-skill-microsoft-docs` | `.github/skills/microsoft-docs/SKILL.md` | generated | file | `cmp:canonical-skill-microsoft-docs` |
+| `cmp:generated-github-skill-prd` | `.github/skills/prd/SKILL.md` | generated | file | `cmp:canonical-skill-prd` |
+| `cmp:generated-github-skill-python-patterns` | `.github/skills/python-patterns/SKILL.md` | generated | file | `cmp:canonical-skill-python-patterns` |
+| `cmp:generated-github-skill-refactor` | `.github/skills/refactor/SKILL.md` | generated | file | `cmp:canonical-skill-refactor` |
+| `cmp:generated-github-skill-scoutqa-test` | `.github/skills/scoutqa-test/SKILL.md` | generated | file | `cmp:canonical-skill-scoutqa-test` |
+| `cmp:generated-github-skill-security-review` | `.github/skills/security-review/SKILL.md` | generated | file | `cmp:canonical-skill-security-review` |
+| `cmp:generated-github-skill-security-review-asset-cloud-infrastructure-security` | `.github/skills/security-review/cloud-infrastructure-security.md` | generated | file | `cmp:canonical-skill-security-review-asset-cloud-infrastructure-security` |
+| `cmp:generated-github-skill-shipping-and-launch` | `.github/skills/shipping-and-launch/SKILL.md` | generated | file | `cmp:canonical-skill-shipping-and-launch` |
+| `cmp:generated-github-skill-specification` | `.github/skills/specification/SKILL.md` | generated | file | `cmp:canonical-skill-specification` |
+| `cmp:generated-github-skill-specification-reference-ac-format-guide` | `.github/skills/specification/references/ac-format-guide.md` | generated | file | `cmp:canonical-skill-specification-reference-ac-format-guide` |
+| `cmp:generated-github-skill-specification-reference-consult-review-protocol` | `.github/skills/specification/references/consult-review-protocol.md` | generated | file | `cmp:canonical-skill-specification-reference-consult-review-protocol` |
+| `cmp:generated-github-skill-specification-reference-specialist-lens-review` | `.github/skills/specification/references/specialist-lens-review.md` | generated | file | `cmp:canonical-skill-specification-reference-specialist-lens-review` |
+| `cmp:generated-github-skill-tdd-workflow` | `.github/skills/tdd-workflow/SKILL.md` | generated | file | `cmp:canonical-skill-tdd-workflow` |
+| `cmp:generated-github-skill-web-design-reviewer` | `.github/skills/web-design-reviewer/SKILL.md` | generated | file | `cmp:canonical-skill-web-design-reviewer` |
+| `cmp:generated-github-skill-web-design-reviewer-reference-framework-fixes` | `.github/skills/web-design-reviewer/references/framework-fixes.md` | generated | file | `cmp:canonical-skill-web-design-reviewer-reference-framework-fixes` |
+| `cmp:generated-github-skill-web-design-reviewer-reference-visual-checklist` | `.github/skills/web-design-reviewer/references/visual-checklist.md` | generated | file | `cmp:canonical-skill-web-design-reviewer-reference-visual-checklist` |
+| `cmp:generated-github-skill-webapp-testing` | `.github/skills/webapp-testing/SKILL.md` | generated | file | `cmp:canonical-skill-webapp-testing` |
+| `cmp:generated-github-skill-webapp-testing-asset-test-helper` | `.github/skills/webapp-testing/test-helper.js` | generated | file | `cmp:canonical-skill-webapp-testing-asset-test-helper` |
+| `cmp:generated-github-skill-work-archiving` | `.github/skills/work-archiving/SKILL.md` | generated | file | `cmp:canonical-skill-work-archiving` |
+| `cmp:generated-github-skill-workflow-orchestrator` | `.github/skills/workflow-orchestrator/SKILL.md` | generated | file | `cmp:canonical-skill-workflow-orchestrator` |
+| `cmp:generated-github-spec-agent` | `.github/agents/spec.agent.md` | generated | file | `cmp:canonical-spec-agent` |
+| `cmp:project-agents-guide` | `AGENTS.md` | project-owned | file | — |
+| `cmp:project-claude-guide` | `CLAUDE.md` | project-owned | file | — |
+| `cmp:project-gemini-guide` | `GEMINI.md` | project-owned | file | — |
+
+
+#### Exact Phase 4A Allowlist
+
+Sol may modify only governance/status evidence:
+
+- `changes/workflow-agents-responsibility-alignment/02-decision-log.md`
+- `changes/workflow-agents-responsibility-alignment/04-plan.md`
+- `changes/workflow-agents-responsibility-alignment/phase-4-manifest-schema-proposal.md` (implementation status only)
+
+Luna may create or modify only these exact product paths:
+
+- `schemas/ai-workflow-install-manifest-v3.schema.json`
+- `manifest/component-catalog.json`
+- `scripts/bootstrap.py`
+- `scripts/bootstrap.ps1`
+- `scripts/tests/test_bootstrap.py`
+- `scripts/bootstrap.Tests.ps1`
+- `scripts/tests/manifest-v3-vectors.json`
+
+No helper file is allowed or needed: both bootstrap entry points are currently standalone distribution surfaces, so an external runtime helper would add an unapproved availability/deployment dependency. `scripts/tests/manifest-v3-vectors.json` is the one shared non-production vector file in the existing `scripts/tests` directory. Candidate Schema, candidate examples, CI workflows, gates, lifecycle assets, Agents, Skills, Prompts, Instructions, `bootstrap.sh`, and unrelated files are immutable in Phase 4A.
+
+#### Phase 4A Local Verification Evidence
+
+- **Luna / TDD**: The sole built-in `worker` was requested as GPT-5.6 / medium; observed model and effort are unknown. Initial RED was Python `2 failed / 1 passed / 92 deselected` and Pester `3 failed / 1 passed / 49 not run`. The final correction RED was Python `15 failed / 62 passed / 92 deselected` and Pester `16 failed / 61 passed / 49 not run`. Luna changed only the seven exact product paths and performed no Git, governance, or remote action.
+- **Correction round 1**: Replaced the invalid 80-parent Skill-mount mapping with the approved `cmp:canonical-skills-root` directory identity. The Catalog became 253 reviewed identities without changing any approved Schema rule.
+- **Correction round 2**: Required complete Production Schema plus exact Catalog validation before `valid-v3`; added the non-valid `v3-validation-blocked` / `catalog-unavailable` outcome, authoritative shared vectors, corrupt/unsupported all-route blocking, Catalog/Manifest parity fixes, and PowerShell remote source-artifact acquisition/revalidation/cleanup before adopter mutation.
+- **Production Schema**: `schemas/ai-workflow-install-manifest-v3.schema.json` is Draft 2020-12 with `$id` `urn:ai-dev-workflow:manifest-schema:v3`. Its parsed object is deep-equal to the approved Candidate after only the four allowlisted transformations. Runtime code does not reference the Candidate path.
+- **Stable Catalog**: `manifest/component-catalog.json` has 253 components: 101 canonical, 110 generated, 3 project-owned, and 39 compatibility; 249 files, one directory, and three mounts. It exactly matches the normative table and retains allocation fingerprint `sha256:4e68c7431da961b126748b2a3fb110e9dc52094cf1a958b64528337422800c66`.
+- **Candidate invariance**: Candidate Schema SHA-256 remains `sha256:c4623a55745d816494c1623eb242961b5ea0a458bd8f7cdabd9fcda73f6de886`; all nine approved examples are byte-identical to starting `main`. All seven v3 examples pass the Python semantic validator without source binding and the Production Schema structural validator after removing only proposal-only metadata.
+- **Reader / writer boundary**: Fully Schema/Catalog-bound v3 returns `valid-v3`; source-unavailable v3 returns `v3-validation-blocked`, never `valid-v3`. Install, update, force, and update-force paths block valid-v3, corrupt, and unsupported inputs before adopter writes. v1/v2 remain read-only compatible. Both production writers still emit schema version 2.
+- **Zero-write evidence**: Python and PowerShell isolated route tests preserve exact Manifest/sentinel bytes, file and directory inventory, and absence of backup or `.git` creation across all four routes. PowerShell remote revalidation uses local fixtures/static sparse-set evidence; no live network or real adopter operation was executed.
+- **Sol independent findings**: Critical findings (premature `valid-v3`; optional Schema/Catalog validation; incomplete remote source acquisition) and High findings (corrupt/unsupported non-update mutation risk; non-authoritative vectors; cross-runtime bounds/timestamp/role-kind/type parity) were resolved in correction round 2. Medium: none. Low/warning-only: historical `05-review.md` alias, `pm/spec` soft line-count warnings, and the environment `pytest-asyncio` deprecation warning. No unresolved Critical or High finding, scope leakage, Schema drift, Catalog identity conflict, downgrade path, or unauthorized behavior remains.
+- **Sol verification**: focused Python `91 passed`; focused Pester `91 passed / 0 failed / 0 skipped`; full Python `170 passed`; full Pester `259 passed / 0 failed / 0 skipped / 0 not run / 0 inconclusive / 0 failed containers`; sync, catalog, lifecycle, Change Package, Agent structure, JSON parse, Python compile, and `git diff --check` all passed. The first complete gate returned `GATE PASSED WITH NOTES`; its 10-path outer SHA-256 snapshot was identical before and after (`008b06c97a5e2707c39ba4a5a3b2b7b6c343d3c018ada7c47865ad7cb47f702a`). The required post-note full-gate rerun is a commit precondition.
+- **High-Risk gates**: Architecture Decision Exit — PASS; A-07 remains the exact approved architecture. Pre-Implementation Readiness — PASS; A-08, prerequisites, mapping, allowlist, RED/GREEN path, ownership, and rollback boundary were explicit. Pre-Delivery Verification — PASS for product, scope, independent review, and deterministic evidence, with the logged warning-only note and post-note full-gate rerun required before commit. Migration / Deployment Readiness — `N/A — no migration, deployment, writer enablement, prune, or real-adopter execution is authorized in Phase 4A.`
+- **Delivery boundary**: One main local commit and one non-Draft PR remain pending. Phase 4A is not merged yet and must not be called complete. Phase 4 overall remains incomplete; Phase 4B, writer enablement, migration, tombstone mutation, prune, real-adopter operation, and Phase 5 remain unauthorized.
 
 ### Validated Current-State Inventory for the Proposal
 

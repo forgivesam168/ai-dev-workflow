@@ -1,0 +1,3520 @@
+{
+  "catalog_schema_version": 1,
+  "catalog_version": "1",
+  "source_release": {
+    "release_id": "ai-dev-workflow:component-catalog:1",
+    "source_ref": "manifest/component-catalog.json",
+    "version": "1"
+  },
+  "components": [
+    {
+      "id": "cmp:canonical-adopter-copilot-instructions",
+      "canonical_source_path": ".github/copilot-instructions.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-adopter-workflow",
+      "canonical_source_path": "WORKFLOW.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-architect-agent",
+      "canonical_source_path": "agents/architect.agent.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-brainstorm-agent",
+      "canonical_source_path": "agents/brainstorm.agent.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-change-template-00-intake",
+      "canonical_source_path": "changes/_template/00-intake.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-change-template-01-brainstorm",
+      "canonical_source_path": "changes/_template/01-brainstorm.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-change-template-02-decision-log",
+      "canonical_source_path": "changes/_template/02-decision-log.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-change-template-03-spec",
+      "canonical_source_path": "changes/_template/03-spec.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-change-template-04-plan",
+      "canonical_source_path": "changes/_template/04-plan.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-change-template-05-test-plan",
+      "canonical_source_path": "changes/_template/05-test-plan.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-change-template-06-impact-analysis",
+      "canonical_source_path": "changes/_template/06-impact-analysis.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-change-template-07-review",
+      "canonical_source_path": "changes/_template/07-review.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-change-template-99-archive",
+      "canonical_source_path": "changes/_template/99-archive.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-code-reviewer-agent",
+      "canonical_source_path": "agents/code-reviewer.agent.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-coder-agent",
+      "canonical_source_path": "agents/coder.agent.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-dba-agent",
+      "canonical_source_path": "agents/dba.agent.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-frontend-designer-agent",
+      "canonical_source_path": "agents/frontend-designer.agent.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-plan-agent",
+      "canonical_source_path": "agents/plan.agent.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-pm-agent",
+      "canonical_source_path": "agents/pm.agent.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-agentic-eval",
+      "canonical_source_path": "skills/agentic-eval/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-agentic-eval-reference-cli-evaluation-workflow",
+      "canonical_source_path": "skills/agentic-eval/references/cli-evaluation-workflow.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-agentic-eval-reference-python-patterns",
+      "canonical_source_path": "skills/agentic-eval/references/python-patterns.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-agentic-eval-reference-stage-rubrics",
+      "canonical_source_path": "skills/agentic-eval/references/stage-rubrics.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-backend-patterns",
+      "canonical_source_path": "skills/backend-patterns/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-brainstorming",
+      "canonical_source_path": "skills/brainstorming/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-brainstorming-template-decision-log",
+      "canonical_source_path": "skills/brainstorming/templates/decision-log.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-brainstorming-template-proposal",
+      "canonical_source_path": "skills/brainstorming/templates/proposal.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-brainstorming-template-tasks",
+      "canonical_source_path": "skills/brainstorming/templates/tasks.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-chrome-devtools",
+      "canonical_source_path": "skills/chrome-devtools/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-ci-cd-and-automation",
+      "canonical_source_path": "skills/ci-cd-and-automation/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-code-security-review",
+      "canonical_source_path": "skills/code-security-review/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-coding-standards",
+      "canonical_source_path": "skills/coding-standards/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-context-engineering",
+      "canonical_source_path": "skills/context-engineering/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-copilot-sdk",
+      "canonical_source_path": "skills/copilot-sdk/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-debug",
+      "canonical_source_path": "skills/debug/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-reference-element-types",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/references/element-types.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-reference-excalidraw-schema",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/references/excalidraw-schema.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-script-",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/scripts/.gitignore",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-script-add-arrow",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/scripts/add-arrow.py",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-script-add-icon-to-diagram",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/scripts/add-icon-to-diagram.py",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-script-readme",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/scripts/README.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-script-split-excalidraw-library",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/scripts/split-excalidraw-library.py",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-template-business-flow-swimlane-template",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/templates/business-flow-swimlane-template.excalidraw",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-template-class-diagram-template",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/templates/class-diagram-template.excalidraw",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-template-data-flow-diagram-template",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/templates/data-flow-diagram-template.excalidraw",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-template-er-diagram-template",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/templates/er-diagram-template.excalidraw",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-template-flowchart-template",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/templates/flowchart-template.excalidraw",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-template-mindmap-template",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/templates/mindmap-template.excalidraw",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-template-relationship-template",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/templates/relationship-template.excalidraw",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-excalidraw-diagram-generator-template-sequence-diagram-template",
+      "canonical_source_path": "skills/excalidraw-diagram-generator/templates/sequence-diagram-template.excalidraw",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-execution-guardrails",
+      "canonical_source_path": "skills/execution-guardrails/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-execution-guardrails-reference-anti-patterns",
+      "canonical_source_path": "skills/execution-guardrails/references/anti-patterns.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-execution-guardrails-reference-stage-usage",
+      "canonical_source_path": "skills/execution-guardrails/references/stage-usage.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-explore",
+      "canonical_source_path": "skills/explore/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-frontend-patterns",
+      "canonical_source_path": "skills/frontend-patterns/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-gh-cli",
+      "canonical_source_path": "skills/gh-cli/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-git-commit",
+      "canonical_source_path": "skills/git-commit/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-github-issues",
+      "canonical_source_path": "skills/github-issues/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-github-issues-reference-templates",
+      "canonical_source_path": "skills/github-issues/references/templates.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-implementation-planning",
+      "canonical_source_path": "skills/implementation-planning/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-make-skill-template",
+      "canonical_source_path": "skills/make-skill-template/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html",
+      "canonical_source_path": "skills/markdown-to-html/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-basic-markdown",
+      "canonical_source_path": "skills/markdown-to-html/references/basic-markdown.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-basic-markdown-to-html",
+      "canonical_source_path": "skills/markdown-to-html/references/basic-markdown-to-html.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-code-blocks",
+      "canonical_source_path": "skills/markdown-to-html/references/code-blocks.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-code-blocks-to-html",
+      "canonical_source_path": "skills/markdown-to-html/references/code-blocks-to-html.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-collapsed-sections",
+      "canonical_source_path": "skills/markdown-to-html/references/collapsed-sections.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-collapsed-sections-to-html",
+      "canonical_source_path": "skills/markdown-to-html/references/collapsed-sections-to-html.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-gomarkdown",
+      "canonical_source_path": "skills/markdown-to-html/references/gomarkdown.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-hugo",
+      "canonical_source_path": "skills/markdown-to-html/references/hugo.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-jekyll",
+      "canonical_source_path": "skills/markdown-to-html/references/jekyll.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-marked",
+      "canonical_source_path": "skills/markdown-to-html/references/marked.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-pandoc",
+      "canonical_source_path": "skills/markdown-to-html/references/pandoc.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-tables",
+      "canonical_source_path": "skills/markdown-to-html/references/tables.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-tables-to-html",
+      "canonical_source_path": "skills/markdown-to-html/references/tables-to-html.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-writing-mathematical-expressions",
+      "canonical_source_path": "skills/markdown-to-html/references/writing-mathematical-expressions.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-markdown-to-html-reference-writing-mathematical-expressions-to-html",
+      "canonical_source_path": "skills/markdown-to-html/references/writing-mathematical-expressions-to-html.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-microsoft-code-reference",
+      "canonical_source_path": "skills/microsoft-code-reference/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-microsoft-docs",
+      "canonical_source_path": "skills/microsoft-docs/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-prd",
+      "canonical_source_path": "skills/prd/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-python-patterns",
+      "canonical_source_path": "skills/python-patterns/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-refactor",
+      "canonical_source_path": "skills/refactor/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-scoutqa-test",
+      "canonical_source_path": "skills/scoutqa-test/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-security-review",
+      "canonical_source_path": "skills/security-review/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-security-review-asset-cloud-infrastructure-security",
+      "canonical_source_path": "skills/security-review/cloud-infrastructure-security.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-shipping-and-launch",
+      "canonical_source_path": "skills/shipping-and-launch/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-specification",
+      "canonical_source_path": "skills/specification/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-specification-reference-ac-format-guide",
+      "canonical_source_path": "skills/specification/references/ac-format-guide.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-specification-reference-consult-review-protocol",
+      "canonical_source_path": "skills/specification/references/consult-review-protocol.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-specification-reference-specialist-lens-review",
+      "canonical_source_path": "skills/specification/references/specialist-lens-review.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-tdd-workflow",
+      "canonical_source_path": "skills/tdd-workflow/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-web-design-reviewer",
+      "canonical_source_path": "skills/web-design-reviewer/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-web-design-reviewer-reference-framework-fixes",
+      "canonical_source_path": "skills/web-design-reviewer/references/framework-fixes.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-web-design-reviewer-reference-visual-checklist",
+      "canonical_source_path": "skills/web-design-reviewer/references/visual-checklist.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-webapp-testing",
+      "canonical_source_path": "skills/webapp-testing/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-webapp-testing-asset-test-helper",
+      "canonical_source_path": "skills/webapp-testing/test-helper.js",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-work-archiving",
+      "canonical_source_path": "skills/work-archiving/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skill-workflow-orchestrator",
+      "canonical_source_path": "skills/workflow-orchestrator/SKILL.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-skills-root",
+      "canonical_source_path": "skills",
+      "role": "canonical",
+      "kind": "directory",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:canonical-spec-agent",
+      "canonical_source_path": "agents/spec.agent.md",
+      "role": "canonical",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-editorconfig",
+      "canonical_source_path": ".editorconfig",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-gitattributes",
+      "canonical_source_path": ".gitattributes",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-hook-post-tool-use-powershell",
+      "canonical_source_path": ".github/hooks/post-tool-use.ps1",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-hook-post-tool-use-shell",
+      "canonical_source_path": ".github/hooks/post-tool-use.sh",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-hook-pre-tool-use-powershell",
+      "canonical_source_path": ".github/hooks/pre-tool-use.ps1",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-hook-pre-tool-use-shell",
+      "canonical_source_path": ".github/hooks/pre-tool-use.sh",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-hook-session-start-powershell",
+      "canonical_source_path": ".github/hooks/session-start.ps1",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-hook-session-start-shell",
+      "canonical_source_path": ".github/hooks/session-start.sh",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-hooks-copilot-hooks",
+      "canonical_source_path": ".github/hooks/copilot-hooks.json",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-agent-skills",
+      "canonical_source_path": ".github/instructions/agent-skills.instructions.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-api-design",
+      "canonical_source_path": ".github/instructions/api-design.instructions.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-architect",
+      "canonical_source_path": ".github/instructions/playbooks/architect.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-aspnet-rest-apis",
+      "canonical_source_path": ".github/instructions/aspnet-rest-apis.instructions.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-changes",
+      "canonical_source_path": ".github/instructions/changes.instructions.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-code-review",
+      "canonical_source_path": ".github/instructions/code-review.instructions.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-csharp",
+      "canonical_source_path": ".github/instructions/csharp.instructions.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-database-reviewer",
+      "canonical_source_path": ".github/instructions/playbooks/database-reviewer.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-dotnet-architecture-good-practices",
+      "canonical_source_path": ".github/instructions/dotnet-architecture-good-practices.instructions.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-openspec",
+      "canonical_source_path": ".github/instructions/openspec.instructions.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-planner",
+      "canonical_source_path": ".github/instructions/playbooks/planner.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-python",
+      "canonical_source_path": ".github/instructions/python.instructions.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-security-reviewer",
+      "canonical_source_path": ".github/instructions/playbooks/security-reviewer.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-sql",
+      "canonical_source_path": ".github/instructions/sql.instructions.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-instruction-tdd-guide",
+      "canonical_source_path": ".github/instructions/playbooks/tdd-guide.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-issue-template-bug-report",
+      "canonical_source_path": ".github/ISSUE_TEMPLATE/bug_report.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-issue-template-feature-request",
+      "canonical_source_path": ".github/ISSUE_TEMPLATE/feature_request.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-issue-template-task",
+      "canonical_source_path": ".github/ISSUE_TEMPLATE/task.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-mcp",
+      "canonical_source_path": ".github/mcp.json",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-prompt-archive",
+      "canonical_source_path": ".github/prompts/archive.prompt.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-prompt-brainstorm",
+      "canonical_source_path": ".github/prompts/brainstorm.prompt.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-prompt-code-review",
+      "canonical_source_path": ".github/prompts/code-review.prompt.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-prompt-commit-gen",
+      "canonical_source_path": ".github/prompts/commit-gen.prompt.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-prompt-create-plan",
+      "canonical_source_path": ".github/prompts/create-plan.prompt.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-prompt-create-readme",
+      "canonical_source_path": ".github/prompts/create-readme.prompt.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-prompt-learn",
+      "canonical_source_path": ".github/prompts/learn.prompt.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-prompt-spec",
+      "canonical_source_path": ".github/prompts/spec.prompt.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-prompt-tdd",
+      "canonical_source_path": ".github/prompts/tdd.prompt.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-prompt-workflow",
+      "canonical_source_path": ".github/prompts/workflow.prompt.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:compat-pull-request-template",
+      "canonical_source_path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "role": "compatibility",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-agent-skills-mount",
+      "canonical_source_path": ".agent/skills",
+      "role": "generated",
+      "kind": "mount",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skills-root"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-agents-skills-mount",
+      "canonical_source_path": ".agents/skills",
+      "role": "generated",
+      "kind": "mount",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skills-root"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-claude-architect-agent",
+      "canonical_source_path": ".claude/agents/architect.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-architect-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-claude-brainstorm-agent",
+      "canonical_source_path": ".claude/agents/brainstorm.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-brainstorm-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-claude-code-reviewer-agent",
+      "canonical_source_path": ".claude/agents/code-reviewer.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-code-reviewer-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-claude-coder-agent",
+      "canonical_source_path": ".claude/agents/coder.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-coder-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-claude-dba-agent",
+      "canonical_source_path": ".claude/agents/dba.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-dba-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-claude-frontend-designer-agent",
+      "canonical_source_path": ".claude/agents/frontend-designer.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-frontend-designer-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-claude-plan-agent",
+      "canonical_source_path": ".claude/agents/plan.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-plan-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-claude-pm-agent",
+      "canonical_source_path": ".claude/agents/pm.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-pm-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-claude-skills-mount",
+      "canonical_source_path": ".claude/skills",
+      "role": "generated",
+      "kind": "mount",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skills-root"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-claude-spec-agent",
+      "canonical_source_path": ".claude/agents/spec.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-spec-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-codex-architect-agent",
+      "canonical_source_path": ".codex/agents/architect.toml",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-architect-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-codex-brainstorm-agent",
+      "canonical_source_path": ".codex/agents/brainstorm.toml",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-brainstorm-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-codex-code-reviewer-agent",
+      "canonical_source_path": ".codex/agents/code-reviewer.toml",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-code-reviewer-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-codex-coder-agent",
+      "canonical_source_path": ".codex/agents/coder.toml",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-coder-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-codex-dba-agent",
+      "canonical_source_path": ".codex/agents/dba.toml",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-dba-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-codex-frontend-designer-agent",
+      "canonical_source_path": ".codex/agents/frontend-designer.toml",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-frontend-designer-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-codex-plan-agent",
+      "canonical_source_path": ".codex/agents/plan.toml",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-plan-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-codex-pm-agent",
+      "canonical_source_path": ".codex/agents/pm.toml",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-pm-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-codex-spec-agent",
+      "canonical_source_path": ".codex/agents/spec.toml",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-spec-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-architect-agent",
+      "canonical_source_path": ".github/agents/architect.agent.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-architect-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-brainstorm-agent",
+      "canonical_source_path": ".github/agents/brainstorm.agent.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-brainstorm-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-code-reviewer-agent",
+      "canonical_source_path": ".github/agents/code-reviewer.agent.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-code-reviewer-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-coder-agent",
+      "canonical_source_path": ".github/agents/coder.agent.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-coder-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-dba-agent",
+      "canonical_source_path": ".github/agents/dba.agent.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-dba-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-frontend-designer-agent",
+      "canonical_source_path": ".github/agents/frontend-designer.agent.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-frontend-designer-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-plan-agent",
+      "canonical_source_path": ".github/agents/plan.agent.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-plan-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-pm-agent",
+      "canonical_source_path": ".github/agents/pm.agent.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-pm-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-agentic-eval",
+      "canonical_source_path": ".github/skills/agentic-eval/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-agentic-eval"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-agentic-eval-reference-cli-evaluation-workflow",
+      "canonical_source_path": ".github/skills/agentic-eval/references/cli-evaluation-workflow.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-agentic-eval-reference-cli-evaluation-workflow"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-agentic-eval-reference-python-patterns",
+      "canonical_source_path": ".github/skills/agentic-eval/references/python-patterns.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-agentic-eval-reference-python-patterns"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-agentic-eval-reference-stage-rubrics",
+      "canonical_source_path": ".github/skills/agentic-eval/references/stage-rubrics.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-agentic-eval-reference-stage-rubrics"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-backend-patterns",
+      "canonical_source_path": ".github/skills/backend-patterns/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-backend-patterns"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-brainstorming",
+      "canonical_source_path": ".github/skills/brainstorming/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-brainstorming"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-brainstorming-template-decision-log",
+      "canonical_source_path": ".github/skills/brainstorming/templates/decision-log.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-brainstorming-template-decision-log"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-brainstorming-template-proposal",
+      "canonical_source_path": ".github/skills/brainstorming/templates/proposal.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-brainstorming-template-proposal"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-brainstorming-template-tasks",
+      "canonical_source_path": ".github/skills/brainstorming/templates/tasks.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-brainstorming-template-tasks"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-chrome-devtools",
+      "canonical_source_path": ".github/skills/chrome-devtools/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-chrome-devtools"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-ci-cd-and-automation",
+      "canonical_source_path": ".github/skills/ci-cd-and-automation/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-ci-cd-and-automation"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-code-security-review",
+      "canonical_source_path": ".github/skills/code-security-review/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-code-security-review"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-coding-standards",
+      "canonical_source_path": ".github/skills/coding-standards/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-coding-standards"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-context-engineering",
+      "canonical_source_path": ".github/skills/context-engineering/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-context-engineering"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-copilot-sdk",
+      "canonical_source_path": ".github/skills/copilot-sdk/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-copilot-sdk"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-debug",
+      "canonical_source_path": ".github/skills/debug/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-debug"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-reference-element-types",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/references/element-types.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-reference-element-types"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-reference-excalidraw-schema",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/references/excalidraw-schema.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-reference-excalidraw-schema"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-script-",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/scripts/.gitignore",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-script-"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-script-add-arrow",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/scripts/add-arrow.py",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-script-add-arrow"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-script-add-icon-to-diagram",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/scripts/add-icon-to-diagram.py",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-script-add-icon-to-diagram"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-script-readme",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/scripts/README.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-script-readme"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-script-split-excalidraw-library",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/scripts/split-excalidraw-library.py",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-script-split-excalidraw-library"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-template-business-flow-swimlane-template",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/templates/business-flow-swimlane-template.excalidraw",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-template-business-flow-swimlane-template"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-template-class-diagram-template",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/templates/class-diagram-template.excalidraw",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-template-class-diagram-template"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-template-data-flow-diagram-template",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/templates/data-flow-diagram-template.excalidraw",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-template-data-flow-diagram-template"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-template-er-diagram-template",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/templates/er-diagram-template.excalidraw",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-template-er-diagram-template"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-template-flowchart-template",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/templates/flowchart-template.excalidraw",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-template-flowchart-template"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-template-mindmap-template",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/templates/mindmap-template.excalidraw",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-template-mindmap-template"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-template-relationship-template",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/templates/relationship-template.excalidraw",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-template-relationship-template"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-excalidraw-diagram-generator-template-sequence-diagram-template",
+      "canonical_source_path": ".github/skills/excalidraw-diagram-generator/templates/sequence-diagram-template.excalidraw",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-excalidraw-diagram-generator-template-sequence-diagram-template"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-execution-guardrails",
+      "canonical_source_path": ".github/skills/execution-guardrails/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-execution-guardrails"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-execution-guardrails-reference-anti-patterns",
+      "canonical_source_path": ".github/skills/execution-guardrails/references/anti-patterns.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-execution-guardrails-reference-anti-patterns"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-execution-guardrails-reference-stage-usage",
+      "canonical_source_path": ".github/skills/execution-guardrails/references/stage-usage.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-execution-guardrails-reference-stage-usage"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-explore",
+      "canonical_source_path": ".github/skills/explore/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-explore"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-frontend-patterns",
+      "canonical_source_path": ".github/skills/frontend-patterns/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-frontend-patterns"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-gh-cli",
+      "canonical_source_path": ".github/skills/gh-cli/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-gh-cli"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-git-commit",
+      "canonical_source_path": ".github/skills/git-commit/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-git-commit"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-github-issues",
+      "canonical_source_path": ".github/skills/github-issues/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-github-issues"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-github-issues-reference-templates",
+      "canonical_source_path": ".github/skills/github-issues/references/templates.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-github-issues-reference-templates"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-implementation-planning",
+      "canonical_source_path": ".github/skills/implementation-planning/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-implementation-planning"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-make-skill-template",
+      "canonical_source_path": ".github/skills/make-skill-template/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-make-skill-template"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html",
+      "canonical_source_path": ".github/skills/markdown-to-html/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-basic-markdown",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/basic-markdown.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-basic-markdown"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-basic-markdown-to-html",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/basic-markdown-to-html.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-basic-markdown-to-html"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-code-blocks",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/code-blocks.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-code-blocks"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-code-blocks-to-html",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/code-blocks-to-html.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-code-blocks-to-html"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-collapsed-sections",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/collapsed-sections.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-collapsed-sections"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-collapsed-sections-to-html",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/collapsed-sections-to-html.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-collapsed-sections-to-html"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-gomarkdown",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/gomarkdown.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-gomarkdown"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-hugo",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/hugo.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-hugo"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-jekyll",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/jekyll.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-jekyll"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-marked",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/marked.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-marked"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-pandoc",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/pandoc.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-pandoc"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-tables",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/tables.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-tables"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-tables-to-html",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/tables-to-html.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-tables-to-html"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-writing-mathematical-expressions",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/writing-mathematical-expressions.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-writing-mathematical-expressions"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-markdown-to-html-reference-writing-mathematical-expressions-to-html",
+      "canonical_source_path": ".github/skills/markdown-to-html/references/writing-mathematical-expressions-to-html.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-markdown-to-html-reference-writing-mathematical-expressions-to-html"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-microsoft-code-reference",
+      "canonical_source_path": ".github/skills/microsoft-code-reference/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-microsoft-code-reference"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-microsoft-docs",
+      "canonical_source_path": ".github/skills/microsoft-docs/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-microsoft-docs"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-prd",
+      "canonical_source_path": ".github/skills/prd/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-prd"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-python-patterns",
+      "canonical_source_path": ".github/skills/python-patterns/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-python-patterns"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-refactor",
+      "canonical_source_path": ".github/skills/refactor/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-refactor"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-scoutqa-test",
+      "canonical_source_path": ".github/skills/scoutqa-test/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-scoutqa-test"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-security-review",
+      "canonical_source_path": ".github/skills/security-review/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-security-review"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-security-review-asset-cloud-infrastructure-security",
+      "canonical_source_path": ".github/skills/security-review/cloud-infrastructure-security.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-security-review-asset-cloud-infrastructure-security"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-shipping-and-launch",
+      "canonical_source_path": ".github/skills/shipping-and-launch/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-shipping-and-launch"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-specification",
+      "canonical_source_path": ".github/skills/specification/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-specification"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-specification-reference-ac-format-guide",
+      "canonical_source_path": ".github/skills/specification/references/ac-format-guide.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-specification-reference-ac-format-guide"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-specification-reference-consult-review-protocol",
+      "canonical_source_path": ".github/skills/specification/references/consult-review-protocol.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-specification-reference-consult-review-protocol"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-specification-reference-specialist-lens-review",
+      "canonical_source_path": ".github/skills/specification/references/specialist-lens-review.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-specification-reference-specialist-lens-review"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-tdd-workflow",
+      "canonical_source_path": ".github/skills/tdd-workflow/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-tdd-workflow"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-web-design-reviewer",
+      "canonical_source_path": ".github/skills/web-design-reviewer/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-web-design-reviewer"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-web-design-reviewer-reference-framework-fixes",
+      "canonical_source_path": ".github/skills/web-design-reviewer/references/framework-fixes.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-web-design-reviewer-reference-framework-fixes"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-web-design-reviewer-reference-visual-checklist",
+      "canonical_source_path": ".github/skills/web-design-reviewer/references/visual-checklist.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-web-design-reviewer-reference-visual-checklist"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-webapp-testing",
+      "canonical_source_path": ".github/skills/webapp-testing/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-webapp-testing"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-webapp-testing-asset-test-helper",
+      "canonical_source_path": ".github/skills/webapp-testing/test-helper.js",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-webapp-testing-asset-test-helper"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-work-archiving",
+      "canonical_source_path": ".github/skills/work-archiving/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-work-archiving"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-skill-workflow-orchestrator",
+      "canonical_source_path": ".github/skills/workflow-orchestrator/SKILL.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-skill-workflow-orchestrator"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:generated-github-spec-agent",
+      "canonical_source_path": ".github/agents/spec.agent.md",
+      "role": "generated",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [
+        "cmp:canonical-spec-agent"
+      ],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:project-agents-guide",
+      "canonical_source_path": "AGENTS.md",
+      "role": "project-owned",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:project-claude-guide",
+      "canonical_source_path": "CLAUDE.md",
+      "role": "project-owned",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    },
+    {
+      "id": "cmp:project-gemini-guide",
+      "canonical_source_path": "GEMINI.md",
+      "role": "project-owned",
+      "kind": "file",
+      "lifecycle_status": "active",
+      "previous_paths": [],
+      "generated_from": [],
+      "successor_component_id": null,
+      "reintroduces_component_id": null,
+      "introduced_release": "ai-dev-workflow:component-catalog:1",
+      "retired_release": null
+    }
+  ]
+}
