@@ -9,6 +9,13 @@ param(
     [switch]$SkipHooks,   # 跳過 git init 步驟（參數名稱保留以向後相容）
     [switch]$Quiet,       # 抑制所有進度輸出（適合 CI 環境）
     [switch]$EnableMemory, # 建立 .ai-workflow-memory/ 骨架（opt-in 記憶功能）
+
+    [switch]$ReportOnly,
+    [Parameter(Mandatory=$false)]
+    [ValidateSet('conversion-plan', 'reconcile')]
+    [string]$Operation = '',
+    [Parameter(Mandatory=$false)]
+    [string]$SourceRoot = '',
     
     [Parameter(Mandatory=$false)]
     [string]$RemoteRepo = "https://github.com/forgivesam168/ai-dev-workflow.git",
@@ -16,6 +23,18 @@ param(
     [Parameter(Mandatory=$false)]
     [string]$TargetPath = ""
 )
+
+if ($ReportOnly) {
+    if ($Force -or $Update -or $Backup) {
+        throw '-ReportOnly cannot be combined with -Force, -Update, or -Backup.'
+    }
+    if (-not $Operation -or -not $SourceRoot -or -not $TargetPath) {
+        throw '-ReportOnly requires -Operation, -SourceRoot, and -TargetPath.'
+    }
+    $reportHelper = Join-Path $PSScriptRoot 'manifest-reconciliation.ps1'
+    & $reportHelper -Operation $Operation -SourceRoot $SourceRoot -TargetPath $TargetPath
+    exit $LASTEXITCODE
+}
 
 # 全域變數
 # Auto-detect RepoRoot: 腳本在 repo 根目錄時 $PSScriptRoot 即為 root；

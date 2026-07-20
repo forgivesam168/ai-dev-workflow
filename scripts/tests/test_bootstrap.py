@@ -11,6 +11,7 @@ from typing import Dict, Optional, Tuple, Union
 import pytest
 
 from scripts import bootstrap
+from scripts import manifest_reconciliation
 
 
 PHASE0B_REPO_ROOT = Path(bootstrap.__file__).resolve().parent.parent
@@ -594,6 +595,299 @@ def _phase4a_write_manifest(root: Path, manifest: dict) -> bytes:
     payload = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     (root / bootstrap.MANIFEST_FILENAME).write_bytes(payload)
     return payload
+
+
+def _phase4b_report_fixture(tmp_path: Path, manifest_bytes: Optional[bytes] = None) -> Tuple[Path, Path]:
+    source = tmp_path / "template"
+    target = tmp_path / "adopter"
+    source.mkdir()
+    target.mkdir()
+    for relative in ("manifest/component-catalog.json", "schemas/ai-workflow-install-manifest-v3.schema.json"):
+        destination = source / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes((PHASE0B_REPO_ROOT / relative).read_bytes())
+    if manifest_bytes is not None:
+        (target / bootstrap.MANIFEST_FILENAME).write_bytes(manifest_bytes)
+    return source, target
+
+
+def _phase4b_validate_contract(value: object, schema: dict, root: dict, path: str = "report") -> None:
+    if "$ref" in schema:
+        value_schema = root["$defs"][schema["$ref"].split("/")[-1]]
+        return _phase4b_validate_contract(value, value_schema, root, path)
+    if "const" in schema:
+        assert value == schema["const"], path
+    if "enum" in schema:
+        assert value in schema["enum"], path
+    expected = schema.get("type")
+    if isinstance(expected, list):
+        assert any((kind == "null" and value is None) or (kind == "string" and isinstance(value, str)) or (kind == "integer" and type(value) is int) or (kind == "boolean" and type(value) is bool) or (kind == "object" and isinstance(value, dict)) or (kind == "array" and isinstance(value, list)) for kind in expected), path
+    elif expected == "object":
+        assert isinstance(value, dict), path
+    elif expected == "array":
+        assert isinstance(value, list), path
+    elif expected == "string":
+        assert isinstance(value, str), path
+    elif expected == "integer":
+        assert type(value) is int, path
+    elif expected == "boolean":
+        assert type(value) is bool, path
+    if "pattern" in schema and isinstance(value, str):
+        import re
+        assert re.match(schema["pattern"], value), path
+    if isinstance(value, dict) and "properties" in schema:
+        assert set(schema.get("required", [])) <= set(value), path
+        if schema.get("additionalProperties") is False:
+            assert set(value) <= set(schema["properties"]), path
+        for key, child in schema["properties"].items():
+            if key in value:
+                _phase4b_validate_contract(value[key], child, root, f"{path}.{key}")
+    if isinstance(value, list) and "items" in schema:
+        for index, item in enumerate(value):
+            _phase4b_validate_contract(item, schema["items"], root, f"{path}[{index}]")
+    if isinstance(value, dict) and "additionalProperties" in schema and isinstance(schema["additionalProperties"], dict):
+        for key, item in value.items():
+            _phase4b_validate_contract(item, schema["additionalProperties"], root, f"{path}.{key}")
+
+
+def _phase4b_record(status: str = "untouched", ownership: str = "template-managed", baseline: Optional[str] = "sha256:" + "a" * 64) -> dict:
+    return {"provenance": {"ownership": ownership, "fork": {"status": status}}, "hashes": {"baseline": baseline}, "lifecycle": {"state": "active"}}
+
+
+def _phase4b_write_file(path: Path, data: bytes, *, mtime_ns: Optional[int] = None) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    if mtime_ns is not None:
+        os.utime(path, ns=(mtime_ns, mtime_ns))
+
+
+def test_phase4b_report_schema_and_canonical_digest_contract() -> None:
+    schema_path = PHASE0B_REPO_ROOT / "schemas/ai-workflow-manifest-reconciliation-report-v1.schema.json"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
+    assert schema["$id"] == "urn:ai-dev-workflow:manifest-reconciliation-report:v1"
+    assert schema["properties"]["report_contract_version"]["const"] == 1
+    assert schema["properties"]["operation"]["enum"] == ["conversion-plan", "reconcile"]
+    assert set(schema["$defs"]["mappedDecision"]["properties"]["classification"]["enum"]) == {
+        "untouched", "customized", "project-owned", "legacy", "unknown", "derived-customized",
+        "conflicted", "not-applicable",
+    }
+    with pytest.raises(ValueError):
+        manifest_reconciliation.canonical_report_bytes({"operation": "reconcile"})
+
+
+@pytest.mark.parametrize("manifest_kind", ["normal", "source-blocked"])
+def test_phase4b_produced_reports_satisfy_dependency_free_strict_schema(tmp_path: Path, manifest_kind: str) -> None:
+    source, target = _phase4b_report_fixture(tmp_path)
+    if manifest_kind == "source-blocked":
+        (source / "manifest/component-catalog.json").write_bytes(b"not-json")
+    report = manifest_reconciliation.build_report(source, target, "conversion-plan")
+    schema = json.loads((PHASE0B_REPO_ROOT / "schemas/ai-workflow-manifest-reconciliation-report-v1.schema.json").read_text(encoding="utf-8"))
+    _phase4b_validate_contract(report, schema, schema)
+    assert manifest_reconciliation.report_digest(report) == report["report_identity"]["canonical_body_digest"]
+    assert manifest_reconciliation.canonical_report_bytes(report).decode("utf-8").endswith("\n")
+
+
+def test_phase4b_all_approved_classifications_are_pure_and_deterministic(tmp_path: Path) -> None:
+    source, target = _phase4b_report_fixture(tmp_path)
+    baseline = "sha256:" + "a" * 64
+    assert manifest_reconciliation._classification(None, {"role": "canonical", "kind": "file"}, None, None)[0] == "unknown"
+    assert manifest_reconciliation._classification(_phase4b_record(ownership="project-owned"), {"role": "canonical", "kind": "file"}, None, None)[0] == "project-owned"
+    assert manifest_reconciliation._classification(_phase4b_record("conflicted"), {"role": "canonical", "kind": "file"}, None, None)[0] == "conflicted"
+    assert manifest_reconciliation._classification(_phase4b_record(), {"role": "canonical", "kind": "directory"}, baseline, baseline)[0] == "not-applicable"
+    assert manifest_reconciliation._classification(_phase4b_record(), {"role": "canonical", "kind": "file"}, baseline, baseline)[0] == "untouched"
+    assert manifest_reconciliation._classification(_phase4b_record(), {"role": "canonical", "kind": "file"}, "sha256:" + "b" * 64, baseline)[0] == "customized"
+    assert manifest_reconciliation._classification(_phase4b_record(), {"role": "generated", "kind": "file"}, "sha256:" + "b" * 64, "sha256:" + "c" * 64)[0] == "derived-customized"
+    assert manifest_reconciliation._classification(_phase4b_record(baseline=None), {"role": "canonical", "kind": "file"}, None, None)[0] == "unknown"
+    assert source.exists() and target.exists()
+
+
+@pytest.mark.parametrize("version", [1, 2])
+def test_phase4b_legacy_versions_map_only_exact_catalog_paths(tmp_path: Path, version: int) -> None:
+    source, target = _phase4b_report_fixture(tmp_path)
+    path = json.loads((source / "manifest/component-catalog.json").read_text(encoding="utf-8"))["components"][0]["canonical_source_path"]
+    manifest = {"schema_version": version, "components": [{"name": path, "source": "template:" + path, "status": "preserved-customization"}]}
+    _phase4a_write_manifest(target, manifest)
+    report = manifest_reconciliation.build_report(source, target, "conversion-plan")
+    assert report["manifest_parse_state"]["state"] == f"valid-v{version}"
+    assert len(report["mapped_component_decisions"]) == 1
+    assert report["mapped_component_decisions"][0]["classification"] == "legacy"
+    unknown = {"schema_version": version, "components": [{"name": "not-in-catalog", "source": "template:not-in-catalog"}]}
+    _phase4a_write_manifest(target, unknown)
+    report = manifest_reconciliation.build_report(source, target, "conversion-plan")
+    assert report["mapped_component_decisions"] == []
+    assert report["unmapped_records"][0]["classification"] == "unknown"
+
+
+def test_phase4b_rename_retirement_and_modified_stale_are_conservative(tmp_path: Path) -> None:
+    source, target = _phase4b_report_fixture(tmp_path)
+    baseline = "sha256:" + "a" * 64
+    current = "new/name.md"
+    old = "old/name.md"
+    (source / current).parent.mkdir(parents=True)
+    (source / current).write_bytes(b"new")
+    (target / old).parent.mkdir(parents=True)
+    (target / old).write_bytes(b"old")
+    catalog = {"role": "canonical", "kind": "file", "canonical_source_path": current, "previous_paths": [old], "generated_from": [], "lifecycle_status": "active"}
+    decision = manifest_reconciliation._decision("cmp:rename-test", catalog, _phase4b_record(baseline=baseline), source, target, "valid-v3")
+    assert decision["stale_or_retirement_reason"] == "rename-proven"
+    assert decision["eligibility"]["eligible"] is False
+    retired = dict(catalog, lifecycle_status="retired", retired_release="release-1", canonical_source_path=old, previous_paths=[])
+    decision = manifest_reconciliation._decision("cmp:retired-test", retired, _phase4b_record(baseline=baseline), source, target, "valid-v3")
+    assert decision["stale_or_retirement_reason"] == "retirement-proven"
+    active_missing_source = dict(catalog, canonical_source_path=old, previous_paths=[])
+    decision = manifest_reconciliation._decision("cmp:stale-test", active_missing_source, _phase4b_record(baseline=baseline), source, target, "valid-v3")
+    assert decision["stale_or_retirement_reason"] == "source-missing-no-retirement-evidence"
+    assert decision["proposed_action"] == "preserve"
+    generated = dict(active_missing_source, role="generated")
+    decision = manifest_reconciliation._decision("cmp:stale-generated", generated, _phase4b_record(baseline=baseline), source, target, "valid-v3")
+    assert decision["classification"] == "derived-customized"
+    assert decision["eligibility"]["eligible"] is False
+
+
+@pytest.mark.parametrize("flag", ["--force", "--update", "--backup"])
+def test_phase4b_python_report_only_rejects_mutation_flags_before_planner(tmp_path: Path, flag: str) -> None:
+    source, target = _phase4b_report_fixture(tmp_path)
+    result = subprocess.run([sys.executable, str(PHASE0B_REPO_ROOT / "scripts/bootstrap.py"), "--report-only", flag, "--operation", "reconcile", "--source-root", str(source), "--target-root", str(target)], capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "cannot be combined" in result.stderr
+    assert not list(target.rglob("*.backup-*"))
+
+
+def test_phase4b_missing_manifest_is_report_only_and_root_tree_is_unchanged(tmp_path: Path) -> None:
+    source, target = _phase4b_report_fixture(tmp_path)
+    sentinel = target / "project-owned.txt"
+    sentinel.write_bytes(b"keep\r\n")
+    before = sorted((p.relative_to(target).as_posix(), p.read_bytes()) for p in target.rglob("*") if p.is_file())
+    report = manifest_reconciliation.build_report(source, target, "conversion-plan")
+    after = sorted((p.relative_to(target).as_posix(), p.read_bytes()) for p in target.rglob("*") if p.is_file())
+    assert report["manifest_parse_state"]["state"] == "missing"
+    assert report["mapped_component_decisions"] == []
+    assert report["required_future_authorization"]["approval_supplied"] is False
+    assert report["no_write_confirmation"]["writes_performed"] is False
+    assert before == after
+
+
+@pytest.mark.parametrize(
+    ("manifest_bytes", "state"),
+    [(b"not-json", "corrupt"), (b'{"schema_version":99,"components":[]}', "unsupported")],
+)
+def test_phase4b_corrupt_or_unsupported_blocks_before_component_planning(
+    tmp_path: Path, manifest_bytes: bytes, state: str
+) -> None:
+    source, target = _phase4b_report_fixture(tmp_path, manifest_bytes)
+    before = (target / bootstrap.MANIFEST_FILENAME).read_bytes()
+    report = manifest_reconciliation.build_report(source, target, "reconcile")
+    assert report["manifest_parse_state"]["state"] == state
+    assert report["mapped_component_decisions"] == []
+    assert report["blocking_findings"]
+    assert (target / bootstrap.MANIFEST_FILENAME).read_bytes() == before
+
+
+def test_phase4b_valid_v3_reconciliation_is_conservative_and_not_authority(tmp_path: Path) -> None:
+    source, target = _phase4b_report_fixture(tmp_path)
+    manifest_bytes = _phase4a_write_manifest(target, _phase4a_valid_manifest())
+    report = manifest_reconciliation.build_report(source, target, "reconcile")
+    assert report["manifest_parse_state"]["state"] == "valid-v3"
+    assert report["required_future_authorization"]["approval_supplied"] is False
+    assert report["required_future_authorization"]["not_authority"] is True
+    assert report["required_future_authorization"]["execution_time_revalidation_required"] is True
+    assert report["required_future_authorization"]["delete_action"] is False
+    assert report["no_write_confirmation"]["pre_manifest_digest"] == bootstrap.hash_bytes(manifest_bytes)
+    assert report["no_write_confirmation"]["inventory_unchanged"] is True
+    assert report["no_write_confirmation"]["timestamps_unchanged"] is True
+    assert report["no_write_confirmation"]["link_metadata_unchanged"] is True
+    assert report["no_write_confirmation"]["git_presence_unchanged"] is True
+    assert report["no_write_confirmation"]["forbidden_artifacts_unchanged"] is True
+    assert report["no_write_confirmation"]["pre_target_snapshot_digest"] == report["no_write_confirmation"]["post_target_snapshot_digest"]
+    assert report["report_identity"]["canonical_body_digest"].startswith("sha256:")
+    assert manifest_reconciliation.report_digest(report) == report["report_identity"]["canonical_body_digest"]
+    assert manifest_reconciliation.canonical_report_bytes(report).endswith(b"\n")
+
+
+def test_phase4b_python_cli_and_powershell_cli_have_identical_canonical_report(tmp_path: Path) -> None:
+    source, target = _phase4b_report_fixture(tmp_path)
+    python_command = [sys.executable, str(PHASE0B_REPO_ROOT / "scripts/bootstrap.py"), "--report-only",
+                      "--operation", "conversion-plan", "--source-root", str(source), "--target-root", str(target)]
+    python_result = subprocess.run(python_command, capture_output=True, text=True, check=False)
+    assert python_result.returncode == 0, python_result.stderr
+    assert "report_path" not in python_result.stdout
+    ps = shutil.which("pwsh")
+    if not ps:
+        pytest.skip("PowerShell is unavailable")
+    ps_result = subprocess.run(
+        [ps, "-NoProfile", "-File", str(PHASE0B_REPO_ROOT / "scripts/bootstrap.ps1"), "-ReportOnly",
+         "-Operation", "conversion-plan", "-SourceRoot", str(source), "-TargetPath", str(target)],
+        capture_output=True, text=True, check=False,
+    )
+    assert ps_result.returncode == 0, ps_result.stderr
+    python_report = json.loads(python_result.stdout)
+    ps_report = json.loads(ps_result.stdout)
+    assert manifest_reconciliation.canonical_report_bytes(ps_report) == manifest_reconciliation.canonical_report_bytes(python_report)
+    assert ps_report["report_identity"]["canonical_body_digest"] == python_report["report_identity"]["canonical_body_digest"]
+
+
+def test_phase4b_normalized_snapshot_digest_ignores_mtime_but_changes_for_content(tmp_path: Path) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    third = tmp_path / "third"
+    same_mtime = 1_750_000_000_000_000_000
+    _phase4b_write_file(first / "same/path.txt", b"same-bytes\n", mtime_ns=1_700_000_000_000_000_000)
+    _phase4b_write_file(second / "same/path.txt", b"same-bytes\n", mtime_ns=1_800_000_000_000_000_000)
+    _phase4b_write_file(third / "same/path.txt", b"different-bytes\n", mtime_ns=same_mtime)
+    first_snapshot = manifest_reconciliation._tree_snapshot(first)
+    second_snapshot = manifest_reconciliation._tree_snapshot(second)
+    third_snapshot = manifest_reconciliation._tree_snapshot(third)
+    assert first_snapshot["files"][0]["mtime_ns"] != second_snapshot["files"][0]["mtime_ns"]
+    assert manifest_reconciliation._snapshot_digest(first_snapshot) == manifest_reconciliation._snapshot_digest(second_snapshot)
+    assert manifest_reconciliation._snapshot_digest(first_snapshot) != manifest_reconciliation._snapshot_digest(third_snapshot)
+
+
+def test_phase4b_canonical_report_digest_ignores_mtime_and_volatile_envelope(tmp_path: Path) -> None:
+    source, target = _phase4b_report_fixture(tmp_path)
+    _phase4b_write_file(source / "docs/example.md", b"same-source\n", mtime_ns=1_700_000_000_000_000_000)
+    _phase4b_write_file(target / "docs/example.md", b"same-target\n", mtime_ns=1_700_000_000_000_000_000)
+    first = manifest_reconciliation.build_report(source, target, "conversion-plan")
+    _phase4b_write_file(source / "docs/example.md", b"same-source\n", mtime_ns=1_800_000_000_000_000_000)
+    _phase4b_write_file(target / "docs/example.md", b"same-target\n", mtime_ns=1_800_000_000_000_000_000)
+    second = manifest_reconciliation.build_report(source, target, "conversion-plan")
+    assert first["report_identity"]["canonical_body_digest"] == second["report_identity"]["canonical_body_digest"]
+    assert manifest_reconciliation.canonical_report_bytes(first) == manifest_reconciliation.canonical_report_bytes(second)
+    assert b"mtime_ns" not in manifest_reconciliation.canonical_report_bytes(first)
+    volatile_changed = deepcopy(first)
+    volatile_changed["volatile_display_envelope"] = {"timestamp": "2099-01-01T00:00:00Z", "host": "other-host"}
+    assert manifest_reconciliation.report_digest(first) == manifest_reconciliation.report_digest(volatile_changed)
+    assert manifest_reconciliation.canonical_report_bytes(first) == manifest_reconciliation.canonical_report_bytes(volatile_changed)
+
+
+def test_phase4b_same_run_timestamp_mutation_blocks_no_write_proof(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    source, target = _phase4b_report_fixture(tmp_path)
+    _phase4b_write_file(target / "docs/example.md", b"same-bytes\n", mtime_ns=1_700_000_000_000_000_000)
+    base_target = manifest_reconciliation._tree_snapshot(target)
+    mutated_target = deepcopy(base_target)
+    mutated_target["files"][0]["mtime_ns"] = 1_800_000_000_000_000_000
+    base_source = manifest_reconciliation._tree_snapshot(source)
+    original_tree_snapshot = manifest_reconciliation._tree_snapshot
+
+    state = {"target_calls": 0, "source_calls": 0}
+
+    def fake_tree_snapshot(root: Path) -> dict:
+        resolved = root.resolve()
+        if resolved == target.resolve():
+            state["target_calls"] += 1
+            return deepcopy(base_target if state["target_calls"] == 1 else mutated_target)
+        if resolved == source.resolve():
+            state["source_calls"] += 1
+            return deepcopy(base_source)
+        return original_tree_snapshot(root)
+
+    monkeypatch.setattr(manifest_reconciliation, "_tree_snapshot", fake_tree_snapshot)
+    report = manifest_reconciliation.build_report(source, target, "conversion-plan")
+    assert report["no_write_confirmation"]["inventory_unchanged"] is True
+    assert report["no_write_confirmation"]["timestamps_unchanged"] is False
+    assert report["no_write_confirmation"]["pre_target_snapshot_digest"] == report["no_write_confirmation"]["post_target_snapshot_digest"]
+    assert report["no_write_confirmation"]["writes_performed"] is True
+    assert any(item["code"] == "no-write-proof-failed" for item in report["blocking_findings"])
 
 
 def test_phase4a_schema_transform_catalog_allocation_and_candidate_boundary() -> None:

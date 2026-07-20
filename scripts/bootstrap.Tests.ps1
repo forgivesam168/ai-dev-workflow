@@ -5,6 +5,48 @@ BeforeAll {
     . "$PSScriptRoot\bootstrap.ps1"
 }
 
+Describe "Phase 4B report-only dispatch" {
+    It "rejects mutation flags before entering installer flow" {
+        $pwsh = (Get-Process -Id $PID).Path
+        $result = & $pwsh -NoProfile -File (Join-Path $PSScriptRoot 'bootstrap.ps1') -ReportOnly -Force -Operation conversion-plan -SourceRoot $PSScriptRoot -TargetPath $TestDrive 2>&1
+        $LASTEXITCODE | Should -Not -Be 0
+        ($result | Out-String) | Should -Match 'cannot be combined'
+    }
+
+    It "uses the shared Python canonical engine for CLI parity" {
+        $python = Get-Command python -ErrorAction SilentlyContinue
+        $python | Should -Not -BeNullOrEmpty
+        $source = Split-Path -Parent $PSScriptRoot
+        $pythonReport = & $python.Source (Join-Path $PSScriptRoot 'manifest_reconciliation.py') --operation conversion-plan --source-root $source --target-root $TestDrive | Out-String
+        $powerShellReport = & (Get-Process -Id $PID).Path -NoProfile -File (Join-Path $PSScriptRoot 'bootstrap.ps1') -ReportOnly -Operation conversion-plan -SourceRoot $source -TargetPath $TestDrive | Out-String
+        $py = $pythonReport | ConvertFrom-Json
+        $ps = $powerShellReport | ConvertFrom-Json
+        $py.report_identity.canonical_body_digest | Should -Be $ps.report_identity.canonical_body_digest
+    }
+
+    It "keeps the PowerShell CLI digest stable when only file mtimes differ" {
+        $source = Join-Path $TestDrive 'source'
+        $targetA = Join-Path $TestDrive 'target-a'
+        $targetB = Join-Path $TestDrive 'target-b'
+        New-Item -ItemType Directory -Path (Join-Path $source 'manifest') -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $source 'schemas') -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $targetA 'docs') -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $targetB 'docs') -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'manifest/component-catalog.json') -Destination (Join-Path $source 'manifest/component-catalog.json')
+        Copy-Item -LiteralPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'schemas/ai-workflow-install-manifest-v3.schema.json') -Destination (Join-Path $source 'schemas/ai-workflow-install-manifest-v3.schema.json')
+        $bytes = [Text.Encoding]::UTF8.GetBytes("same-bytes`n")
+        [IO.File]::WriteAllBytes((Join-Path $targetA 'docs/example.md'), $bytes)
+        [IO.File]::WriteAllBytes((Join-Path $targetB 'docs/example.md'), $bytes)
+        (Get-Item (Join-Path $targetA 'docs/example.md')).LastWriteTimeUtc = [datetime]'2024-01-01T00:00:00Z'
+        (Get-Item (Join-Path $targetB 'docs/example.md')).LastWriteTimeUtc = [datetime]'2025-01-01T00:00:00Z'
+
+        $first = & (Get-Process -Id $PID).Path -NoProfile -File (Join-Path $PSScriptRoot 'bootstrap.ps1') -ReportOnly -Operation conversion-plan -SourceRoot $source -TargetPath $targetA | Out-String | ConvertFrom-Json
+        $second = & (Get-Process -Id $PID).Path -NoProfile -File (Join-Path $PSScriptRoot 'bootstrap.ps1') -ReportOnly -Operation conversion-plan -SourceRoot $source -TargetPath $targetB | Out-String | ConvertFrom-Json
+
+        $first.report_identity.canonical_body_digest | Should -Be $second.report_identity.canonical_body_digest
+    }
+}
+
 Describe "Phase 0C manifest parse safety" {
     BeforeAll {
         function Get-Phase0CTreeSnapshot {

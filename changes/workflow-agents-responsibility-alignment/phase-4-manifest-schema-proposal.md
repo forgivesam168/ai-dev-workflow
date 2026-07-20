@@ -423,3 +423,7 @@ OD-01 through OD-17 are approved by Amendment A-07 as the internally consistent 
 | OD-17 | Migration/deployment execution | N/A — no migration or deployment execution is authorized in this Phase | Any real execution requires a later exact scope, rollback/recovery evidence, and action-specific approval |
 
 OD-01 through OD-17 are approved as one internally consistent v3 contract. Phase 4A Reader-First Foundation is separately authorized and in progress under Amendment A-08; Candidate artifacts remain non-runtime, production writers remain v2, and conversion planning, writer enablement, migration, tombstone mutation, prune, real-adopter operation, and later Phase 4 tranches require separate explicit current-task authorization.
+
+### Phase 4B Status Pointer
+
+Phase 4B is separately authorized under Amendment A-09 for a report-only deterministic `conversion-plan` / `reconcile` planner. The bounded Amendment A-10 correction removed raw `mtime_ns` from normalized hashed snapshot inputs while retaining blocking same-run timestamp mutation detection; independent read-only review resolved the original High finding and the required gate passed with notes. This pointer does not authorize a v3 writer, migration or rehearsal, backup/journal/atomic publication, tombstone mutation, restore/reintroduction execution, prune/delete, approval execution, real-adopter operation, or Phase 5. Production writers remain v2 and Phase 4 remains incomplete.
