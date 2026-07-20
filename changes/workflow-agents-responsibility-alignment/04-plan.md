@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Phase 4A PR #12 CI correction locally verified; follow-up push and CI rerun pending; Phase 4 overall partially implemented; writer enablement, migration, prune, and real-adopter execution not authorized
+- **Status**: Phase 4A merged; Phase 4B in progress; Phase 4 overall in progress / partially implemented; Phase 4C and later mutation capabilities not authorized
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 4A — Manifest v3 Reader-First Foundation
+- **Current active phase**: Phase 4B — Deterministic No-Write Conversion & Stale Planner
 
 ## Phase Status Summary
 
@@ -19,7 +19,7 @@
 | 1 — AGENTS / WORKFLOW / risk contract | Merged | Required | Required |
 | 2 — Agent / Skill / Prompt / Instruction alignment | Merged | Required | Required |
 | 3 — Change Package / Review / Archive semantics | Merged | Required | Required |
-| 4 — Manifest / provenance / stale-derived migration | In progress / partially implemented: Schema approved and Proposal PR #11 merged; Phase 4A PR #12 CI correction locally verified with rerun pending; Phase 4B, writer enablement, migration, and prune not authorized | Required | Required |
+| 4 — Manifest / provenance / stale-derived migration | In progress / partially implemented: Schema and Phase 4A reader foundation merged; Phase 4B report-only planner in progress; Phase 4C and later mutation capabilities not authorized | Required | Required |
 | 5 — Cross-CLI evidence and adapter proposal | Pending | Required | Evidence PR before implementation PR |
 | 6 — Bash deprecation completion | Pending | Required | Required |
 
@@ -924,7 +924,7 @@ Separate approval and separate PR required; naming decision must be recorded bef
 ### Schema Proposal Status
 
 - **Status**: Schema Design approved; Proposal PR #11 merged; Phase 4A Reader-First Foundation in progress; Phase 4 overall remains incomplete.
-- **Authorization boundary**: Phase 4A may create the approved Production Schema and Component Catalog, add read-only v3 validation to both runtimes, preserve v1/v2 reading, and block every v3 mutation path before writes. Candidate schema/examples must remain byte-identical to approved head `16aa063139431cbd07cba147d81be1d2cb3da609`; writer enablement, conversion planning, migration, tombstone mutation, prune, and real-adopter behavior remain unauthorized.
+- **Authorization boundary**: Phase 4A created the approved Production Schema and Component Catalog, added read-only v3 validation to both runtimes, preserved v1/v2 reading, and blocks every v3 mutation path before writes. Phase 4B separately authorizes only the report-only planner; writer enablement, migration, tombstone mutation, prune, and real-adopter behavior remain unauthorized.
 - **Proposal branch**: `design/phase-4-manifest-schema-proposal` from merged Phase 3 `main` at `f8a0116ce4af0b463c838150350a9ccfa7c2cac6`.
 - **Approval evidence**: Amendment A-07 records explicit current-task approval of OD-01 through OD-17 and the complete Manifest v3 Schema Design at exact head `16aa063139431cbd07cba147d81be1d2cb3da609`.
 - **Remote evidence**: PR #11 was merged from final status head `fa0471d8139e288fcf856af7a160f0e2d1335627` as squash merge `5300d56c9ef9594f9bb3007b22824a644e06ee62`; three commits and 13 files; latest Verify Change Package, verify-sync Ubuntu, and verify-sync Windows completed successfully; no reviews or unresolved review threads.
@@ -1526,3 +1526,21 @@ Separate user approval and separate PR required.
 ## Implementation Start Gate
 
 No phase may start until the user explicitly names and approves that phase. Approval of this Change Package is not implementation authorization.
+
+## Phase 4B — Deterministic No-Write Conversion & Stale Planner
+
+- **Status**: In progress. Phase 4A = Merged; Phase 4 overall = In progress / partially implemented; Phase 4C and later mutation capabilities = Not authorized.
+- **Authorization**: Amendment A-09 and the current task authorize report-only `conversion-plan` and `reconcile` only. No v3 writer, migration/rewrite, rehearsal, backup/lock/journal, atomic publication, tombstone, restore/reintroduction execution, prune/delete, approval execution entry point, or real-adopter operation.
+- **Selected implementation option**: Option B — one thin `scripts/manifest_reconciliation.py` helper and one thin `scripts/manifest-reconciliation.ps1` helper, dispatched before the existing installer pipeline in `scripts/bootstrap.py` and `scripts/bootstrap.ps1`.
+- **CLI contract**: Python `python scripts/bootstrap.py --report-only --operation {conversion-plan|reconcile} --source-root <template-root> --target-root <adopter-root>`; PowerShell `pwsh -File scripts/bootstrap.ps1 -ReportOnly -Operation {conversion-plan|reconcile} -SourceRoot <template-root> -TargetPath <adopter-root>`.
+- **Mutation isolation**: The report-only dispatch validates operation and arguments, reads bytes/metadata only, calls no existing installer sync, backup, manifest writer, link, directory, Git, or lifecycle mutation function, and exits before `main`/`Main` reaches the mutation pipeline. No report path option is exposed; JSON is stdout-only.
+- **Parity contract**: Both helpers use the same contract version, field names, approved classification enum, sorted component/proof order, UTF-8 without BOM, LF, fixed canonical property order, and SHA-256 digest format. Volatile display data is outside the hashed canonical decision body.
+- **Exact allowlist before Luna delegation**: `schemas/ai-workflow-manifest-reconciliation-report-v1.schema.json`; `scripts/bootstrap.py`; `scripts/bootstrap.ps1`; at most one Python helper `scripts/manifest_reconciliation.py`; at most one PowerShell helper `scripts/manifest-reconciliation.ps1`; `scripts/tests/test_bootstrap.py`; `scripts/bootstrap.Tests.ps1`; at most two shared reconciliation/report vector files under `scripts/tests/`; necessary synthetic fixtures only; `BOOTSTRAP-GUIDE.md` only if the public CLI needs minimal documentation. Sol governance paths are this file, `02-decision-log.md`, and a brief status note in `phase-4-manifest-schema-proposal.md`. Production v3 Schema, Catalog, candidate artifacts, AGENTS/WORKFLOW, agents/skills/prompts/instructions, bootstrap.sh, CI workflows, generated mirrors, and unrelated files are immutable.
+- **Input policy**: Missing is report-only with no inferred lineage; corrupt/unsupported blocks before component planning; v1 maps only exact Catalog paths and remains legacy/unknown without full lineage; v2 reports existing facts but cannot launder customization or become v3 provenance without binding; valid-v3 reuses Phase 4A structural/semantic validation and reconciles fresh target bytes.
+- **Stale/eligibility policy**: Rename requires stable ID plus Catalog path history; retirement requires Catalog plus typed source-release evidence; source working-tree absence alone is insufficient. Modified stale output is preserved and never eligible. Eligibility can be true only for valid-v3 with all D-05 proofs, and must include `not_authority: true`, approval not supplied, future action-specific approval required, execution-time TOCTOU revalidation, and no delete action.
+- **Verification plan**: Luna records focused RED before GREEN. Stable diff then runs focused Python/Pester, full Python/Pester regression, sync/catalog/lifecycle/Change Package/Agent/JSON-schema/canonicalization checks, `git diff --check`, full repository gate, and pre/post worktree invariance. A separate built-in read-only Reviewer inspects the exact stable diff once before commit; any post-review file change repeats affected checks, risk-based full gate, and exact-diff review.
+- **Delivery boundary**: One feature branch `feat/phase-4b-manifest-report-planner`, one non-amended main commit `feat: 建立 Manifest 唯讀轉換與過期報告`, one non-Draft PR, expected-head guarded squash merge, ff-only local `main` sync, retain feature branches, then stop. Phase 4B complete does not mean Phase 4 complete.
+- **Model experiment evidence**: Sol requested GPT-5.6 Luna / high; observed model and effort are unknown. The single bounded escalation product correction requested Luna as GPT-5.4 / medium; observed model and effort are unknown. Luna product-correction invocation count for this continuation is 1; no second product writer was authorized. The independent read-only Reviewer was requested as GPT-5.4 mini / medium; observed model and effort are unknown; Reviewer invocation count is 1.
+- **Luna correction evidence**: Required RED was `3 failed, 185 deselected`, isolating raw `mtime_ns` contamination and same-run timestamp proof weakness. GREEN was focused Python contract `7 passed`, Phase 4B Python `18 passed`, and pinned Pester parity `2 passed`; direct Sol audit confirmed stable canonical ordering, self-reference exclusion, raw timestamp exclusion from hashed body, and retained no-write detection.
+- **Final verification evidence**: Full Python regression `188 passed`; full pinned Pester regression `130 passed`; sync, catalog, lifecycle, Change Package, Agent structure, JSON/schema/canonicalization, and `git diff --check` passed. The one valid Full Gate returned `GATE PASSED WITH NOTES`, with Python `188 passed`, Pester `262 passed`, and true branch/HEAD/status/path/bytes/SHA-256 invariance. Independent review returned `0 Critical / 0 High / 0 Medium / 0 Low` and `Resolved` for the original High finding.
+- **Known environment note**: The default visible Pester module is `3.4.0`; the repo-pinned cached `Pester 5.6.1` was used without installing dependencies. An initial gate preflight stopped before required checks because its module discovery path was incorrect; a read-only path probe corrected the process environment, and the single valid Full Gate then passed. No dependency was installed or manifest changed.

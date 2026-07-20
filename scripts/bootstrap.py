@@ -23,6 +23,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 MIN_GIT = "2.0.0"
 MIN_PYTHON = "3.7.0"
 MIN_POWERSHELL = "5.1.0"
@@ -2132,7 +2135,23 @@ def main() -> None:
     parser.add_argument("--update", action="store_true", help="Refresh workflow files")
     parser.add_argument("--backup", action="store_true", help="Create backup before syncing")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
+    parser.add_argument("--report-only", action="store_true", help="Emit a deterministic no-write reconciliation report")
+    parser.add_argument("--operation", choices=("conversion-plan", "reconcile"), help="Report-only operation")
+    parser.add_argument("--source-root", help="Template root for report-only planning")
+    parser.add_argument("--target-root", help="Adopter root for report-only planning")
     args = parser.parse_args()
+
+    if args.report_only:
+        if args.force or args.update or args.backup:
+            parser.error("--report-only cannot be combined with --force, --update, or --backup")
+        if not args.operation or not args.source_root or not args.target_root:
+            parser.error("--report-only requires --operation, --source-root, and --target-root")
+        from scripts import manifest_reconciliation
+        raise SystemExit(
+            manifest_reconciliation.emit_report(
+                Path(args.source_root), Path(args.target_root), args.operation
+            )
+        )
 
     force_mode = args.force
     backup_mode = args.backup or args.update  # Always backup in update mode
