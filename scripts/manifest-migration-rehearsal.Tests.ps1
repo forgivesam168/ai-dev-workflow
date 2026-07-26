@@ -418,8 +418,7 @@ Describe 'Phase 4C Windows-first manifest migration rehearsal' {
         try {
             New-Item -ItemType Junction -Path $junction -Target $actual -ErrorAction Stop | Out-Null
         } catch {
-            Set-ItResult -Skipped -Because "Junction creation unavailable: $($_.Exception.Message)"
-            return
+            throw "Junction creation unavailable: $($_.Exception.Message)"
         }
 
         $process = Invoke-RehearsalProcess $junction $script:WorkspaceParent
@@ -430,38 +429,35 @@ Describe 'Phase 4C Windows-first manifest migration rehearsal' {
         $result.classification | Should -Be 'unsafe-path'
     }
 
-    It '[Path-Type] hard stops a leaf junction at the manifest path without reading or changing its target' {
-        if (-not $IsWindows) {
-            Set-ItResult -Skipped -Because 'Phase 4C supports Windows ReparsePoint and Junction semantics only.'
-            return
-        }
-        $fixture = Join-Path $TestDrive ([Guid]::NewGuid().ToString('N'))
-        $target = Join-Path $TestDrive ([Guid]::NewGuid().ToString('N'))
-        [IO.Directory]::CreateDirectory($fixture) | Out-Null
-        [IO.Directory]::CreateDirectory($target) | Out-Null
-        $sentinel = Join-Path $target 'outside-sentinel.txt'
-        [IO.File]::WriteAllText($sentinel, 'outside-leaf-junction-sentinel')
-        $targetBefore = Get-FullInventory $target
-        $fixtureBefore = $null
-        try {
-            New-Item -ItemType Junction -Path (Join-Path $fixture $script:ManifestName) -Target $target -ErrorAction Stop | Out-Null
-            $fixtureBefore = Get-FullInventory $fixture
-        } catch {
-            Set-ItResult -Skipped -Because "Junction creation unavailable: $($_.Exception.Message)"
-            return
-        }
+    if ($IsWindows) {
+        It '[Path-Type] hard stops a leaf junction at the manifest path without reading or changing its target' {
+            $fixture = Join-Path $TestDrive ([Guid]::NewGuid().ToString('N'))
+            $target = Join-Path $TestDrive ([Guid]::NewGuid().ToString('N'))
+            [IO.Directory]::CreateDirectory($fixture) | Out-Null
+            [IO.Directory]::CreateDirectory($target) | Out-Null
+            $sentinel = Join-Path $target 'outside-sentinel.txt'
+            [IO.File]::WriteAllText($sentinel, 'outside-leaf-junction-sentinel')
+            $targetBefore = Get-FullInventory $target
+            $fixtureBefore = $null
+            try {
+                New-Item -ItemType Junction -Path (Join-Path $fixture $script:ManifestName) -Target $target -ErrorAction Stop | Out-Null
+                $fixtureBefore = Get-FullInventory $fixture
+            } catch {
+                throw "Junction creation unavailable: $($_.Exception.Message)"
+            }
 
-        $process = Invoke-RehearsalProcess $fixture $script:WorkspaceParent
-        $result = $process.Text | ConvertFrom-Json -AsHashtable
+            $process = Invoke-RehearsalProcess $fixture $script:WorkspaceParent
+            $result = $process.Text | ConvertFrom-Json -AsHashtable
 
-        $process.ExitCode | Should -Not -Be 0
-        $result.status | Should -Be 'blocked'
-        $result.classification | Should -Be 'unsafe-path'
-        $result.committed | Should -BeFalse
-        $result.workspace | Should -Be ''
-        $process.Text | Should -Not -Match 'outside-leaf-junction-sentinel'
-        @(Get-FullInventory $fixture) | Should -Be $fixtureBefore
-        @(Get-FullInventory $target) | Should -Be $targetBefore
+            $process.ExitCode | Should -Not -Be 0
+            $result.status | Should -Be 'blocked'
+            $result.classification | Should -Be 'unsafe-path'
+            $result.committed | Should -BeFalse
+            $result.workspace | Should -Be ''
+            $process.Text | Should -Not -Match 'outside-leaf-junction-sentinel'
+            @(Get-FullInventory $fixture) | Should -Be $fixtureBefore
+            @(Get-FullInventory $target) | Should -Be $targetBefore
+        }
     }
 
     It 'never reports committed when replace publication fails and retains backup and diagnostic' {
