@@ -431,6 +431,10 @@ Describe 'Phase 4C Windows-first manifest migration rehearsal' {
     }
 
     It '[Path-Type] hard stops a leaf junction at the manifest path without reading or changing its target' {
+        if (-not $IsWindows) {
+            Set-ItResult -Skipped -Because 'Phase 4C supports Windows ReparsePoint and Junction semantics only.'
+            return
+        }
         $fixture = Join-Path $TestDrive ([Guid]::NewGuid().ToString('N'))
         $target = Join-Path $TestDrive ([Guid]::NewGuid().ToString('N'))
         [IO.Directory]::CreateDirectory($fixture) | Out-Null
