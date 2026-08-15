@@ -443,5 +443,30 @@ These amendments preserve the approved architecture directions above. They corre
 - **CI failure classification**: Ubuntu baseline Pester discovered `300` tests and produced `299 passed / 1 failed`. The only failure was the Windows leaf-Junction Path-Type test expecting the Windows entry point to reject a junction. Linux PowerShell accepted `New-Item -ItemType Junction` without Windows ReparsePoint semantics, so this was an exact test-platform boundary inside the fixed Matrix, not a Production Matrix failure or a new Critical/High.
 - **Authorized CI correction 1/1**: The sole change is a four-line `$IsWindows` guard in `scripts/manifest-migration-rehearsal.Tests.ps1`. Non-Windows records an explicit skip because Linux mutation parity is Deferred; Windows still executes the full junction/no-target-read/source-and-target-invariance/hard-stop proof. No Product code or contract changed.
 - **Verification and review**: Windows focused Path-Type Pester passed `6 / 6` with zero failure or skip. The single post-correction Full Gate returned `GATE PASSED WITH NOTES`, Python `188`, pinned Pester `300 / 300`, zero negative counts, and exact branch/HEAD/status/modified-test length/SHA-256 invariance. The same sole independent read-only Reviewer returned `ACCEPTED`, with `0` Blocking, `0` Critical/High, and `0` non-blocking findings.
-- **Delivery boundary**: Record this evidence, run governance-only consistency verification, create a non-amended follow-up commit, and normally push the new reviewed PR head. Required CI must pass on that head before expected-head guarded squash merge. Phase 4C, real-adopter operations, and Phase 4D status are otherwise unchanged.
+- **Delivery boundary**: PR #14's required CI and merge path are complete; PR #14 is authoritative merged evidence and Phase 4C = Complete / merged. The earlier correction-pending wording is superseded. Phase 4D is separately active as the current Build candidate; real-adopter operations remain out of scope.
 - **Architecture direction changed**: No.
+
+### Phase 4D Build Candidate Governance — 2026-08-14
+
+- **Status correction**: Phase 4C authoritative status is Complete / merged, including PR #14 merge evidence. Phase 4D is In progress / Build candidate, not Complete and not Awaiting Acceptance until a PR is actually created. Phase 4 overall remains Incomplete.
+- **Frozen A–G boundary**: New Install emits v3; explicit `-MigrationPreview` is deterministic/no-write; explicit `-ApplyMigration -ExpectedPreviewId` recomputes and binds to the preview; general v1/v2 Update does not auto-migrate; valid-v3 Update manages only trusted Untouched records; Customized, Legacy, Unknown, Project-owned, and stale records are preserved or reported; corrupt/unsupported/unsafe input hard-stops before writes; Manifest is published last; failure retains backup/diagnostic and never reports false success.
+- **Excluded/deferred**: Python/Linux v3 writer, automatic prune/delete/tombstone, automatic restore, Lock/Journal/Recovery Engine, hostile concurrency, and real-adopter migration/restore/cleanup were not implemented or executed. `Force` and `AlwaysOverwrite` do not bypass v3 ownership. Schema, Catalog, Phase 4C, and Python writer boundaries remain unchanged.
+- **Verification handoff**: Product/Test remained unchanged during governance. Carry forward the existing focused Pester 5.6.1 `23/23` evidence, run the one Repository Full Gate after these documentation edits, then stop Product changes after a passing Gate. No independent Reviewer is called in this Build; acceptance is delegated to a new Session.
+
+### Phase 4D Repository Full Gate Stop — 2026-08-14
+
+- **Result**: The one authorized Repository Full Gate returned `GATE FAILED`; no delivery action followed.
+- **Counts**: Python required check `76 passed / 12 failed`; pinned Pester 5.6.1 `323 total / 317 passed / 6 failed / 0 skipped`; sync, Catalog, lifecycle, Change Package, Agent structure, and diff-check passed, and the Gate preserved worktree status.
+- **Classification**: Python failures are Phase 0B Bash tests using `/bin/bash` against a Windows `<repo-root>/scripts/bootstrap.sh` path (environment/path). Pester failures are six deterministic contract mismatches: missing-manifest diagnostic wording, schema-v2 writer regression expectation, and four Phase 4A valid-v3 route expectations for the retired `manifest-v3-writer-disabled` behavior.
+- **Stop**: No Product/Test correction, commit, push, PR, independent Reviewer, CI, merge, auto-merge, admin bypass, branch deletion, or later phase was started. Phase 4D is blocked as a Build candidate; Phase 4 overall remains Incomplete.
+
+### Phase 4D Bounded Failure Triage and Correction — 2026-08-16
+
+- **Attribution**: Python Phase 0B failures are BASELINE-ENVIRONMENT; exact clean-main and current targeted runs pass `13/13`. The six Pester failures are EXPECTATION-CHANGED under the approved Phase 4D A–G contract. The clean-main route line-wrap issue remains baseline-only and was not corrected.
+- **Correction scope**: Only `scripts/bootstrap.Tests.ps1` changed. It updates the retired missing-manifest wording and schema-v2 expectation, and rewrites the four stale valid-v3 route assertions to prove Phase 4D explicit-update/no-update behavior, backup, valid-v3 publication, and preservation. No Product code or new capability changed.
+- **Pre-Gate evidence**: Corrected cases `6 passed / 0 failed / 0 skipped / 0 inconclusive`; Phase 4D focused `23 passed / 0 failed / 0 skipped`; Python Phase 0B `13 passed`. The one Repository Full Gate is pending with Git Bash explicitly selected for the known environment boundary.
+
+### Phase 4D Repository Full Gate Result — 2026-08-16
+
+- **Gate**: `GATE PASSED WITH NOTES`; Python `188 passed`; pinned Pester 5.6.1 `323 passed / 0 failed / 0 skipped`; all other required gate components passed and worktree status was invariant.
+- **Note and boundary**: The only note is the pre-existing Agent line-count warning. Product/Test are frozen after this Gate. Phase 4D remains In progress / Build candidate, not Complete; no commit, push, PR, CI, merge, or independent Reviewer was invoked.

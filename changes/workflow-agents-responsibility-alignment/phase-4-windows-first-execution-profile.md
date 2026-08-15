@@ -159,7 +159,29 @@ The public entry point is `scripts/manifest-migration-rehearsal.ps1`. The Python
 
 ### Phase 4D
 
-PowerShell becomes the Windows Production v3 Writer for new installs and explicit Preview-bound Migration. General v1/v2 Update does not migrate. Existing valid-v3 Update preserves Untouched/Customized/Legacy rules and creates a backup bundle. Python valid-v3 mutation remains safely blocked unless separately implemented later. Exact Product allowlist is derived from the merged Phase 4C `main` before delegating Phase 4D.
+PowerShell is the Windows-first Production v3 Writer for new installs and explicit Preview-bound Migration. The actual CLI is `pwsh -File scripts/bootstrap.ps1 -TargetPath <target> -MigrationPreview` followed, only after reviewing the deterministic no-write result, by `pwsh -File scripts/bootstrap.ps1 -TargetPath <target> -ApplyMigration -ExpectedPreviewId <preview-id>`. General v1/v2 `-Update` does not migrate. Existing valid-v3 Update preserves Untouched/Customized/Legacy/Unknown/Project-owned rules and creates a backup bundle; `-Force` and `-AlwaysOverwrite` cannot bypass v3 ownership. Corrupt/Unsupported/unsafe input hard-stops before writes, Manifest publication is last, and failure retains backup/diagnostic without false success. Python valid-v3 mutation remains safely blocked; Python/Linux v3 writer work is Deferred.
+
+#### Phase 4D Build Candidate Status — 2026-08-14
+
+- **Status**: In progress / Build candidate. This is not Phase 4D Complete and not Awaiting Acceptance until the non-Draft PR is actually created. Phase 4 overall remains Incomplete.
+- **Frozen scope**: State Matrix A–G only. No new CLI operation, prune/delete/tombstone, automatic restore, Lock/Journal/Recovery Engine, hostile-concurrency capability, Python/Linux writer, or real-adopter operation.
+- **Preservation/failure boundary**: New Install emits v3; v1/v2 general Update remains report/stop; deterministic Preview is no-write and Apply binds to a recomputed Preview ID; valid-v3 Untouched alone may update; Customized/Legacy/Unknown/Project-owned/stale content is preserved/reported; corrupt/unsupported/unsafe input stops before writes; Manifest is last; backup/diagnostic remains after failure.
+- **Evidence and handoff**: Existing focused evidence is Pester 5.6.1 `23 passed / 0 failed / 0 skipped`; Product/Test are unchanged in this governance pass. One Repository Full Gate follows. No real migration, restore, cleanup, deployment, or real-adopter operation was executed. Independent Acceptance belongs to a new Session.
+
+#### Phase 4D Gate disposition — 2026-08-14
+
+- The single Repository Full Gate failed with Python `76 passed / 12 failed` and pinned Pester `323 total / 317 passed / 6 failed / 0 skipped`; sync, Catalog, lifecycle, Change Package, Agent structure, and diff-check passed.
+- The candidate is **Blocked** pending a future authorized correction session. No commit, push, PR, CI, independent acceptance, merge, auto-merge, admin bypass, branch deletion, or real-adopter operation occurred.
+
+#### Phase 4D Triage Correction — 2026-08-16
+
+- The prior Pester failures were attributed: Python Phase 0B is baseline environment-only; six Pester assertions were stale against the approved Phase 4D A–G contract. Only `scripts/bootstrap.Tests.ps1` was corrected.
+- Minimal evidence is green: Python Phase 0B `13/13`, corrected Pester cases `6/6`, and Phase 4D focused `23/23`, all with zero skips. The final Repository Full Gate is pending and remains the only next verification action.
+
+#### Phase 4D Final Gate — 2026-08-16
+
+- The one Repository Full Gate returned `GATE PASSED WITH NOTES`: Python `188 passed`; Pester `323 passed / 0 failed / 0 skipped`; required sync, Catalog, lifecycle, Change Package, Agent structure, JSON/Schema/parser/compile, and diff-check passed with worktree invariant.
+- Only pre-existing Agent line-count warnings remain. Product/Test are frozen after the Gate; Phase 4D remains In progress / Build candidate and is not Complete or delivered.
 
 ### Phase 4E
 
@@ -173,4 +195,4 @@ The report-only stale/retirement evidence becomes a human-readable manual Cleanu
 - Each Phase receives one main Luna implementation plus at most three bounded Product corrections.
 - Each Phase uses its own branch, local commit, normal feature-branch push, non-Draft PR, CI proof, expected-head guarded squash merge, ff-only `main` synchronization, and retained local/remote feature branch.
 
-Phase 4C remains incomplete until the focused/full verification, invariant Full Gate, independent review, PR CI, guarded merge, and `main` synchronization succeed. Production writers continue to emit v2 until Phase 4D is separately delivered. No real-adopter operation is authorized.
+Phase 4C is Complete / merged, with PR #14 as the authoritative merge evidence. Phase 4D is the active In progress / Build candidate and remains not Complete until its own non-Draft PR and later independent acceptance. Production writers continue to emit v2 outside the Phase 4D Windows-first scope. No real-adopter operation is authorized.

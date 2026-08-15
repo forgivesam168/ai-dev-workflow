@@ -74,6 +74,20 @@ rm bootstrap.py
 .\scripts\bootstrap.ps1 -Backup
 ```
 
+### Phase 4D Windows-first Manifest v3 writer
+
+The Windows PowerShell writer emits a production Manifest v3 for a New Install. Existing v1/v2 projects do not auto-migrate during general `-Update`; use the explicit, preview-bound flow:
+
+```powershell
+# Deterministic, no-write preview
+$preview = .\scripts\bootstrap.ps1 -TargetPath "<target-project>" -MigrationPreview | ConvertFrom-Json
+
+# Apply only the exact preview that was reviewed
+.\scripts\bootstrap.ps1 -TargetPath "<target-project>" -ApplyMigration -ExpectedPreviewId $preview.preview_id
+```
+
+Existing valid-v3 updates use trusted ownership evidence. Untouched content may update; Customized, Legacy, Unknown, Project-owned, and stale content is preserved or reported. Corrupt, unsupported, or unsafe Manifest input stops before writes. The Manifest is published last, and failures retain backup/diagnostic evidence without false success. `-Force` and `-AlwaysOverwrite` do not bypass v3 ownership. Python/Linux v3 writing, automatic prune/delete/tombstone, automatic restore, hostile-concurrency handling, and real-adopter migration/restore/cleanup are deferred or not executed in this Build candidate.
+
 **Linux/macOS (Python):**
 ```bash
 # Standard installation

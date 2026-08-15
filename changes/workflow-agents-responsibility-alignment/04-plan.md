@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Program stopped in Phase 4C after correction budget exhaustion; Phase 4A and Phase 4B merged; Phase 4C Windows-first incomplete/blocked; Phase 4 overall incomplete; Phase 4D, 4E, 5, 6, and Final Closeout not started in this run
+- **Status**: Phase 4C authoritative status = Complete / merged (PR #14); Phase 4D = In progress / Build candidate; Phase 4 overall = Incomplete; Phase 4E, 5, 6, and Final Closeout not started
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: None — Phase 4C delivery blocked by an Applicable false-success classification finding after correction 3/3
+- **Current active phase**: Phase 4D Build candidate — bounded test-contract correction and Repository Full Gate complete; no commit, push, PR, or CI is authorized in this session
 
 ## Phase Status Summary
 
@@ -1631,7 +1631,30 @@ No phase may start until the user explicitly names and approves that phase. Appr
 - **Exact CI correction 1/1**: Only `scripts/manifest-migration-rehearsal.Tests.ps1` changed. The leaf-Junction case now uses `$IsWindows` and records an explicit skip outside Windows; Windows still executes every junction, sentinel, inventory, and hard-stop assertion. No Product code, Schema, Catalog, writer, Python path, or Phase 4D behavior changed.
 - **Post-correction verification**: Windows focused Path-Type Pester passed `6 / 6`, with zero failure or skip. The one post-correction Full Gate returned `GATE PASSED WITH NOTES`, Python `188 / 188`, pinned Pester 5.6.1 `300 / 300`, and zero negative counts. Branch, HEAD, status, the one modified test file length, and SHA-256 were invariant before and after the Gate.
 - **Post-correction independent review**: The same sole independent read-only Reviewer accepted the exact four-line test correction with `0` Blocking, `0` Critical/High, and `0` non-blocking findings. It confirmed Windows execution remains intact, non-Windows behavior does not claim Linux parity, and the frozen Windows-first Acceptance Boundary is unchanged.
-- **Delivery status**: A follow-up local commit and normal push are required, after which PR #14 must rerun required CI on the new reviewed head. Phase 4C remains pending until required CI, final PR metadata/thread proof, expected-head guarded squash merge, and clean synchronized `main` complete. Phase 4D remains not started.
+- **Delivery status**: PR #14 completed its required CI and merge path and is authoritative merged evidence. Phase 4C = Complete / merged. The prior correction-pending wording is superseded and is not the current PR #14 status. Phase 4D is now the active separately approved Build candidate; Phase 4 overall remains Incomplete.
+
+### Phase 4D Windows-First Build Candidate — 2026-08-14
+
+- **Scope freeze**: The A–G State Matrix is the fixed Acceptance Boundary for this Build. No new CLI operation, migration feature, prune/delete/tombstone, automatic restore, Lock/Journal/Recovery Engine, Python/Linux v3 writer, hostile-concurrency capability, or real-adopter operation is included.
+- **Product boundary**: `scripts/bootstrap.ps1` is the Windows-first Production v3 Writer for New Install and explicit `-MigrationPreview` / `-ApplyMigration -ExpectedPreviewId`. General v1/v2 `-Update` never auto-migrates. Existing valid-v3 Update uses trusted ownership evidence: Untouched may update; Customized, Legacy, Unknown, Project-owned, and stale content are preserved or reported. Corrupt, Unsupported, unsafe, or unprovable Manifest input hard-stops before writes. Preview is deterministic and no-write; Apply recomputes and requires an exact Preview ID. Manifest publication is last and failures retain backup/diagnostic without false success. `Force` and `AlwaysOverwrite` cannot bypass v3 ownership.
+- **Bounded self-review**: A–G confirms New Install and existing missing-Manifest routing; v1/v2 Update refusal; Preview determinism/no-write; Preview-ID binding; valid-v3 ownership preservation; corrupt/unsupported hard-stop; final Manifest publication; honest failure/backup/diagnostic behavior; and no prune/delete/tombstone. Schema, Catalog, Phase 4C, and Python writer boundaries are unchanged. Non-core style/refactor/extra-edge ideas are deferred to backlog.
+- **Focused evidence**: Existing final evidence is Pester 5.6.1 `23 passed / 0 failed / 0 skipped`; Product/Test were not changed during this Build's governance pass, so the evidence is carried forward. A local duplicate attempt was environment-blocked by sandbox registry access and is not counted as new evidence.
+- **Verification boundary**: One Repository Full Gate follows governance updates. No Product/Test change is planned after a passing Gate. Schema SHA-256 must remain `e8109224c5dd96a558b18f6362a70775563fa3902825ae7b45602e8c1d994142`; Catalog SHA-256 must remain `a8a4b126699f88dca86cf3498be5febfd50272509f9cf521abda749cb264f5d8`.
+- **Delivery state**: Before PR creation, Phase 4D = In progress / Build candidate; after a successfully created non-Draft PR it becomes Awaiting Independent Acceptance. It must never be reported as Phase 4D Complete. Phase 4 overall remains Incomplete. Real migration, restore, cleanup, deployment, and production/adopter operations were not executed.
+
+### Phase 4D Full Gate Triage — 2026-08-16
+
+- **Prior Gate failure**: The previous Full Gate reported Python `76 passed / 12 failed` and Pester `317 passed / 6 failed / 0 skipped`; sync, Catalog, lifecycle, Change Package, Agent structure, and diff-check passed.
+- **Attribution**: Python failures are BASELINE-ENVIRONMENT (`/bin/bash` selected a Windows-incompatible path); exact clean-main and current targeted Phase 0B runs both pass `13/13`. Pester missing-manifest wording, schema-v2 writer, and four valid-v3 route assertions were EXPECTATION-CHANGED by the approved Phase 4D A–G contract. Clean-main route cases retained a separate baseline line-wrap failure; no Product change was justified for it.
+- **Correction**: Only `scripts/bootstrap.Tests.ps1` changed: the missing-manifest diagnostic now asserts `legacy/missing-manifest`; the writer test asserts Catalog-bound schema v3; valid-v3 route tests retain no-update hard-stop and now assert explicit update success, backup, valid-v3 publication, and preservation of sentinel/custom content. No vector, Product, Schema, Catalog, Python, Phase 4C, or new capability changed.
+- **Pre-Gate verification**: Python Phase 0B `13 passed`; corrected Pester cases `6 passed / 0 failed / 0 skipped / 0 inconclusive`; Phase 4D focused `23 passed / 0 failed / 0 skipped`.
+- **Delivery state**: Phase 4D remains In progress / Build candidate after the passing Gate; Phase 4 overall remains Incomplete. No commit, push, PR, independent Reviewer, CI, merge, auto-merge, admin bypass, branch deletion, Phase 4E, or real-adopter operation is authorized.
+
+### Phase 4D Repository Full Gate — passed with notes 2026-08-16
+
+- **Result**: The one authorized Repository Full Gate returned `GATE PASSED WITH NOTES` using pinned Pester 5.6.1 and explicit `PHASE0B_BASH=<git-bash>/bash.exe`.
+- **Counts**: Python `188 passed`; Pester `323 passed / 0 failed / 0 skipped / 0 inconclusive / 0 not run`; sync, Catalog, lifecycle, Change Package, Agent structure, JSON/Schema/parser/compile, and diff-check passed. Worktree status was unchanged.
+- **Note**: Only the pre-existing Agent line-count warnings were reported. No Product/Test change is permitted after this Gate. Phase 4D is not Complete and no delivery action follows in this session.
 
 ## Phase 4B — Deterministic No-Write Conversion & Stale Planner
 

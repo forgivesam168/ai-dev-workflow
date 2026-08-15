@@ -243,6 +243,29 @@ Required future communication includes:
 - Python/PowerShell parity across the reviewed fixture matrix.
 - No lifecycle or quality downgrade on a surface lacking Custom Agents.
 
+## Phase 4D Build Candidate Impact — 2026-08-14
+
+- **Windows-first writer**: PowerShell is enabled for v3 New Install and explicit Preview-bound Migration; Python remains Reader/report-only and is not enabled as a v3 writer.
+- **Update safety**: General v1/v2 Update remains non-migrating. Valid-v3 Update uses exact baseline equality and preserves Customized, Legacy, Unknown, Project-owned, and stale records. Corrupt/Unsupported/unsafe input stops before writes.
+- **CLI and evidence**: `-MigrationPreview` is deterministic and no-write; `-ApplyMigration -ExpectedPreviewId <preview-id>` recomputes and applies only a matching preview. Manifest publication is last; backup/diagnostic evidence remains on failure.
+- **Deferred capabilities**: Python/Linux writer, automatic prune/delete/tombstone, automatic restore, Lock/Journal/Recovery Engine, hostile concurrency, and real-adopter migration/restore/cleanup remain deferred or not executed.
+- **Compatibility and rollback**: Schema/Catalog are unchanged; no Phase 4C rehearsal or Python production writer is modified. Rollback is the single scoped commit/PR revert before any merge; no migration or cleanup rollback operation was executed.
+
+### Full Gate blocker — 2026-08-14
+
+- The Repository Full Gate is deterministic-blocked by 12 Phase 0B Bash environment/path failures and six Pester contract mismatches. This prevents commit, push, PR, CI, and independent acceptance for the candidate.
+- No runtime, Schema, Catalog, Phase 4C, Python writer, migration, restore, cleanup, or adopter state was changed by the failed Gate. Future correction requires a separately authorized bounded session with refreshed focused/full evidence.
+
+### Full Gate triage disposition — 2026-08-16
+
+- The blocker is narrowed to a known Phase 0B runtime selection environment issue plus stale Phase 4A assertions for the approved Phase 4D contract. Only the stale assertions were updated; no Product, Schema, Catalog, Python writer, migration, restore, or cleanup behavior changed.
+- Minimal corrected evidence is green; the one final Repository Full Gate remains the only pending verification gate for this Build candidate.
+
+### Final Gate disposition — 2026-08-16
+
+- The Repository Full Gate passed with notes (`188` Python, `323` Pester, zero failures/skips). The previous blocker is resolved by attribution and bounded test-contract correction; no Product, Schema, Catalog, Python writer, migration, restore, cleanup, or adopter state changed after the Gate.
+- Remaining boundary: Phase 4D is still an uncommitted Build candidate. No commit, push, PR, CI, merge, or independent acceptance occurred.
+
 ## Remaining Uncertainty
 
 - Complete manifest schema and migration encoding.
