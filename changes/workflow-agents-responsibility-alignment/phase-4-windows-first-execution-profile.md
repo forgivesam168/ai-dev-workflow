@@ -161,9 +161,9 @@ The public entry point is `scripts/manifest-migration-rehearsal.ps1`. The Python
 
 PowerShell is the Windows-first Production v3 Writer for new installs and explicit Preview-bound Migration. The actual CLI is `pwsh -File scripts/bootstrap.ps1 -TargetPath <target> -MigrationPreview` followed, only after reviewing the deterministic no-write result, by `pwsh -File scripts/bootstrap.ps1 -TargetPath <target> -ApplyMigration -ExpectedPreviewId <preview-id>`. General v1/v2 `-Update` does not migrate. Existing valid-v3 Update preserves Untouched/Customized/Legacy/Unknown/Project-owned rules and creates a backup bundle; `-Force` and `-AlwaysOverwrite` cannot bypass v3 ownership. Corrupt/Unsupported/unsafe input hard-stops before writes, Manifest publication is last, and failure retains backup/diagnostic without false success. Python valid-v3 mutation remains safely blocked; Python/Linux v3 writer work is Deferred.
 
-#### Phase 4D Build Candidate Status — 2026-08-14
+#### Phase 4D Build Candidate Evidence (historical checkpoint) — 2026-08-14
 
-- **Status**: In progress / Build candidate. This is not Phase 4D Complete and not Awaiting Acceptance until the non-Draft PR is actually created. Phase 4 overall remains Incomplete.
+- **Historical status at this checkpoint**: In progress / Build candidate. This checkpoint is superseded by Phase 4D Complete / merged (PR #15); Phase 4 overall remains Incomplete.
 - **Frozen scope**: State Matrix A–G only. No new CLI operation, prune/delete/tombstone, automatic restore, Lock/Journal/Recovery Engine, hostile-concurrency capability, Python/Linux writer, or real-adopter operation.
 - **Preservation/failure boundary**: New Install emits v3; v1/v2 general Update remains report/stop; deterministic Preview is no-write and Apply binds to a recomputed Preview ID; valid-v3 Untouched alone may update; Customized/Legacy/Unknown/Project-owned/stale content is preserved/reported; corrupt/unsupported/unsafe input stops before writes; Manifest is last; backup/diagnostic remains after failure.
 - **Evidence and handoff**: Existing focused evidence is Pester 5.6.1 `23 passed / 0 failed / 0 skipped`; Product/Test are unchanged in this governance pass. One Repository Full Gate follows. No real migration, restore, cleanup, deployment, or real-adopter operation was executed. Independent Acceptance belongs to a new Session.
@@ -181,7 +181,7 @@ PowerShell is the Windows-first Production v3 Writer for new installs and explic
 #### Phase 4D Final Gate — 2026-08-16
 
 - The one Repository Full Gate returned `GATE PASSED WITH NOTES`: Python `188 passed`; Pester `323 passed / 0 failed / 0 skipped`; required sync, Catalog, lifecycle, Change Package, Agent structure, JSON/Schema/parser/compile, and diff-check passed with worktree invariant.
-- Only pre-existing Agent line-count warnings remain. Product/Test are frozen after the Gate; Phase 4D remains In progress / Build candidate and is not Complete or delivered.
+- Only pre-existing Agent line-count warnings remain. Product/Test are frozen after the Gate; Phase 4D is Complete / merged (PR #15).
 
 ### Phase 4E
 
@@ -189,19 +189,20 @@ The report-only stale/retirement evidence becomes a human-readable manual Cleanu
 
 #### Phase 4E Build Candidate — 2026-08-16
 
-- **Status**: In progress / Build candidate. This is not Phase 4E Complete and not Awaiting Acceptance until the non-Draft PR is actually created. Phase 4 overall remains Incomplete.
+- **Status**: Awaiting / under Independent Acceptance (PR #17). Phase 4E is not Complete or merged; Phase 4 overall remains Incomplete.
 - **Frozen scope**: Stale derived output manual cleanup recommendation only. No new CLI operation, prune/delete/tombstone, automatic restore, Lock/Journal/Recovery Engine, hostile-concurrency capability, Python/Linux writer, or real-adopter operation.
 - **Stale-report contract**: The existing Phase 4B `reconcile` operation (`-ReportOnly -Operation reconcile`) is the sole report engine. Phase 4E enriches `eligibility.reason` in `mapped_component_decisions` with a specific cleanup recommendation string per the five conservative rules, using the existing free-form schema field. No Schema, Catalog, or CLI change was made.
 - **Recommendation matrix**:
-  1. stale + current bytes equal trusted baseline → `manual-cleanup-candidate; no-delete; report-only-no-delete-authority` (report only, no deletion)
-  2. stale + current bytes modified → `manual-review; preserve; report-only-no-delete-authority` (preserve, manual review)
-  3. Legacy / Unknown / Project-owned → `preserve; no-automatic-cleanup; report-only-no-delete-authority` (preserve, no automatic cleanup)
-  4. insufficient provenance / Catalog evidence → `insufficient-evidence; no-guess; report-only-no-delete-authority` (blocked, no guess)
-  5. Missing target → `already-absent; no-cleanup-required; report-only-no-delete-authority` (no cleanup required, no tombstone)
+  1. valid-v3 + Manifest record + regular target + exact baseline equality + typed Catalog retirement + generated/derived-runtime scope + trusted provenance → `manual-cleanup-candidate; no-delete; report-only-no-delete-authority` (report only, no deletion)
+  2. active component or source missing without typed retirement evidence → `insufficient-evidence; no-guess; report-only-no-delete-authority` (preserve, no inferred retirement)
+  3. stale + current bytes modified → `manual-review; preserve; report-only-no-delete-authority` (preserve, manual review)
+  4. Legacy / Unknown / Project-owned → `preserve; no-automatic-cleanup; report-only-no-delete-authority` (preserve, no automatic cleanup)
+  5. insufficient provenance / Catalog evidence → `insufficient-evidence; no-guess; report-only-no-delete-authority` (blocked, no guess)
+  6. Missing target → `already-absent; no-cleanup-required; report-only-no-delete-authority` (no cleanup required, no tombstone)
 - **No automatic prune/delete/tombstone**: `eligibility.eligible` is always `false`, `eligibility.not_authority` is always `true`, `required_future_authorization.delete_action` is always `false`, `no_write_confirmation.writes_performed` is always `false`. The recommendation is evidence, not execution authority.
 - **Exact Product/Test allowlist**: `scripts/manifest_reconciliation.py`, `scripts/bootstrap.Tests.ps1`. Schema, Catalog, CLI operations, and bootstrap.ps1 are immutable in Phase 4E.
 - **Real cleanup / migration / restore**: No. Phase 4E is report-only.
-- **Evidence**: Phase 4E focused Pester `10/10 passed`; Phase 4B/4D/4A regression `104/104 passed`; Python reconciliation tests `176 passed` (11 pre-existing bash installer failures unrelated to Phase 4E).
+- **Evidence**: Local focused Pester 5.6.1 `13 passed / 0 failed / 0 skipped`. Authoritative PR #17 CI currently reports Verify Change Package, Windows baseline, and Ubuntu baseline all `success`; no Python baseline failure count is inferred from non-authoritative or mismatched local evidence.
 
 ## Roles, Review, and Delivery
 
@@ -211,4 +212,4 @@ The report-only stale/retirement evidence becomes a human-readable manual Cleanu
 - Each Phase receives one main Luna implementation plus at most three bounded Product corrections.
 - Each Phase uses its own branch, local commit, normal feature-branch push, non-Draft PR, CI proof, expected-head guarded squash merge, ff-only `main` synchronization, and retained local/remote feature branch.
 
-Phase 4C is Complete / merged, with PR #14 as the authoritative merge evidence. Phase 4D is the active In progress / Build candidate and remains not Complete until its own non-Draft PR and later independent acceptance. Production writers continue to emit v2 outside the Phase 4D Windows-first scope. No real-adopter operation is authorized.
+Phase 4C is Complete / merged, with PR #14 as the authoritative merge evidence. Phase 4D is Complete / merged (PR #15). Phase 4E is Awaiting / under Independent Acceptance (PR #17). Production writers continue to emit v2 outside the Phase 4D Windows-first scope. No real-adopter operation is authorized.
