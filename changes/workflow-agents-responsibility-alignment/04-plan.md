@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Phase 4C authoritative status = Complete / merged (PR #14); Phase 4D = In progress / Build candidate; Phase 4 overall = Incomplete; Phase 4E, 5, 6, and Final Closeout not started
+- **Status**: Phase 4C = Complete / merged (PR #14); Phase 4D = Complete / merged (PR #15); Phase 4 overall = Incomplete; Phase 4E = Not started (next eligible phase); Phase 5, 6, and Final Closeout not started
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 4D Build candidate — bounded test-contract correction and Repository Full Gate complete; no commit, push, PR, or CI is authorized in this session
+- **Current active phase**: Phase 4D is complete and merged. Phase 4E is the next eligible phase and has not been started.
 
 ## Phase Status Summary
 
@@ -19,7 +19,7 @@
 | 1 — AGENTS / WORKFLOW / risk contract | Merged | Required | Required |
 | 2 — Agent / Skill / Prompt / Instruction alignment | Merged | Required | Required |
 | 3 — Change Package / Review / Archive semantics | Merged | Required | Required |
-| 4 — Manifest / provenance / stale-derived migration | In progress / partially implemented: Phase 4A reader and Phase 4B report-only planner merged; Phase 4C Windows-first rescope active; Phase 4D and 4E authorized only after sequential gates | Satisfied by A-14 Program; sequential gate required | Required |
+| 4 — Manifest / provenance / stale-derived migration | Partially implemented: Phase 4A reader and Phase 4B report-only planner merged; Phase 4C Windows-first rescope complete/merged (PR #14); Phase 4D Windows-first Manifest v3 writer complete/merged (PR #15); Phase 4E not started | Satisfied by A-14 Program; sequential gate required | Required |
 | 5 — Windows-first Cross-CLI evidence and adapter proposal | Authorized, pending Phase 4E merge; Adapter implementation excluded | Satisfied by A-14 Program; sequential gate required | Evidence PR only |
 | 6 — Bash deprecation completion | Authorized, pending Phase 5 merge | Satisfied by A-14 Program; sequential gate required | Required |
 

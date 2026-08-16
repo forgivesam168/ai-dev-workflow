@@ -265,3 +265,20 @@ Unavailable checks must be reported with reason and exact follow-up command; the
 
 - `GATE PASSED WITH NOTES`: Python `188 passed`; Pester 5.6.1 `323 passed / 0 failed / 0 skipped / 0 inconclusive`; sync, Catalog, lifecycle, Change Package, Agent structure, JSON/Schema/parser/compile, and diff-check passed; worktree invariant passed.
 - The only note is the existing Agent line-count warning. Product/Test are frozen; no delivery action is authorized in this session.
+### Phase 4D Final Acceptance and Remote CI Evidence — 2026-08-16
+
+- **Superseding status**: This entry supersedes the prior "no delivery action is authorized in this session" state. Phase 4D = Complete / merged (PR #15).
+- **Independent Acceptance Session**: A new Acceptance Session verified the PR #15 Phase 4D Product, corrected known Ubuntu Pester portability issues, completed bounded Acceptance Review, and performed guarded squash merge.
+- **Test-only correction**: Commit 9f58a458576d5a683ed18574d84d3a8bf9465522 modified only scripts/bootstrap.Tests.ps1 — 6 lines adding -Force to Get-Item/Get-ChildItem calls accessing dot-prefixed hidden paths on Unix PowerShell. Product scripts/bootstrap.ps1 was not modified. No tests were skipped, deleted, or weakened. All backup/diagnostic/Preview mtime determinism assertions preserved.
+- **Targeted verification (Windows local)**: 153/153 passed, 0 failed, 0 skipped (scripts/bootstrap.Tests.ps1).
+- **Remote CI on final head 9f58a458576d5a683ed18574d84d3a8bf9465522**:
+  - Verify Change Package: success
+  - Windows baseline: success — Python 188 passed, Pester 323 passed / 0 failed / 0 skipped
+  - Ubuntu baseline: success — Python 188 passed, Pester 321 passed / 0 failed / 0 skipped
+  - The 5 originally-failing Ubuntu Pester tests now pass (not skipped, not excluded from discovery).
+- **Acceptance Review**: PASS — no blocking findings. All 10 checklist items verified.
+- **GitHub reviews**: none submitted. GitHub review threads: none.
+- **Squash merge**: Method = squash merge with expected-head guard. Squash merge SHA = 5cd848b86c5e084d6d30096daa3f1c04c661b26b.
+- **Post-merge**: Local main = origin/main = 5cd848b86c5e084d6d30096daa3f1c04c661b26b. Worktree clean. Feature branch retained.
+- **Product hash unchanged by correction**: The correction commit modified only scripts/bootstrap.Tests.ps1. Product scripts/bootstrap.ps1 bytes are identical to the original PR head 5c4f65e7d3f6f48427925b07c19df3110f3071ca.
+- **No real migration / restore / cleanup executed**.

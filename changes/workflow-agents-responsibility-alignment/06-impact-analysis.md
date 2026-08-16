@@ -274,3 +274,13 @@ Required future communication includes:
 - Final High-Risk rubric thresholds.
 - Current official Codex and Antigravity capabilities.
 - Bash wrapper removal timing.
+### Phase 4D Final Delivery Disposition — 2026-08-16
+
+- **Superseding status**: This entry supersedes the prior "uncommitted Build candidate" disposition. Phase 4D = Complete / merged (PR #15). The previous Full Gate blocker and triage entries are historical and remain readable; they are not the current delivery state.
+- **Delivery**: PR #15 was squash-merged to main with expected-head guard. Squash merge SHA = 5cd848b86c5e084d6d30096daa3f1c04c661b26b. Original PR head = 5c4f65e7d3f6f48427925b07c19df3110f3071ca; test-only correction head = 9f58a458576d5a683ed18574d84d3a8bf9465522.
+- **Correction**: The correction modified only scripts/bootstrap.Tests.ps1 (6 lines adding -Force for Unix hidden path visibility). Product scripts/bootstrap.ps1 was not modified by the correction. No tests were skipped, deleted, or weakened.
+- **Remote CI**: Windows 323/0/0, Ubuntu 321/0/0, Python 188 on both. Verify Change Package success. Independent Acceptance Review PASS with no blocking findings. No GitHub reviews or review threads.
+- **Deferred capabilities (retained)**: Python/Linux v3 writer, automatic prune/delete/tombstone, automatic restore, Lock/Journal/Recovery Engine, hostile concurrency, and real-adopter migration/restore/cleanup. These were not implemented or executed.
+- **No fabricated real-adopter evidence**: No real migration, restore, cleanup, deployment, production operation, or real-adopter execution occurred.
+- **Compatibility and rollback**: Schema/Catalog unchanged. No Phase 4C rehearsal or Python production writer modified. Rollback is the scoped commit/PR revert; no migration or cleanup rollback was executed.
+- **Phase status**: Phase 4D = Complete. Phase 4 overall = Incomplete. Phase 4E = Not started (next eligible phase).
