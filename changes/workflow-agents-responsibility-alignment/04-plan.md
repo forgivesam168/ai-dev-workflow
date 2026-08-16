@@ -2,11 +2,11 @@
 
 ## Plan Status
 
-- **Status**: Phase 4C = Complete / merged (PR #14); Phase 4D = Complete / merged (PR #15); Phase 4 overall = Incomplete; Phase 4E = In progress / PR #17 under Independent Acceptance; Phase 5, 6, and Final Closeout not started
+- **Status**: Phase 4C = Complete / merged (PR #14); Phase 4D = Complete / merged (PR #15); Phase 4E = Complete / merged (PR #17); Phase 4 overall = Complete; Phase 5 = Not started / next eligible phase; Phase 6 and Final Closeout not started
 - **Task/status SSOT**: This file
 - **External tracker**: None
 - **Execution rule**: One phase requires separate user approval, implementation, verification, review, and PR boundary before the next phase begins.
-- **Current active phase**: Phase 4E is In progress / PR #17 under Independent Acceptance. Phase 4D is complete and merged.
+- **Current active phase**: Phase 4E is Complete / merged (PR #17). Phase 5 is Not started / next eligible phase; no Phase 5 execution has begun.
 
 ## Phase Status Summary
 
@@ -19,8 +19,8 @@
 | 1 — AGENTS / WORKFLOW / risk contract | Merged | Required | Required |
 | 2 — Agent / Skill / Prompt / Instruction alignment | Merged | Required | Required |
 | 3 — Change Package / Review / Archive semantics | Merged | Required | Required |
-| 4 — Manifest / provenance / stale-derived migration | Partially implemented: Phase 4A reader and Phase 4B report-only planner merged; Phase 4C Windows-first rescope complete/merged (PR #14); Phase 4D Windows-first Manifest v3 writer complete/merged (PR #15); Phase 4E in progress / PR #17 under Independent Acceptance | Satisfied by A-14 Program; sequential gate required | Required |
-| 5 — Windows-first Cross-CLI evidence and adapter proposal | Authorized, pending Phase 4E merge; Adapter implementation excluded | Satisfied by A-14 Program; sequential gate required | Evidence PR only |
+| 4 — Manifest / provenance / stale-derived migration | Complete: Phase 4A reader, Phase 4B report-only planner, Phase 4C Windows-first rescope (PR #14), Phase 4D Windows-first Manifest v3 writer (PR #15), and Phase 4E stale-derived report (PR #17) are merged | Satisfied by A-14 Program; sequential gate completed | Required |
+| 5 — Windows-first Cross-CLI evidence and adapter proposal | Not started / next eligible phase; Adapter implementation remains excluded | Satisfied by A-14 Program; sequential gate required | Evidence PR only |
 | 6 — Bash deprecation completion | Authorized, pending Phase 5 merge | Satisfied by A-14 Program; sequential gate required | Required |
 
 ## Global Sequencing Rules
@@ -1674,3 +1674,12 @@ No phase may start until the user explicitly names and approves that phase. Appr
 - **Luna correction evidence**: Required RED was `3 failed, 185 deselected`, isolating raw `mtime_ns` contamination and same-run timestamp proof weakness. GREEN was focused Python contract `7 passed`, Phase 4B Python `18 passed`, and pinned Pester parity `2 passed`; direct Sol audit confirmed stable canonical ordering, self-reference exclusion, raw timestamp exclusion from hashed body, and retained no-write detection.
 - **Final verification evidence**: Full Python regression `188 passed`; full pinned Pester regression `130 passed`; sync, catalog, lifecycle, Change Package, Agent structure, JSON/schema/canonicalization, and `git diff --check` passed. The one valid Full Gate returned `GATE PASSED WITH NOTES`, with Python `188 passed`, Pester `262 passed`, and true branch/HEAD/status/path/bytes/SHA-256 invariance. Independent review returned `0 Critical / 0 High / 0 Medium / 0 Low` and `Resolved` for the original High finding.
 - **Known environment note**: The default visible Pester module is `3.4.0`; the repo-pinned cached `Pester 5.6.1` was used without installing dependencies. An initial gate preflight stopped before required checks because its module discovery path was incorrect; a read-only path probe corrected the process environment, and the single valid Full Gate then passed. No dependency was installed or manifest changed.
+
+### Phase 4E / Phase 4 Post-Merge Governance Closure — 2026-08-16
+
+- **Superseding status**: This append-only entry supersedes the prior Phase 4E `In progress / PR #17 under Independent Acceptance` status. Phase 4E = Complete / merged (PR #17); Phase 4 overall = Complete. Phase 5 = Not started / next eligible phase, and no Phase 5 execution began.
+- **Final contract**: A `manual-cleanup-candidate` requires `valid-v3`, a Manifest record, a regular target, exact trusted-baseline equality, typed Catalog retirement evidence, generated/derived-runtime cleanup scope, and trusted ownership/provenance. Source absence alone is insufficient. Active canonical/generated components are not candidates. Modified retired derived output is `manual-review; preserve`; `eligibility.eligible` remains `false`; recommendations are not deletion authority.
+- **Final delivery**: Original head `f62559e9159d3d3abd23f9290fde70e46e784055`; correction/final head `b908e36d3135cc9b186fc978534120ba0cc972ec`; expected-head guarded squash merge `9d55ee112cc826f30c57de3a775041d462587fde`. The merged PR body remains the original Build-time summary and was not edited; final-head Acceptance evidence supersedes it for the final contract.
+- **Authoritative remote verification**: Verify Change Package = success. Windows = Python `188 passed`, Pester `336/336`, zero failed/skipped/not-run, `GATE PASSED WITH NOTES`, worktree invariant. Ubuntu = Python `188 passed`, Pester `334/334`, zero failed/skipped/not-run, `GATE PASSED WITH NOTES`, worktree invariant. Phase 4E focused verification = `13 passed / 0 failed / 0 skipped`.
+- **Review evidence**: Acceptance Review is Acceptance Session evidence only; GitHub submitted reviews and review threads were none. Acceptance findings = `0 Blocking`.
+- **Operational boundary**: No delete/prune/tombstone/new CLI and no real cleanup/migration/restore/deployment/adopter operation occurred. Schema/Catalog remained unchanged. Local Full Gate remains documented as unavailable in the sandbox due test-harness recursive prerequisite behavior; no local PASS claim is made. No Phase 5 work began.

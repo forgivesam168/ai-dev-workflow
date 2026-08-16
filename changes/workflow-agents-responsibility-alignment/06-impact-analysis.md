@@ -3,8 +3,8 @@
 ## Status
 
 - **Risk**: High-Risk
-- **Implementation**: Not started
-- **Migration**: Not authorized
+- **Implementation**: Phase 4 Complete / merged (PRs #14, #15, and #17)
+- **Migration**: No real migration, restore, cleanup, deployment, or adopter operation executed
 - **Purpose**: Identify distribution, compatibility, policy-loss, and operational impact before each separately approved phase.
 
 ## Impact Surface
@@ -284,3 +284,12 @@ Required future communication includes:
 - **No fabricated real-adopter evidence**: No real migration, restore, cleanup, deployment, production operation, or real-adopter execution occurred.
 - **Compatibility and rollback**: Schema/Catalog unchanged. No Phase 4C rehearsal or Python production writer modified. Rollback is the scoped commit/PR revert; no migration or cleanup rollback was executed.
 - **Phase status**: Phase 4D = Complete. Phase 4 overall = Incomplete. Phase 4E = Not started (next eligible phase).
+
+### Phase 4E / Phase 4 Post-Merge Impact Disposition — 2026-08-16
+
+- **Superseding status**: The prior Phase 4D-era impact status is historical. Phase 4E is Complete / merged (PR #17), and Phase 4 overall is Complete. Phase 5 is Not started / next eligible phase; no Phase 5 execution began.
+- **Behavioral impact**: Phase 4E remains report-only. A cleanup recommendation is emitted only with `valid-v3`, Manifest record, regular target, exact trusted baseline, typed Catalog retirement, generated/derived-runtime scope, and trusted provenance. Source absence alone is insufficient; active canonical/generated output is preserved as insufficient evidence; modified retired output requires manual review and preserve.
+- **Compatibility and authority**: `eligibility` remains false and the recommendation is not deletion authority. No Schema, Catalog, CLI, Product, Test, Gate, or CI behavior changed during this governance closure.
+- **Authoritative evidence**: Final head `b908e36d3135cc9b186fc978534120ba0cc972ec`; squash merge `9d55ee112cc826f30c57de3a775041d462587fde`; Verify Change Package success; Windows Python `188`, Pester `336/336`, zero negative counts; Ubuntu Python `188`, Pester `334/334`, zero negative counts; both Gates `PASSED WITH NOTES` with worktree invariance.
+- **Review and PR evidence**: Acceptance Session evidence was accepted with `0 Blocking`; no GitHub submitted reviews or review threads exist. The merged PR body is unchanged Build-time evidence and is superseded for final contract interpretation by final-head Acceptance evidence.
+- **Operational impact and rollback**: No real cleanup, migration, restore, deployment, or adopter operation occurred; no delete/prune/tombstone/new CLI exists. If governance rollback is required, revert only the documentation closure commit when one is created; no runtime rollback operation is applicable.

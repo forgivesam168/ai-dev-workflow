@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the approved architecture test strategy. Tests are planned, not executed by this documentation stage.
+This is the approved architecture test strategy. Executed phase evidence is recorded in append-only closure entries below.
 
 ## Test Principles
 
@@ -282,3 +282,12 @@ Unavailable checks must be reported with reason and exact follow-up command; the
 - **Post-merge**: Local main = origin/main = 5cd848b86c5e084d6d30096daa3f1c04c661b26b. Worktree clean. Feature branch retained.
 - **Product hash unchanged by correction**: The correction commit modified only scripts/bootstrap.Tests.ps1. Product scripts/bootstrap.ps1 bytes are identical to the original PR head 5c4f65e7d3f6f48427925b07c19df3110f3071ca.
 - **No real migration / restore / cleanup executed**.
+
+### Phase 4E Final Acceptance and Post-Merge Governance Evidence — 2026-08-16
+
+- **Focused evidence**: Phase 4E focused tests passed `13 / 13`, with `0 failed` and `0 skipped`; the active/generated-without-retirement, typed-retired exact-baseline, and typed-retired-modified-output cases were discovered and executed.
+- **Authoritative final-head CI**: Verify Change Package = success. Windows baseline = success — Python `188 passed`; Pester `336 passed / 0 failed / 0 skipped / 0 not run / 0 failed containers`; Gate = `PASSED WITH NOTES`; worktree invariant passed. Ubuntu baseline = success — Python `188 passed`; Pester `334 passed / 0 failed / 0 skipped / 0 not run / 0 failed containers`; Gate = `PASSED WITH NOTES`; worktree invariant passed.
+- **Final delivery identity**: Original head `f62559e9159d3d3abd23f9290fde70e46e784055`; correction/final head `b908e36d3135cc9b186fc978534120ba0cc972ec`; squash merge SHA `9d55ee112cc826f30c57de3a775041d462587fde`.
+- **Acceptance and review distinction**: Independent Acceptance is this Acceptance Session's evidence, not a GitHub review. GitHub submitted reviews and review threads were none. The merged PR body remains unchanged and is retained as Build-time evidence; final-head correction plus CI supersedes it for final contract acceptance.
+- **Local Gate boundary**: Local Full Gate is recorded as unavailable in the sandbox due the test-harness recursive prerequisite behavior. It was not rerun or represented as PASS; the Windows/Ubuntu CI Gates are authoritative for this closure.
+- **Preserved negative guarantees**: No delete, prune, tombstone, automatic cleanup, new CLI, real cleanup, migration, restore, deployment, or adopter operation occurred. Schema/Catalog and Product/Test/Gate/CI bytes were not changed by this governance closure. Phase 5 remains Not started.
