@@ -201,11 +201,33 @@ def _decision(component_id: str, catalog_record: dict, record: Optional[dict], s
         if record is not None and record["hashes"]["baseline"] not in (None, target_hash):
             classification = "customized" if catalog_record["role"] == "canonical" else "derived-customized"
             basis = "modified-stale-output"
+    if state != "valid-v3":
+        reason = "preserve; no-automatic-cleanup; report-only-no-delete-authority"
+    elif record is None:
+        reason = "insufficient-evidence; no-guess; report-only-no-delete-authority"
+    elif target_hash is None:
+        reason = "already-absent; no-cleanup-required; report-only-no-delete-authority"
+    elif stale:
+        ownership = record["provenance"]["ownership"] if record else "unknown"
+        if ownership in ("project-owned", "legacy-compat") or catalog_record["role"] in ("project-owned", "compatibility"):
+            reason = "preserve; no-automatic-cleanup; report-only-no-delete-authority"
+        else:
+            baseline_hash = record["hashes"]["baseline"] if record else None
+            if baseline_hash is not None and target_hash == baseline_hash:
+                reason = "manual-cleanup-candidate; no-delete; report-only-no-delete-authority"
+            else:
+                reason = "manual-review; preserve; report-only-no-delete-authority"
+    elif classification in ("project-owned", "legacy", "unknown"):
+        reason = "preserve; no-automatic-cleanup; report-only-no-delete-authority"
+    elif classification in ("customized", "derived-customized", "conflicted"):
+        reason = "manual-review; preserve; report-only-no-delete-authority"
+    else:
+        reason = "report-only-no-delete-authority"
     eligibility = {
         "eligible": False,
         "computation_version": "d05-v1",
         "not_authority": True,
-        "reason": "report-only-no-delete-authority",
+        "reason": reason,
     }
     return {
         "component_identity": {

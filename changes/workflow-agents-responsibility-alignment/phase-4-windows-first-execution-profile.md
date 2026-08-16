@@ -187,6 +187,22 @@ PowerShell is the Windows-first Production v3 Writer for new installs and explic
 
 The report-only stale/retirement evidence becomes a human-readable manual Cleanup recommendation. The tool performs no Delete, Prune, Tombstone, automatic directory cleanup, or automatic rollback. If the existing Phase 4B report is already sufficient, Phase 4E may be governance/documentation-only.
 
+#### Phase 4E Build Candidate — 2026-08-16
+
+- **Status**: In progress / Build candidate. This is not Phase 4E Complete and not Awaiting Acceptance until the non-Draft PR is actually created. Phase 4 overall remains Incomplete.
+- **Frozen scope**: Stale derived output manual cleanup recommendation only. No new CLI operation, prune/delete/tombstone, automatic restore, Lock/Journal/Recovery Engine, hostile-concurrency capability, Python/Linux writer, or real-adopter operation.
+- **Stale-report contract**: The existing Phase 4B `reconcile` operation (`-ReportOnly -Operation reconcile`) is the sole report engine. Phase 4E enriches `eligibility.reason` in `mapped_component_decisions` with a specific cleanup recommendation string per the five conservative rules, using the existing free-form schema field. No Schema, Catalog, or CLI change was made.
+- **Recommendation matrix**:
+  1. stale + current bytes equal trusted baseline → `manual-cleanup-candidate; no-delete; report-only-no-delete-authority` (report only, no deletion)
+  2. stale + current bytes modified → `manual-review; preserve; report-only-no-delete-authority` (preserve, manual review)
+  3. Legacy / Unknown / Project-owned → `preserve; no-automatic-cleanup; report-only-no-delete-authority` (preserve, no automatic cleanup)
+  4. insufficient provenance / Catalog evidence → `insufficient-evidence; no-guess; report-only-no-delete-authority` (blocked, no guess)
+  5. Missing target → `already-absent; no-cleanup-required; report-only-no-delete-authority` (no cleanup required, no tombstone)
+- **No automatic prune/delete/tombstone**: `eligibility.eligible` is always `false`, `eligibility.not_authority` is always `true`, `required_future_authorization.delete_action` is always `false`, `no_write_confirmation.writes_performed` is always `false`. The recommendation is evidence, not execution authority.
+- **Exact Product/Test allowlist**: `scripts/manifest_reconciliation.py`, `scripts/bootstrap.Tests.ps1`. Schema, Catalog, CLI operations, and bootstrap.ps1 are immutable in Phase 4E.
+- **Real cleanup / migration / restore**: No. Phase 4E is report-only.
+- **Evidence**: Phase 4E focused Pester `10/10 passed`; Phase 4B/4D/4A regression `104/104 passed`; Python reconciliation tests `176 passed` (11 pre-existing bash installer failures unrelated to Phase 4E).
+
 ## Roles, Review, and Delivery
 
 - Sol owns governance, exact allowlists, audit, Git, PR, CI, guarded merge, and `main` synchronization; Sol does not edit Product files.
