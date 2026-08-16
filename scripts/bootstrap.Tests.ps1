@@ -1873,3 +1873,455 @@ Describe "Test-NodeJSInstalled" {
         }
     }
 }
+Describe "Phase 4E stale derived output manual cleanup recommendation" -Tag 'Phase4E' {
+    BeforeAll {
+        $script:Phase4ERepoRoot = Split-Path -Parent $PSScriptRoot
+
+        function New-Phase4ESourceRoot {
+            $root = Join-Path $TestDrive ("phase4e-source-" + [guid]::NewGuid().ToString('N'))
+            New-Item -ItemType Directory -Path (Join-Path $root 'schemas') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $root 'manifest') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $root 'agents') -Force | Out-Null
+            Copy-Item -LiteralPath (Join-Path $script:Phase4ERepoRoot 'schemas/ai-workflow-install-manifest-v3.schema.json') -Destination (Join-Path $root 'schemas/ai-workflow-install-manifest-v3.schema.json')
+            Copy-Item -LiteralPath (Join-Path $script:Phase4ERepoRoot 'manifest/component-catalog.json') -Destination (Join-Path $root 'manifest/component-catalog.json')
+            return $root
+        }
+
+        function Add-Phase4ESyntheticCatalogComponent {
+            param(
+                [string]$SourceRoot,
+                [string]$ComponentId,
+                [string]$Path,
+                [string]$Role = 'generated',
+                [string]$LifecycleStatus = 'active',
+                [string]$RetiredRelease = $null,
+                [string[]]$GeneratedFrom = @('cmp:canonical-coder-agent')
+            )
+            $retiredReleaseValue = if ([string]::IsNullOrEmpty($RetiredRelease)) { $null } else { $RetiredRelease }
+            $catalogPath = Join-Path $SourceRoot 'manifest/component-catalog.json'
+            $catalog = Get-Content -Raw $catalogPath | ConvertFrom-Json
+            $component = [ordered]@{
+                id = $ComponentId
+                canonical_source_path = $Path
+                role = $Role
+                kind = 'file'
+                lifecycle_status = $LifecycleStatus
+                previous_paths = @()
+                generated_from = @($GeneratedFrom | Sort-Object)
+                successor_component_id = $null
+                reintroduces_component_id = $null
+                introduced_release = $script:ComponentCatalogReleaseId
+                retired_release = $retiredReleaseValue
+            }
+            $catalog.components = @(@($catalog.components) + [PSCustomObject]$component | Sort-Object -Property id)
+            $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($catalog | ConvertTo-Json -Depth 20) + "`n")
+            [IO.File]::WriteAllBytes($catalogPath, $bytes)
+        }
+
+        function New-Phase4ETarget {
+            $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+            New-Item -ItemType Directory -Path $target | Out-Null
+            return $target
+        }
+
+        function Get-Phase4ECatalogHash {
+            param([string]$SourceRoot)
+            return Get-BytesHash ([IO.File]::ReadAllBytes((Join-Path $SourceRoot 'manifest/component-catalog.json')))
+        }
+
+        function Write-Phase4EV3Manifest {
+            param(
+                [string]$Target,
+                [string]$SourceRoot,
+                [string]$ComponentId,
+                [string]$Path,
+                [string]$Ownership,
+                [string]$ForkStatus,
+                [string]$ForkBasis,
+                [string]$ForkDecision,
+                [string]$BaselineHash,
+                [string]$ProposedSourceHash,
+                [string]$LifecycleState = 'active',
+                [string]$Role = 'canonical',
+                [string]$Outcome = 'installed',
+                [string[]]$GeneratedFrom = @(),
+                [string]$ObservedBeforeHash = $null
+            )
+            if ([string]::IsNullOrEmpty($ObservedBeforeHash)) {
+                $ObservedBeforeHash = $BaselineHash
+            }
+            $proposedSourceHashValue = if ([string]::IsNullOrEmpty($ProposedSourceHash)) { $null } else { $ProposedSourceHash }
+            $catalogHash = Get-Phase4ECatalogHash -SourceRoot $SourceRoot
+            $sourceKind = switch ($Role) {
+                'canonical' { 'template' }
+                'generated' { 'generated' }
+                'project-owned' { 'project' }
+                'compatibility' { 'legacy' }
+                default { 'template' }
+            }
+            $resultAfter = if ($Outcome -in @('preserved-existing', 'retired')) { $ObservedBeforeHash } else { $proposedSourceHashValue }
+            $retirement = if ($LifecycleState -eq 'retired') {
+                [ordered]@{
+                    reason = 'source-retired'
+                    detected_at = '2026-07-17T01:30:02Z'
+                    source_evidence = [ordered]@{ type = 'release-retirement-record'; locator = 'release:ai-dev-workflow:component-catalog:retired-fixture' }
+                    successor_component_id = $null
+                    pruned_at = $null
+                }
+            } else { $null }
+            $componentRecords = @([ordered]@{
+                identity = [ordered]@{ id = $ComponentId; path = $Path; path_key = $Path.ToLowerInvariant(); kind = 'file'; role = $Role; link = $null }
+                provenance = [ordered]@{
+                    ownership = $Ownership
+                    source = [ordered]@{ kind = $sourceKind; locator = "${sourceKind}:$Path"; release = $script:ComponentCatalogReleaseId }
+                    generated_from = @($GeneratedFrom | Sort-Object)
+                    fork = [ordered]@{ status = $ForkStatus; basis = $ForkBasis; decision = $ForkDecision; classified_at = '2026-07-17T01:30:01Z' }
+                }
+                hashes = [ordered]@{
+                    algorithm = 'sha256'; content_basis = 'exact-bytes'
+                    baseline = $BaselineHash; observed_before = $ObservedBeforeHash
+                    proposed_source = $proposedSourceHashValue; result_after = $resultAfter
+                }
+                lifecycle = [ordered]@{ state = $LifecycleState; previous_paths = @(); retirement = $retirement; reintroduces_component_id = $null }
+                last_operation = [ordered]@{ transaction_id = 'txn:phase4e-test'; outcome = $Outcome }
+                installed_at = '2026-07-01T00:00:00Z'; updated_at = '2026-07-17T01:30:05Z'
+            })
+            if (@($GeneratedFrom).Count -gt 0) {
+                $componentRecords += [ordered]@{
+                    identity = [ordered]@{ id = 'cmp:canonical-coder-agent'; path = 'agents/coder.agent.md'; path_key = 'agents/coder.agent.md'; kind = 'file'; role = 'canonical'; link = $null }
+                    provenance = [ordered]@{
+                        ownership = 'template-managed'
+                        source = [ordered]@{ kind = 'template'; locator = 'template:agents/coder.agent.md'; release = $script:ComponentCatalogReleaseId }
+                        generated_from = @()
+                        fork = [ordered]@{ status = 'untouched'; basis = 'verified-managed-equality'; decision = 'manage'; classified_at = '2026-07-17T01:30:01Z' }
+                    }
+                    hashes = [ordered]@{
+                        algorithm = 'sha256'; content_basis = 'exact-bytes'
+                        baseline = $BaselineHash; observed_before = $BaselineHash
+                        proposed_source = $BaselineHash; result_after = $BaselineHash
+                    }
+                    lifecycle = [ordered]@{ state = 'active'; previous_paths = @(); retirement = $null; reintroduces_component_id = $null }
+                    last_operation = [ordered]@{ transaction_id = 'txn:phase4e-test'; outcome = 'installed' }
+                    installed_at = '2026-07-01T00:00:00Z'; updated_at = '2026-07-17T01:30:05Z'
+                }
+                $componentRecords = @($componentRecords | Sort-Object { $_.identity.id })
+            }
+            $manifest = [ordered]@{
+                schema_version = 3
+                written_at = '2026-07-17T01:30:05Z'
+                source_release = [ordered]@{
+                    release_id = $script:ComponentCatalogReleaseId
+                    source_ref = $script:ComponentCatalogPath
+                    version = $script:ComponentCatalogVersion
+                    component_catalog = [ordered]@{ path = $script:ComponentCatalogPath; schema_version = 1; sha256 = $catalogHash }
+                }
+                last_transaction = [ordered]@{
+                    id = 'txn:phase4e-test'; mode = 'install'; writer = 'powershell'
+                    started_at = '2026-07-17T01:30:00Z'; completed_at = '2026-07-17T01:30:05Z'; result = 'committed'
+                }
+                components = $componentRecords
+            }
+            $manifestPath = Join-Path $Target '.ai-workflow-install.json'
+            $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($manifest | ConvertTo-Json -Depth 20) + "`n")
+            [IO.File]::WriteAllBytes($manifestPath, $bytes)
+        }
+
+        function Write-Phase4EEmptyV3Manifest {
+            param([string]$Target, [string]$SourceRoot)
+            $catalogHash = Get-Phase4ECatalogHash -SourceRoot $SourceRoot
+            $manifest = [ordered]@{
+                schema_version = 3; written_at = '2026-07-17T01:30:05Z'
+                source_release = [ordered]@{
+                    release_id = $script:ComponentCatalogReleaseId; source_ref = $script:ComponentCatalogPath; version = $script:ComponentCatalogVersion
+                    component_catalog = [ordered]@{ path = $script:ComponentCatalogPath; schema_version = 1; sha256 = $catalogHash }
+                }
+                last_transaction = [ordered]@{ id = 'txn:phase4e-test'; mode = 'install'; writer = 'powershell'; started_at = '2026-07-17T01:30:00Z'; completed_at = '2026-07-17T01:30:05Z'; result = 'committed' }
+                components = @()
+            }
+            $manifestPath = Join-Path $Target '.ai-workflow-install.json'
+            $bytes = [Text.UTF8Encoding]::new($false).GetBytes(($manifest | ConvertTo-Json -Depth 20) + "`n")
+            [IO.File]::WriteAllBytes($manifestPath, $bytes)
+        }
+
+        function Invoke-Phase4EReconcile {
+            param([string]$Source, [string]$Target)
+            $pwsh = (Get-Process -Id $PID).Path
+            $output = & $pwsh -NoProfile -File (Join-Path $PSScriptRoot 'bootstrap.ps1') -ReportOnly -Operation reconcile -SourceRoot $Source -TargetPath $Target 2>&1 | Out-String
+            [PSCustomObject]@{ ExitCode = $LASTEXITCODE; Output = $output }
+        }
+
+        function Get-Phase4EDecision {
+            param([string]$Report, [string]$ComponentId)
+            $json = $Report | ConvertFrom-Json
+            return @($json.mapped_component_decisions | Where-Object { $_.component_identity.id -eq $ComponentId })[0]
+        }
+    }
+
+    It "Rule 1: active canonical with source missing and baseline equality reports insufficient evidence" {
+        $source = New-Phase4ESourceRoot
+        $target = New-Phase4ETarget
+        $path = 'agents/coder.agent.md'
+        $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("managed baseline content`n")
+        $baselineHash = Get-BytesHash $baselineBytes
+        New-Item -ItemType Directory -Path (Join-Path $target 'agents') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $target $path), $baselineBytes)
+        # Manifest records the original install: proposed_source was the source hash at install time
+        Write-Phase4EV3Manifest -Target $target -SourceRoot $source -ComponentId 'cmp:canonical-coder-agent' -Path $path -Ownership 'template-managed' -ForkStatus 'untouched' -ForkBasis 'verified-managed-equality' -ForkDecision 'manage' -BaselineHash $baselineHash -ProposedSourceHash $baselineHash
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $result.ExitCode | Should -Be 0
+        $decision = Get-Phase4EDecision -Report $result.Output -ComponentId 'cmp:canonical-coder-agent'
+        $decision | Should -Not -BeNullOrEmpty -Because 'stale component should be in mapped decisions'
+        $decision.eligibility.eligible | Should -BeFalse
+        $decision.eligibility.not_authority | Should -BeTrue
+        $decision.eligibility.reason | Should -Match 'insufficient.evidence'
+        $decision.eligibility.reason | Should -Match 'no.guess'
+        $decision.proposed_action | Should -Be 'preserve'
+    }
+
+    It "Rule 1b: active generated with source missing and no typed retirement reports insufficient evidence" {
+        $source = New-Phase4ESourceRoot
+        Add-Phase4ESyntheticCatalogComponent -SourceRoot $source -ComponentId 'cmp:generated-phase4e-active-output' -Path 'generated/phase4e-active-output.txt'
+        $target = New-Phase4ETarget
+        $path = 'generated/phase4e-active-output.txt'
+        $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("managed baseline content`n")
+        $baselineHash = Get-BytesHash $baselineBytes
+        New-Item -ItemType Directory -Path (Join-Path $target 'generated') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $target $path), $baselineBytes)
+        Write-Phase4EV3Manifest -Target $target -SourceRoot $source -ComponentId 'cmp:generated-phase4e-active-output' -Path $path -Ownership 'derived-runtime' -ForkStatus 'untouched' -ForkBasis 'verified-managed-equality' -ForkDecision 'manage' -BaselineHash $baselineHash -ProposedSourceHash $baselineHash -Role 'generated' -GeneratedFrom @('cmp:canonical-coder-agent')
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $result.ExitCode | Should -Be 0
+        $decision = Get-Phase4EDecision -Report $result.Output -ComponentId 'cmp:generated-phase4e-active-output'
+        $decision.eligibility.eligible | Should -BeFalse
+        $decision.eligibility.reason | Should -Match 'insufficient.evidence'
+        $decision.eligibility.reason | Should -Match 'no.guess'
+        $decision.proposed_action | Should -Be 'preserve'
+    }
+
+    It "Rule 1c: typed retired generated output with exact baseline recommends manual cleanup without authority" {
+        $source = New-Phase4ESourceRoot
+        Add-Phase4ESyntheticCatalogComponent -SourceRoot $source -ComponentId 'cmp:generated-phase4e-retired-output' -Path 'generated/phase4e-retired-output.txt' -LifecycleStatus 'retired' -RetiredRelease 'ai-dev-workflow:component-catalog:retired-fixture'
+        $target = New-Phase4ETarget
+        $path = 'generated/phase4e-retired-output.txt'
+        $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("managed baseline content`n")
+        $baselineHash = Get-BytesHash $baselineBytes
+        New-Item -ItemType Directory -Path (Join-Path $target 'generated') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $target $path), $baselineBytes)
+        Write-Phase4EV3Manifest -Target $target -SourceRoot $source -ComponentId 'cmp:generated-phase4e-retired-output' -Path $path -Ownership 'derived-runtime' -ForkStatus 'untouched' -ForkBasis 'verified-managed-equality' -ForkDecision 'manage' -BaselineHash $baselineHash -ProposedSourceHash $null -LifecycleState 'retired' -Role 'generated' -Outcome 'retired' -GeneratedFrom @('cmp:canonical-coder-agent')
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $result.ExitCode | Should -Be 0
+        $decision = Get-Phase4EDecision -Report $result.Output -ComponentId 'cmp:generated-phase4e-retired-output'
+        $decision.eligibility.eligible | Should -BeFalse
+        $decision.eligibility.not_authority | Should -BeTrue
+        $decision.eligibility.reason | Should -Match 'manual.cleanup.candidate'
+        $decision.eligibility.reason | Should -Match 'no.delete'
+        $decision.proposed_action | Should -Be 'report'
+        $decision.stale_or_retirement_reason | Should -Be 'retirement-proven'
+    }
+
+    It "Rule 1d: typed retired generated output with modified bytes requires manual review and preserve" {
+        $source = New-Phase4ESourceRoot
+        Add-Phase4ESyntheticCatalogComponent -SourceRoot $source -ComponentId 'cmp:generated-phase4e-retired-modified' -Path 'generated/phase4e-retired-modified.txt' -LifecycleStatus 'retired' -RetiredRelease 'ai-dev-workflow:component-catalog:retired-fixture'
+        $target = New-Phase4ETarget
+        $path = 'generated/phase4e-retired-modified.txt'
+        $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("managed baseline content`n")
+        $modifiedBytes = [Text.UTF8Encoding]::new($false).GetBytes("modified content`n")
+        $baselineHash = Get-BytesHash $baselineBytes
+        $modifiedHash = Get-BytesHash $modifiedBytes
+        New-Item -ItemType Directory -Path (Join-Path $target 'generated') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $target $path), $modifiedBytes)
+        Write-Phase4EV3Manifest -Target $target -SourceRoot $source -ComponentId 'cmp:generated-phase4e-retired-modified' -Path $path -Ownership 'derived-runtime' -ForkStatus 'derived-customized' -ForkBasis 'derived-hash-divergence' -ForkDecision 'preserve' -BaselineHash $baselineHash -ProposedSourceHash $null -LifecycleState 'retired' -Role 'generated' -Outcome 'retired' -GeneratedFrom @('cmp:canonical-coder-agent') -ObservedBeforeHash $modifiedHash
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $result.ExitCode | Should -Be 0
+        $decision = Get-Phase4EDecision -Report $result.Output -ComponentId 'cmp:generated-phase4e-retired-modified'
+        $decision.eligibility.eligible | Should -BeFalse
+        $decision.eligibility.reason | Should -Match 'manual.review'
+        $decision.eligibility.reason | Should -Match 'preserve'
+        $decision.proposed_action | Should -Be 'preserve'
+        $decision.classification | Should -Be 'derived-customized'
+    }
+
+    It "Rule 2: stale derived with modified bytes recommends preserve and manual review" {
+        $source = New-Phase4ESourceRoot
+        $target = New-Phase4ETarget
+        $path = 'agents/coder.agent.md'
+        $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("managed baseline content`n")
+        $baselineHash = Get-BytesHash $baselineBytes
+        $modifiedBytes = [Text.UTF8Encoding]::new($false).GetBytes("modified content`n")
+        New-Item -ItemType Directory -Path (Join-Path $target 'agents') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $target $path), $modifiedBytes)
+        Write-Phase4EV3Manifest -Target $target -SourceRoot $source -ComponentId 'cmp:canonical-coder-agent' -Path $path -Ownership 'template-managed' -ForkStatus 'untouched' -ForkBasis 'verified-managed-equality' -ForkDecision 'manage' -BaselineHash $baselineHash -ProposedSourceHash $baselineHash
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $result.ExitCode | Should -Be 0
+        $decision = Get-Phase4EDecision -Report $result.Output -ComponentId 'cmp:canonical-coder-agent'
+        $decision | Should -Not -BeNullOrEmpty
+        $decision.eligibility.eligible | Should -BeFalse
+        $decision.eligibility.reason | Should -Match 'manual.review'
+        $decision.eligibility.reason | Should -Match 'preserve'
+        $decision.proposed_action | Should -Be 'preserve'
+        $decision.classification | Should -Be 'customized'
+    }
+
+    It "Rule 3: legacy and unknown ownership are preserved without automatic cleanup recommendation" {
+        $source = New-Phase4ESourceRoot
+        $target = New-Phase4ETarget
+        $path = 'agents/coder.agent.md'
+        $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("content`n")
+        $baselineHash = Get-BytesHash $baselineBytes
+        New-Item -ItemType Directory -Path (Join-Path $target 'agents') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $target $path), $baselineBytes)
+        $manifest = [ordered]@{
+            schema_version = 2; installed_at = '2026-07-01T00:00:00Z'; source_ref = 'legacy'
+            components = @([ordered]@{
+                name = $path; installed_at = '2026-07-01T00:00:00Z'; updated_at = '2026-07-01T00:00:00Z'
+                source_hash = $baselineHash; managed_hash = $baselineHash; observed_hash = $baselineHash
+                ownership = 'template-managed'; kind = 'file'; source = "template:$path"; status = 'managed'
+            })
+        }
+        [IO.File]::WriteAllText((Join-Path $target '.ai-workflow-install.json'), ($manifest | ConvertTo-Json -Depth 20) + "`n", [Text.UTF8Encoding]::new($false))
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $result.ExitCode | Should -Be 0
+        $decision = Get-Phase4EDecision -Report $result.Output -ComponentId 'cmp:canonical-coder-agent'
+        $decision | Should -Not -BeNullOrEmpty
+        $decision.eligibility.eligible | Should -BeFalse
+        $decision.eligibility.reason | Should -Match 'preserve'
+        $decision.eligibility.reason | Should -Match 'no.automatic.cleanup'
+    }
+
+    It "Rule 3b: project-owned is preserved without cleanup recommendation" {
+        $source = New-Phase4ESourceRoot
+        $target = New-Phase4ETarget
+        $path = 'AGENTS.md'
+        $contentBytes = [Text.UTF8Encoding]::new($false).GetBytes("project content`n")
+        $contentHash = Get-BytesHash $contentBytes
+        [IO.File]::WriteAllBytes((Join-Path $target $path), $contentBytes)
+        Write-Phase4EV3Manifest -Target $target -SourceRoot $source -ComponentId 'cmp:project-agents-guide' -Path $path -Ownership 'project-owned' -ForkStatus 'project-owned' -ForkBasis 'explicit-project-ownership' -ForkDecision 'preserve' -BaselineHash $contentHash -ProposedSourceHash $contentHash -Role 'project-owned' -Outcome 'preserved-existing'
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $result.ExitCode | Should -Be 0
+        $decision = Get-Phase4EDecision -Report $result.Output -ComponentId 'cmp:project-agents-guide'
+        $decision | Should -Not -BeNullOrEmpty
+        $decision.eligibility.eligible | Should -BeFalse
+        $decision.eligibility.reason | Should -Match 'preserve'
+        $decision.eligibility.reason | Should -Match 'no.automatic.cleanup'
+        $decision.proposed_action | Should -Be 'preserve'
+    }
+
+    It "Rule 4: insufficient provenance is blocked not guessed" {
+        $source = New-Phase4ESourceRoot
+        $target = New-Phase4ETarget
+        $path = 'agents/coder.agent.md'
+        $contentBytes = [Text.UTF8Encoding]::new($false).GetBytes("content`n")
+        $contentHash = Get-BytesHash $contentBytes
+        New-Item -ItemType Directory -Path (Join-Path $source 'agents') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $source $path), $contentBytes)
+        New-Item -ItemType Directory -Path (Join-Path $target 'agents') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $target $path), $contentBytes)
+        Write-Phase4EEmptyV3Manifest -Target $target -SourceRoot $source
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $result.ExitCode | Should -Be 0
+        $decision = Get-Phase4EDecision -Report $result.Output -ComponentId 'cmp:canonical-coder-agent'
+        $decision | Should -Not -BeNullOrEmpty
+        $decision.eligibility.eligible | Should -BeFalse
+        $decision.eligibility.reason | Should -Match 'insufficient.evidence'
+        $decision.eligibility.reason | Should -Match 'no.guess'
+        $decision.classification | Should -Be 'unknown'
+    }
+
+    It "Rule 5: missing target reports already-absent with no cleanup required" {
+        $source = New-Phase4ESourceRoot
+        $target = New-Phase4ETarget
+        $path = 'agents/coder.agent.md'
+        $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("content`n")
+        $baselineHash = Get-BytesHash $baselineBytes
+        New-Item -ItemType Directory -Path (Join-Path $source 'agents') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $source $path), $baselineBytes)
+        Write-Phase4EV3Manifest -Target $target -SourceRoot $source -ComponentId 'cmp:canonical-coder-agent' -Path $path -Ownership 'template-managed' -ForkStatus 'untouched' -ForkBasis 'verified-managed-equality' -ForkDecision 'manage' -BaselineHash $baselineHash -ProposedSourceHash $baselineHash
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $result.ExitCode | Should -Be 0
+        $decision = Get-Phase4EDecision -Report $result.Output -ComponentId 'cmp:canonical-coder-agent'
+        $decision | Should -Not -BeNullOrEmpty
+        $decision.eligibility.eligible | Should -BeFalse
+        $decision.eligibility.reason | Should -Match 'already.absent'
+        $decision.eligibility.reason | Should -Match 'no.cleanup.required'
+        $decision.observed_hash | Should -BeNullOrEmpty
+    }
+
+    It "corrupt manifest does not produce a cleanup recommendation" {
+        $source = New-Phase4ESourceRoot
+        $target = New-Phase4ETarget
+        [IO.File]::WriteAllBytes((Join-Path $target '.ai-workflow-install.json'), [Text.Encoding]::UTF8.GetBytes('not-json'))
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $result.ExitCode | Should -Be 0
+        $json = $result.Output | ConvertFrom-Json
+        $json.manifest_parse_state.state | Should -Be 'corrupt'
+        $json.mapped_component_decisions | Should -Be @()
+        $json.blocking_findings | Should -Not -BeNullOrEmpty
+        $json.required_future_authorization.delete_action | Should -BeFalse
+    }
+
+    It "report is deterministic across identical inputs" {
+        $source = New-Phase4ESourceRoot
+        $targetA = New-Phase4ETarget
+        $targetB = New-Phase4ETarget
+        $path = 'agents/coder.agent.md'
+        $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("same content`n")
+        $baselineHash = Get-BytesHash $baselineBytes
+        foreach ($t in @($targetA, $targetB)) {
+            New-Item -ItemType Directory -Path (Join-Path $t 'agents') -Force | Out-Null
+            [IO.File]::WriteAllBytes((Join-Path $t $path), $baselineBytes)
+            Write-Phase4EV3Manifest -Target $t -SourceRoot $source -ComponentId 'cmp:canonical-coder-agent' -Path $path -Ownership 'template-managed' -ForkStatus 'untouched' -ForkBasis 'verified-managed-equality' -ForkDecision 'manage' -BaselineHash $baselineHash -ProposedSourceHash $baselineHash
+        }
+
+        $first = Invoke-Phase4EReconcile -Source $source -Target $targetA
+        $second = Invoke-Phase4EReconcile -Source $source -Target $targetB
+        $firstJson = $first.Output | ConvertFrom-Json
+        $secondJson = $second.Output | ConvertFrom-Json
+        $firstJson.report_identity.canonical_body_digest | Should -Be $secondJson.report_identity.canonical_body_digest
+    }
+
+    It "report-only reconcile performs zero target writes" {
+        $source = New-Phase4ESourceRoot
+        $target = New-Phase4ETarget
+        $path = 'agents/coder.agent.md'
+        $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("content`n")
+        $baselineHash = Get-BytesHash $baselineBytes
+        New-Item -ItemType Directory -Path (Join-Path $target 'agents') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $target $path), $baselineBytes)
+        Write-Phase4EV3Manifest -Target $target -SourceRoot $source -ComponentId 'cmp:canonical-coder-agent' -Path $path -Ownership 'template-managed' -ForkStatus 'untouched' -ForkBasis 'verified-managed-equality' -ForkDecision 'manage' -BaselineHash $baselineHash -ProposedSourceHash $baselineHash
+
+        $beforeHash = Get-FileHash256 -Path (Join-Path $target $path)
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $afterHash = Get-FileHash256 -Path (Join-Path $target $path)
+        $json = $result.Output | ConvertFrom-Json
+        $json.no_write_confirmation.writes_performed | Should -BeFalse
+        $json.no_write_confirmation.inventory_unchanged | Should -BeTrue
+        $beforeHash | Should -Be $afterHash
+    }
+
+    It "report contains no delete tombstone or prune path" {
+        $source = New-Phase4ESourceRoot
+        $target = New-Phase4ETarget
+        $path = 'agents/coder.agent.md'
+        $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("content`n")
+        $baselineHash = Get-BytesHash $baselineBytes
+        New-Item -ItemType Directory -Path (Join-Path $target 'agents') -Force | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $target $path), $baselineBytes)
+        Write-Phase4EV3Manifest -Target $target -SourceRoot $source -ComponentId 'cmp:canonical-coder-agent' -Path $path -Ownership 'template-managed' -ForkStatus 'untouched' -ForkBasis 'verified-managed-equality' -ForkDecision 'manage' -BaselineHash $baselineHash -ProposedSourceHash $baselineHash
+
+        $result = Invoke-Phase4EReconcile -Source $source -Target $target
+        $json = $result.Output | ConvertFrom-Json
+        $json.required_future_authorization.delete_action | Should -BeFalse
+        $json.required_future_authorization.not_authority | Should -BeTrue
+        $json.required_future_authorization.approval_supplied | Should -BeFalse
+        @(Get-ChildItem -LiteralPath $target -Force -Recurse | Where-Object { $_.Name -match 'tombstone|prune|delete' }).Count | Should -Be 0
+    }
+}

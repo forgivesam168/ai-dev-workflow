@@ -184,11 +184,33 @@ def _decision(component_id: str, catalog_record: dict, record: Optional[dict], s
     relative = catalog_record["canonical_source_path"]
     source_hash = _path_digest(source_root, relative)
     target_hash = _path_digest(target_root, relative)
+    target_path = _safe_path(target_root, relative)
+    target_entry = target_root / Path(relative)
+    target_regular_file = target_path is not None and target_entry.is_file() and not target_entry.is_symlink()
     previous_hashes = {old: _path_digest(target_root, old) for old in sorted(catalog_record.get("previous_paths", []))}
     classification, basis, action = _classification(record, catalog_record, target_hash, source_hash) if state == "valid-v3" else ("legacy", "compatibility-reader", "report")
     rename_proven = bool(source_hash and target_hash is None and any(previous_hashes.values()))
     retirement_proven = catalog_record.get("lifecycle_status") == "retired" and bool(catalog_record.get("retired_release"))
     stale = source_hash is None and target_hash is not None
+    trusted_derived_provenance = bool(
+        record is not None
+        and catalog_record["role"] == "generated"
+        and catalog_record["kind"] == "file"
+        and record["provenance"]["ownership"] == "derived-runtime"
+        and record["provenance"]["source"]["kind"] == "generated"
+        and record["provenance"]["source"]["release"] == bootstrap.COMPONENT_CATALOG_RELEASE_ID
+        and record["provenance"]["generated_from"] == sorted(catalog_record["generated_from"])
+    )
+    manual_cleanup_candidate = bool(
+        state == "valid-v3"
+        and record is not None
+        and stale
+        and target_regular_file
+        and retirement_proven
+        and trusted_derived_provenance
+        and record["hashes"]["baseline"] is not None
+        and target_hash == record["hashes"]["baseline"]
+    )
     if rename_proven:
         action = "report"
         basis = "catalog-previous-path-history"
@@ -201,11 +223,36 @@ def _decision(component_id: str, catalog_record: dict, record: Optional[dict], s
         if record is not None and record["hashes"]["baseline"] not in (None, target_hash):
             classification = "customized" if catalog_record["role"] == "canonical" else "derived-customized"
             basis = "modified-stale-output"
+    if state != "valid-v3":
+        reason = "preserve; no-automatic-cleanup; report-only-no-delete-authority"
+    elif record is None:
+        reason = "insufficient-evidence; no-guess; report-only-no-delete-authority"
+    elif target_hash is None:
+        reason = "already-absent; no-cleanup-required; report-only-no-delete-authority"
+    elif stale:
+        ownership = record["provenance"]["ownership"] if record else "unknown"
+        if ownership in ("project-owned", "legacy-compat") or catalog_record["role"] in ("project-owned", "compatibility"):
+            reason = "preserve; no-automatic-cleanup; report-only-no-delete-authority"
+        else:
+            baseline_hash = record["hashes"]["baseline"] if record else None
+            if manual_cleanup_candidate:
+                reason = "manual-cleanup-candidate; no-delete; report-only-no-delete-authority"
+            elif baseline_hash is not None and target_hash == baseline_hash:
+                reason = "insufficient-evidence; no-guess; report-only-no-delete-authority"
+            else:
+                action = "preserve"
+                reason = "manual-review; preserve; report-only-no-delete-authority"
+    elif classification in ("project-owned", "legacy", "unknown"):
+        reason = "preserve; no-automatic-cleanup; report-only-no-delete-authority"
+    elif classification in ("customized", "derived-customized", "conflicted"):
+        reason = "manual-review; preserve; report-only-no-delete-authority"
+    else:
+        reason = "report-only-no-delete-authority"
     eligibility = {
         "eligible": False,
         "computation_version": "d05-v1",
         "not_authority": True,
-        "reason": "report-only-no-delete-authority",
+        "reason": reason,
     }
     return {
         "component_identity": {
