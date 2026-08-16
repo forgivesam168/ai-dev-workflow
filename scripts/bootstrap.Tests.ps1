@@ -986,7 +986,7 @@ Describe "Phase 4D Windows Manifest v3 writer" {
             $before = Get-Phase4DTreeSnapshot $target
 
             $first = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
-            (Get-Item $manifestPath).LastWriteTimeUtc = [datetime]'2025-01-01T00:00:00Z'
+            (Get-Item -LiteralPath $manifestPath -Force).LastWriteTimeUtc = [datetime]'2025-01-01T00:00:00Z'
             $second = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
 
             $first.input_version | Should -Be 2
@@ -1144,7 +1144,7 @@ Describe "Phase 4D Windows Manifest v3 writer" {
             $update.ExitCode | Should -Be 0
             [IO.File]::ReadAllBytes($customPath) | Should -Be $customBytes
             (Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4DRepoRoot).State | Should -Be 'valid-v3'
-            @(Get-ChildItem -LiteralPath $target -Directory -Filter '.ai-workflow-phase4d-backup-*').Count | Should -Be 1
+            @(Get-ChildItem -LiteralPath $target -Force -Directory -Filter '.ai-workflow-phase4d-backup-*').Count | Should -Be 1
         }
     }
 
@@ -1243,8 +1243,8 @@ Describe "Phase 4D Windows Manifest v3 writer" {
 
             [IO.File]::ReadAllBytes((Join-Path $target 'agents/coder.agent.md')) | Should -Be $oldBytes
             [IO.File]::ReadAllBytes((Join-Path $target '.ai-workflow-install.json')) | Should -Be $manifestBefore
-            @(Get-ChildItem -LiteralPath $target -Directory -Filter '.ai-workflow-phase4d-backup-*').Count | Should -Be 1
-            @(Get-ChildItem -LiteralPath $target -Recurse -File -Filter 'diagnostic.txt').Count | Should -Be 1
+            @(Get-ChildItem -LiteralPath $target -Force -Directory -Filter '.ai-workflow-phase4d-backup-*').Count | Should -Be 1
+            @(Get-ChildItem -LiteralPath $target -Force -Recurse -File -Filter 'diagnostic.txt').Count | Should -Be 1
         }
 
         It "retains the exact backup and diagnostic when Manifest replace fails" {
@@ -1258,7 +1258,7 @@ Describe "Phase 4D Windows Manifest v3 writer" {
             { Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId $preview.preview_id } | Should -Throw '*manual-recovery-required*manifest-replace*'
 
             [IO.File]::ReadAllBytes($manifestPath) | Should -Be $original
-            $backup = @(Get-ChildItem -LiteralPath $target -File -Filter '.ai-workflow-install.json.phase4d-backup-*' | Where-Object Name -NotLike '*.diagnostic.txt')
+            $backup = @(Get-ChildItem -LiteralPath $target -Force -File -Filter '.ai-workflow-install.json.phase4d-backup-*' | Where-Object Name -NotLike '*.diagnostic.txt')
             $backup.Count | Should -Be 1
             [IO.File]::ReadAllBytes($backup[0].FullName) | Should -Be $original
             Test-Path ($backup[0].FullName + '.diagnostic.txt') | Should -BeTrue
@@ -1275,7 +1275,7 @@ Describe "Phase 4D Windows Manifest v3 writer" {
             { Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId $preview.preview_id } | Should -Throw '*manual-recovery-required*post-write-validation*'
 
             [IO.File]::ReadAllBytes($manifestPath) | Should -Not -Be $original
-            $backup = @(Get-ChildItem -LiteralPath $target -File -Filter '.ai-workflow-install.json.phase4d-backup-*' | Where-Object Name -NotLike '*.diagnostic.txt')
+            $backup = @(Get-ChildItem -LiteralPath $target -Force -File -Filter '.ai-workflow-install.json.phase4d-backup-*' | Where-Object Name -NotLike '*.diagnostic.txt')
             $backup.Count | Should -Be 1
             [IO.File]::ReadAllBytes($backup[0].FullName) | Should -Be $original
             Test-Path ($backup[0].FullName + '.diagnostic.txt') | Should -BeTrue
