@@ -16,6 +16,11 @@ param(
     [string]$Operation = '',
     [Parameter(Mandatory=$false)]
     [string]$SourceRoot = '',
+
+    [switch]$MigrationPreview,
+    [switch]$ApplyMigration,
+    [Parameter(Mandatory=$false)]
+    [string]$ExpectedPreviewId = '',
     
     [Parameter(Mandatory=$false)]
     [string]$RemoteRepo = "https://github.com/forgivesam168/ai-dev-workflow.git",
@@ -34,6 +39,16 @@ if ($ReportOnly) {
     $reportHelper = Join-Path $PSScriptRoot 'manifest-reconciliation.ps1'
     & $reportHelper -Operation $Operation -SourceRoot $SourceRoot -TargetPath $TargetPath
     exit $LASTEXITCODE
+}
+
+if ($MigrationPreview -and $ApplyMigration) {
+    throw '-MigrationPreview cannot be combined with -ApplyMigration.'
+}
+if ($ExpectedPreviewId -and -not $ApplyMigration) {
+    throw '-ExpectedPreviewId requires -ApplyMigration.'
+}
+if ($ApplyMigration -and -not $ExpectedPreviewId) {
+    throw '-ApplyMigration requires -ExpectedPreviewId.'
 }
 
 # 全域變數
@@ -93,6 +108,7 @@ $script:LegacyRuntimeExcludes = @(
     'skills',
     'agents'
 )
+$script:Phase4DPlanOnly = $false
 
 # -Quiet 模式：在 script scope 覆寫 Write-Host，抑制所有進度輸出。
 # Write-Error / Write-Warning 不受影響，錯誤訊息仍正常顯示。
@@ -530,7 +546,7 @@ function Sync-WorkflowFiles {
         }
     }
     
-    if (-not (Test-Path $targetGithubPath)) {
+    if (-not $script:Phase4DPlanOnly -and -not (Test-Path $targetGithubPath)) {
         New-Item -ItemType Directory -Path $targetGithubPath -Force | Out-Null
     }
 
@@ -1553,22 +1569,43 @@ function Get-InstallManifest {
     $manifestPath = Join-Path $TargetPath '.ai-workflow-install.json'
     $entries = @{}
 
-    if (-not (Test-Path $manifestPath)) {
+    try {
+        if ($script:Phase4DManifestInspectionFailure) {
+            throw [IO.IOException]::new('Injected Manifest path inspection failure.')
+        }
+        $manifestItem = Get-Item -LiteralPath $manifestPath -Force -ErrorAction Stop
+    } catch [Management.Automation.ItemNotFoundException] {
         return [PSCustomObject]@{
-            State         = 'missing'
-            Entries       = $entries
-            SchemaVersion = $null
-            Detail        = $null
-            ManifestPath  = $manifestPath
-            DiagnosticCategory = 'manifest-missing'
-            CatalogValidated = $false
+            State = 'missing'; Entries = $entries; SchemaVersion = $null; Detail = $null
+            ManifestPath = $manifestPath; DiagnosticCategory = 'manifest-missing'; CatalogValidated = $false
+        }
+    } catch {
+        return [PSCustomObject]@{
+            State = 'corrupt'; Entries = $entries; SchemaVersion = $null
+            Detail = "Manifest path could not be inspected safely: $($_.Exception.Message)"
+            ManifestPath = $manifestPath; DiagnosticCategory = 'manifest-inspection'; CatalogValidated = $false
+        }
+    }
+    if (($manifestItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+        return [PSCustomObject]@{
+            State = 'unsafe-path'; Entries = $entries; SchemaVersion = $null
+            Detail = 'Manifest path is a ReparsePoint, Junction, or SymbolicLink.'
+            ManifestPath = $manifestPath; DiagnosticCategory = 'manifest-unsafe-path'; CatalogValidated = $false
+        }
+    }
+    if ($manifestItem.PSIsContainer -or $manifestItem -isnot [IO.FileInfo]) {
+        return [PSCustomObject]@{
+            State = 'corrupt'; Entries = $entries; SchemaVersion = $null
+            Detail = 'Manifest path must be a supported regular file.'
+            ManifestPath = $manifestPath; DiagnosticCategory = 'manifest-path-type'; CatalogValidated = $false
         }
     }
 
     try {
+        $inputBytes = [IO.File]::ReadAllBytes($manifestItem.FullName)
         $jsonParameters = @{ AsHashtable = $true }
         if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $jsonParameters['DateKind'] = 'String' }
-        $manifest = Get-Content -Raw $manifestPath | ConvertFrom-Json @jsonParameters
+        $manifest = [Text.UTF8Encoding]::new($false, $true).GetString($inputBytes) | ConvertFrom-Json @jsonParameters
     } catch {
         return [PSCustomObject]@{
             State         = 'corrupt'
@@ -1743,6 +1780,403 @@ function Set-ManifestEntry {
     }
 }
 
+function ConvertTo-ManifestV3Timestamp {
+    param([datetime]$Value = [datetime]::UtcNow)
+    return $Value.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffffffZ', [Globalization.CultureInfo]::InvariantCulture)
+}
+
+function ConvertTo-DeterministicJsonBytes {
+    param([Parameter(Mandatory = $true)][object]$Value)
+    $json = $Value | ConvertTo-Json -Depth 100 -Compress
+    return [Text.UTF8Encoding]::new($false).GetBytes("$json`n")
+}
+
+function Resolve-ManifestV3SourceLocator {
+    param([Parameter(Mandatory = $true)][System.Collections.IDictionary]$CatalogComponent)
+    $prefix = switch ($CatalogComponent.role) {
+        'canonical' { 'template' }
+        'generated' { 'generated' }
+        'project-owned' { 'project' }
+        'compatibility' { 'legacy' }
+        default { throw "Unsupported Catalog role: $($CatalogComponent.role)" }
+    }
+    return "$prefix`:$($CatalogComponent.canonical_source_path)"
+}
+
+function Get-ManifestV3ForkClassification {
+    param(
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$CatalogComponent,
+        [object]$LegacyEntry,
+        [string]$BaselineHash,
+        [string]$ObservedHash
+    )
+    if ($CatalogComponent.role -eq 'project-owned') {
+        return @('project-owned', 'explicit-project-ownership', 'preserve')
+    }
+    if ($CatalogComponent.role -eq 'compatibility') {
+        return @('legacy', 'legacy-import', 'report-only')
+    }
+    if (-not $LegacyEntry) {
+        return @('unknown', 'missing-lineage', 'report-only')
+    }
+    if ($BaselineHash -and $ObservedHash -eq $BaselineHash) {
+        return @('untouched', 'verified-managed-equality', 'manage')
+    }
+    if ($BaselineHash -and $ObservedHash -and $ObservedHash -ne $BaselineHash) {
+        if ($CatalogComponent.role -eq 'generated') {
+            return @('derived-customized', 'derived-hash-divergence', 'preserve')
+        }
+        return @('customized', 'hash-divergence', 'preserve')
+    }
+    return @('unknown', 'missing-lineage', 'report-only')
+}
+
+function Get-V3UpdateDisposition {
+    param(
+        [object]$Component,
+        [string]$CurrentHash
+    )
+    if (-not $Component) {
+        return [PSCustomObject]@{ Action = 'report-only'; Reason = 'missing-lineage' }
+    }
+    if ($Component.lifecycle.state -ne 'active') {
+        return [PSCustomObject]@{ Action = 'report-only'; Reason = 'stale-or-retired' }
+    }
+    if ($Component.provenance.ownership -eq 'project-owned') {
+        return [PSCustomObject]@{ Action = 'preserve'; Reason = 'project-owned' }
+    }
+    if ($Component.provenance.ownership -eq 'legacy-compat' -or $Component.provenance.fork.decision -eq 'report-only') {
+        return [PSCustomObject]@{ Action = 'report-only'; Reason = 'legacy-or-unknown' }
+    }
+    $trustedBaseline = [string]$Component.hashes.result_after
+    if ($Component.provenance.fork.decision -eq 'manage' -and $trustedBaseline -and $CurrentHash -eq $trustedBaseline) {
+        return [PSCustomObject]@{ Action = 'manage'; Reason = 'trusted-baseline-equality' }
+    }
+    return [PSCustomObject]@{ Action = 'preserve'; Reason = 'customized-or-unproven' }
+}
+
+function Resolve-ManifestV3Link {
+    param(
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$CatalogComponent,
+        [Parameter(Mandatory = $true)][string]$TargetPath
+    )
+    if ($CatalogComponent.kind -notin @('mount', 'link')) { return $null }
+    $targetRelative = if ($CatalogComponent.kind -eq 'mount') { 'skills' } else { throw "Unsupported Catalog link mapping: $($CatalogComponent.id)" }
+    $mode = if ($script:Phase4DPlanOnly) {
+        if ($IsWindows) { 'junction' } else { 'symlink' }
+    } else {
+        $path = Join-Path $TargetPath $CatalogComponent.canonical_source_path
+        $item = Get-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+        if ($item -and (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)) {
+            if ($IsWindows) { 'junction' } else { 'symlink' }
+        } else { 'copy-fallback' }
+    }
+    return [ordered]@{ target_path = $targetRelative; target_path_key = $targetRelative.ToLowerInvariant(); mode = $mode }
+}
+
+function ConvertFrom-V3ManifestForUpdate {
+    param(
+        [Parameter(Mandatory = $true)][pscustomobject]$ManifestResult,
+        [Parameter(Mandatory = $true)][string]$TargetPath,
+        [Parameter(Mandatory = $true)][string]$SourceRoot
+    )
+    if ($ManifestResult.State -ne 'valid-v3') { throw "v3-update-plan-required: $($ManifestResult.State)" }
+    $entries = @{ __v3_update_mode = $true }
+    foreach ($component in @($ManifestResult.Entries.Values)) {
+        $path = [string]$component.identity.path
+        $targetFile = Join-Path $TargetPath $path
+        $sourceFile = Join-Path $SourceRoot $path
+        $currentHash = if ($component.identity.kind -eq 'file' -and (Test-Path -LiteralPath $targetFile -PathType Leaf)) { Get-PathHash $targetFile } else { $null }
+        $proposedHash = if ($component.identity.kind -eq 'file' -and (Test-Path -LiteralPath $sourceFile -PathType Leaf)) { Get-PathHash $sourceFile } else { $null }
+        $disposition = Get-V3UpdateDisposition -Component $component -CurrentHash $currentHash
+        $entries[$path] = [ordered]@{
+            name = $path
+            installed_at = $component.installed_at
+            source_hash = $component.hashes.result_after
+            managed_hash = $component.hashes.result_after
+            observed_hash = $currentHash
+            proposed_hash = $proposedHash
+            ownership = $component.provenance.ownership
+            kind = $component.identity.kind
+            source = $component.provenance.source.locator
+            status = $disposition.Reason
+            v3_disposition = $disposition.Action
+        }
+    }
+    return $entries
+}
+
+function New-ManifestV3Candidate {
+    param(
+        [Parameter(Mandatory = $true)][string]$TargetPath,
+        [Parameter(Mandatory = $true)][string]$SourceRoot,
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$ManifestEntries,
+        [ValidateSet('install', 'update', 'migration')][string]$Mode,
+        [datetime]$Timestamp = [datetime]::UtcNow,
+        [string]$TransactionId
+    )
+    $catalogResult = Get-ValidatedComponentCatalog -SourceRoot $SourceRoot
+    $catalog = $catalogResult.Catalog
+    $now = ConvertTo-ManifestV3Timestamp $Timestamp
+    if (-not $TransactionId) {
+        $TransactionId = "txn:powershell-$([guid]::NewGuid().ToString('N'))"
+    }
+    $components = @()
+    foreach ($name in @($ManifestEntries.Keys | Where-Object { -not ([string]$_).StartsWith('__', [StringComparison]::Ordinal) } | Sort-Object)) {
+        $normalized = Normalize-RelativePath ([string]$name)
+        $catalogComponent = @($catalog.components | Where-Object canonical_source_path -CEQ $normalized)
+        if ($catalogComponent.Count -ne 1) {
+            throw "catalog-mapping: Manifest entry does not resolve to exactly one Catalog component: $normalized"
+        }
+        $catalogComponent = $catalogComponent[0]
+        $legacy = $ManifestEntries[$name]
+        $baseline = if ($legacy.managed_hash) { [string]$legacy.managed_hash } elseif ($legacy.source_hash) { [string]$legacy.source_hash } else { $null }
+        $observed = if ($legacy.observed_hash) { [string]$legacy.observed_hash } else { $baseline }
+        $sourcePath = Join-Path $SourceRoot $catalogComponent.canonical_source_path
+        $proposed = if ($catalogComponent.kind -eq 'file' -and (Test-Path -LiteralPath $sourcePath -PathType Leaf)) { Get-PathHash $sourcePath } else { $null }
+        $classification = if ($catalogComponent.kind -eq 'file') {
+            Get-ManifestV3ForkClassification -CatalogComponent $catalogComponent -LegacyEntry $legacy -BaselineHash $baseline -ObservedHash $observed
+        } else {
+            @('not-applicable', 'hash-not-applicable', 'report-only')
+        }
+        $outcome = switch ($classification[0]) {
+            'untouched' { if ($Mode -eq 'install') { 'installed' } else { 'updated' } }
+            { $_ -in @('customized', 'derived-customized') } { 'preserved-customization' }
+            'not-applicable' { 'reported' }
+            default { 'preserved-existing' }
+        }
+        if ($outcome -in @('installed', 'updated')) {
+            $resultAfter = $proposed
+            if (-not $resultAfter) { $classification = @('unknown', 'missing-lineage', 'report-only'); $outcome = 'preserved-existing'; $resultAfter = $observed }
+        } else {
+            $resultAfter = $observed
+        }
+        $ownership = switch ($catalogComponent.role) {
+            canonical { 'template-managed' }
+            generated { 'derived-runtime' }
+            'project-owned' { 'project-owned' }
+            compatibility { 'legacy-compat' }
+        }
+        $sourceKind = switch ($catalogComponent.role) {
+            canonical { 'template' }
+            generated { 'generated' }
+            'project-owned' { 'project' }
+            compatibility { 'legacy' }
+        }
+        $installedAt = if ($legacy.installed_at) {
+            try { ConvertTo-ManifestV3Timestamp ([DateTimeOffset]::Parse([string]$legacy.installed_at, [Globalization.CultureInfo]::InvariantCulture).UtcDateTime) }
+            catch { $now }
+        } else { $now }
+        $components += [ordered]@{
+            identity = [ordered]@{
+                id = $catalogComponent.id; path = $catalogComponent.canonical_source_path
+                path_key = $catalogComponent.canonical_source_path.ToLowerInvariant(); kind = $catalogComponent.kind
+                role = $catalogComponent.role; link = (Resolve-ManifestV3Link -CatalogComponent $catalogComponent -TargetPath $TargetPath)
+            }
+            provenance = [ordered]@{
+                ownership = $ownership
+                source = [ordered]@{ kind = $sourceKind; locator = (Resolve-ManifestV3SourceLocator $catalogComponent); release = $catalog.source_release.release_id }
+                generated_from = @($catalogComponent.generated_from)
+                fork = [ordered]@{ status = $classification[0]; basis = $classification[1]; decision = $classification[2]; classified_at = $now }
+            }
+            hashes = [ordered]@{
+                algorithm = 'sha256'; content_basis = 'exact-bytes'; baseline = $baseline
+                observed_before = $observed; proposed_source = $proposed; result_after = $resultAfter
+            }
+            lifecycle = [ordered]@{ state = $catalogComponent.lifecycle_status; previous_paths = @($catalogComponent.previous_paths); retirement = $null; reintroduces_component_id = $catalogComponent.reintroduces_component_id }
+            last_operation = [ordered]@{ transaction_id = $TransactionId; outcome = $outcome }
+            installed_at = $installedAt; updated_at = $now
+        }
+    }
+    $manifest = [ordered]@{
+        schema_version = 3; written_at = $now
+        source_release = [ordered]@{
+            release_id = $catalog.source_release.release_id; source_ref = $catalog.source_release.source_ref; version = $catalog.source_release.version
+            component_catalog = [ordered]@{ path = $script:ComponentCatalogPath; schema_version = $script:ComponentCatalogSchemaVersion; sha256 = (Get-Sha256ForBytes $catalogResult.Bytes) }
+        }
+        last_transaction = [ordered]@{ id = $TransactionId; mode = $Mode; writer = 'powershell'; started_at = $now; completed_at = $now; result = 'committed' }
+        components = @($components | Sort-Object { $_.identity.id })
+    }
+    [void](Assert-V3Manifest -Manifest $manifest -SourceRoot $SourceRoot)
+    return $manifest
+}
+
+function New-ManifestMigrationProposal {
+    param(
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$ManifestEntries,
+        [Parameter(Mandatory = $true)][string]$SourceRoot
+    )
+    $catalogResult = Get-ValidatedComponentCatalog -SourceRoot $SourceRoot
+    $components = foreach ($name in @($ManifestEntries.Keys | Sort-Object)) {
+        $normalized = Normalize-RelativePath ([string]$name)
+        $catalogComponent = @($catalogResult.Catalog.components | Where-Object canonical_source_path -CEQ $normalized)
+        if ($catalogComponent.Count -ne 1) { throw "catalog-mapping: Manifest entry does not resolve to exactly one Catalog component: $normalized" }
+        $catalogComponent = $catalogComponent[0]
+        $entry = $ManifestEntries[$name]
+        $baseline = if ($entry.managed_hash) { [string]$entry.managed_hash } elseif ($entry.source_hash) { [string]$entry.source_hash } else { $null }
+        $observed = if ($entry.observed_hash) { [string]$entry.observed_hash } else { $baseline }
+        $sourcePath = Join-Path $SourceRoot $normalized
+        $proposed = if ($catalogComponent.kind -eq 'file' -and (Test-Path -LiteralPath $sourcePath -PathType Leaf)) { Get-PathHash $sourcePath } else { $null }
+        $fork = Get-ManifestV3ForkClassification -CatalogComponent $catalogComponent -LegacyEntry $entry -BaselineHash $baseline -ObservedHash $observed
+        [ordered]@{
+            id = $catalogComponent.id; path = $normalized; kind = $catalogComponent.kind; role = $catalogComponent.role
+            ownership = switch ($catalogComponent.role) { canonical { 'template-managed' } generated { 'derived-runtime' } 'project-owned' { 'project-owned' } compatibility { 'legacy-compat' } }
+            fork = [ordered]@{ status = $fork[0]; basis = $fork[1]; decision = $fork[2] }
+            hashes = [ordered]@{ baseline = $baseline; observed_before = $observed; proposed_source = $proposed }
+        }
+    }
+    return [ordered]@{ schema_version = 3; components = @($components | Sort-Object id) }
+}
+
+function ConvertFrom-LegacyManifestForMigration {
+    param(
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$Manifest,
+        [Parameter(Mandatory = $true)][string]$TargetPath
+    )
+    $entries = @{}
+    foreach ($component in @($Manifest.components)) {
+        $name = Normalize-RelativePath ([string]$component.name)
+        $entry = [ordered]@{}
+        foreach ($key in $component.Keys) { $entry[$key] = $component[$key] }
+        $componentPath = Join-Path $TargetPath $name
+        if (Test-Path -LiteralPath $componentPath -PathType Leaf) {
+            $entry.observed_hash = Get-PathHash $componentPath
+        }
+        $entries[$name] = $entry
+    }
+    return $entries
+}
+
+function New-ManifestMigrationPreview {
+    param(
+        [Parameter(Mandatory = $true)][string]$TargetPath,
+        [Parameter(Mandatory = $true)][string]$SourceRoot
+    )
+    $target = [IO.Path]::GetFullPath($TargetPath)
+    $classification = Get-InstallManifest -TargetPath $target -SourceRoot $SourceRoot
+    if ($classification.State -eq 'valid-v3') {
+        return [PSCustomObject]@{ status = 'already-v3'; applicable = $false; normalized_target = $target; no_write_confirmation = $true }
+    }
+    if ($classification.State -notin @('valid-v1', 'valid-v2')) {
+        throw "migration-preview-not-applicable: $($classification.State)"
+    }
+    $manifestPath = $classification.ManifestPath
+    $inputBytes = [IO.File]::ReadAllBytes($manifestPath)
+    $jsonParameters = @{ AsHashtable = $true }
+    if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $jsonParameters.DateKind = 'String' }
+    $legacy = [Text.UTF8Encoding]::new($false, $true).GetString($inputBytes) | ConvertFrom-Json @jsonParameters
+    $entries = ConvertFrom-LegacyManifestForMigration -Manifest $legacy -TargetPath $target
+    $inputHash = Get-BytesHash $inputBytes
+    $proposal = New-ManifestMigrationProposal -ManifestEntries $entries -SourceRoot $SourceRoot
+    $proposalHash = Get-BytesHash (ConvertTo-DeterministicJsonBytes $proposal)
+    $schema = Get-ValidatedProductionManifestSchema -SourceRoot $SourceRoot
+    $catalog = Get-ValidatedComponentCatalog -SourceRoot $SourceRoot
+    $binding = [ordered]@{
+        normalized_target = $target; input_manifest_sha256 = $inputHash; proposed_manifest_sha256 = $proposalHash
+        schema_id = $schema.Schema['$id']; schema_version = 3; catalog_fingerprint = (Get-Sha256ForBytes $catalog.Bytes)
+        source_ref = $catalog.Catalog.source_release.source_ref
+    }
+    $previewId = 'preview:' + (Get-BytesHash (ConvertTo-DeterministicJsonBytes $binding))
+    $mapped = @($proposal.components | ForEach-Object { $_.id })
+    $preserved = @($proposal.components | Where-Object { $_.fork.decision -ne 'manage' } | ForEach-Object { $_.id })
+    $legacyIds = @($proposal.components | Where-Object { $_.fork.status -in @('legacy', 'unknown') } | ForEach-Object { $_.id })
+    return [PSCustomObject][ordered]@{
+        status = 'preview'; applicable = $true; input_version = $classification.SchemaVersion; normalized_target = $target
+        input_manifest_sha256 = $inputHash; proposed_manifest_sha256 = $proposalHash
+        schema = [ordered]@{ id = $schema.Schema['$id']; version = 3 }
+        catalog = [ordered]@{ fingerprint = (Get-Sha256ForBytes $catalog.Bytes) }
+        source = [ordered]@{ version = $catalog.Catalog.source_release.version; ref = $catalog.Catalog.source_release.source_ref }
+        mapped_components = $mapped; preserved_components = $preserved; legacy_components = $legacyIds
+        blocking_findings = @(); backup_plan = [ordered]@{ required = $true; exact_bytes = $true; manifest_only = $true }
+        preview_id = $previewId; no_write_confirmation = $true
+    }
+}
+
+function Copy-ManifestMigrationBackup {
+    param([Parameter(Mandatory = $true)][string]$ManifestPath)
+    if ($script:Phase4DFailpoint -eq 'backup') { throw 'backup-failed: injected before backup creation' }
+    $backupPath = "$ManifestPath.phase4d-backup-$([guid]::NewGuid().ToString('N'))"
+    [IO.File]::WriteAllBytes($backupPath, [IO.File]::ReadAllBytes($ManifestPath))
+    return $backupPath
+}
+
+function Write-Phase4DDiagnostic {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Message
+    )
+    try {
+        [IO.File]::WriteAllText($Path, $Message + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
+    } catch {
+        # The original failure remains authoritative. Never hide it with a
+        # secondary diagnostic-write failure or attempt a speculative restore.
+    }
+}
+
+function Assert-ManifestV3CandidateBytes {
+    param(
+        [Parameter(Mandatory = $true)][byte[]]$Bytes,
+        [Parameter(Mandatory = $true)][string]$SourceRoot
+    )
+    $jsonParameters = @{ AsHashtable = $true }
+    if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $jsonParameters.DateKind = 'String' }
+    $candidate = [Text.UTF8Encoding]::new($false, $true).GetString($Bytes) | ConvertFrom-Json @jsonParameters
+    [void](Assert-V3Manifest -Manifest $candidate -SourceRoot $SourceRoot)
+    return $candidate
+}
+
+function Publish-ManifestV3Candidate {
+    param(
+        [Parameter(Mandatory = $true)][string]$ManifestPath,
+        [Parameter(Mandatory = $true)][byte[]]$CandidateBytes,
+        [Parameter(Mandatory = $true)][string]$SourceRoot
+    )
+    $tempPath = Join-Path (Split-Path -Parent $ManifestPath) ('.ai-workflow-install.phase4d-' + [guid]::NewGuid().ToString('N') + '.tmp')
+    try {
+        [IO.File]::WriteAllBytes($tempPath, $CandidateBytes)
+        [void](Assert-ManifestV3CandidateBytes -Bytes ([IO.File]::ReadAllBytes($tempPath)) -SourceRoot $SourceRoot)
+        if ($script:Phase4DFailpoint -eq 'manifest-replace') { throw 'manifest-replace-failed: injected before replace' }
+        [IO.File]::Move($tempPath, $ManifestPath, $true)
+    } finally {
+        if (Test-Path -LiteralPath $tempPath -PathType Leaf) { Remove-Item -LiteralPath $tempPath -Force }
+    }
+}
+
+function Invoke-ManifestMigrationApply {
+    param(
+        [Parameter(Mandatory = $true)][string]$TargetPath,
+        [Parameter(Mandatory = $true)][string]$SourceRoot,
+        [Parameter(Mandatory = $true)][string]$ExpectedPreviewId
+    )
+    $current = Get-InstallManifest -TargetPath $TargetPath -SourceRoot $SourceRoot
+    if ($current.State -eq 'valid-v3') {
+        return [PSCustomObject]@{ status = 'already-v3'; applicable = $false }
+    }
+    $preview = New-ManifestMigrationPreview -TargetPath $TargetPath -SourceRoot $SourceRoot
+    if ($preview.preview_id -cne $ExpectedPreviewId) { throw "preview-mismatch: expected $ExpectedPreviewId; actual $($preview.preview_id)" }
+    $manifestPath = Join-Path ([IO.Path]::GetFullPath($TargetPath)) '.ai-workflow-install.json'
+    $inputBytes = [IO.File]::ReadAllBytes($manifestPath)
+    $jsonParameters = @{ AsHashtable = $true }
+    if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $jsonParameters.DateKind = 'String' }
+    $legacy = [Text.UTF8Encoding]::new($false, $true).GetString($inputBytes) | ConvertFrom-Json @jsonParameters
+    $entries = ConvertFrom-LegacyManifestForMigration -Manifest $legacy -TargetPath ([IO.Path]::GetFullPath($TargetPath))
+    $candidate = New-ManifestV3Candidate -TargetPath $TargetPath -SourceRoot $SourceRoot -ManifestEntries $entries -Mode migration
+    $candidateBytes = ConvertTo-DeterministicJsonBytes $candidate
+    if ($script:Phase4DFailpoint -eq 'candidate-validation') { throw 'candidate-validation-failed: injected before backup or publication' }
+    [void](Assert-ManifestV3CandidateBytes -Bytes $candidateBytes -SourceRoot $SourceRoot)
+    $backupPath = Copy-ManifestMigrationBackup -ManifestPath $manifestPath
+    try {
+        Publish-ManifestV3Candidate -ManifestPath $manifestPath -CandidateBytes $candidateBytes -SourceRoot $SourceRoot
+        if ($script:Phase4DFailpoint -eq 'post-write-validation') { throw 'post-write-validation-failed: injected after publication' }
+        $published = Get-InstallManifest -TargetPath $TargetPath -SourceRoot $SourceRoot
+        if ($published.State -ne 'valid-v3') { throw "post-write-validation-failed: $($published.DiagnosticCategory)" }
+    } catch {
+        Write-Phase4DDiagnostic -Path ($backupPath + '.diagnostic.txt') -Message $_.Exception.Message
+        throw "manual-recovery-required: $($_.Exception.Message); backup=$backupPath"
+    }
+    return [PSCustomObject]@{ status = 'completed'; applicable = $true; backup_path = $backupPath; preview_id = $preview.preview_id }
+}
+
 function Write-InstallManifest {
     param(
         [Parameter(Mandatory = $true)]
@@ -1750,27 +2184,80 @@ function Write-InstallManifest {
         [Parameter(Mandatory = $true)]
         [string]$SourceRoot,
         [Parameter(Mandatory = $true)]
-        [hashtable]$ManifestEntries
+        [hashtable]$ManifestEntries,
+        [ValidateSet('install', 'update')][string]$Mode = 'update'
     )
-
-    $sourceRef = (& git -C $SourceRoot rev-parse --short HEAD 2>$null)
-    if (-not $sourceRef) {
-        $sourceRef = 'unknown'
-    }
-
-    $components = foreach ($name in ($ManifestEntries.Keys | Sort-Object)) {
-        $ManifestEntries[$name]
-    }
-
-    $manifest = [ordered]@{
-        schema_version = 2
-        installed_at   = (Get-Date).ToString('o')
-        source_ref     = $sourceRef
-        components     = @($components)
-    }
-
+    $manifest = New-ManifestV3Candidate -TargetPath $TargetPath -SourceRoot $SourceRoot -ManifestEntries $ManifestEntries -Mode $Mode
+    $bytes = ConvertTo-DeterministicJsonBytes $manifest
+    [void](Assert-ManifestV3CandidateBytes -Bytes $bytes -SourceRoot $SourceRoot)
     $manifestPath = Join-Path $TargetPath '.ai-workflow-install.json'
-    $manifest | ConvertTo-Json -Depth 6 | Set-Content -Path $manifestPath -Encoding UTF8
+    Publish-ManifestV3Candidate -ManifestPath $manifestPath -CandidateBytes $bytes -SourceRoot $SourceRoot
+    $published = Get-InstallManifest -TargetPath $TargetPath -SourceRoot $SourceRoot
+    if ($published.State -ne 'valid-v3') { throw "post-write-validation-failed: $($published.DiagnosticCategory)" }
+}
+
+function New-ManifestV3UpdateBackup {
+    param(
+        [Parameter(Mandatory = $true)][string]$TargetPath,
+        [Parameter(Mandatory = $true)][hashtable]$ManifestEntries
+    )
+    if ($script:Phase4DFailpoint -eq 'backup') { throw 'backup-failed: injected before backup creation' }
+    $backupRoot = Join-Path $TargetPath ('.ai-workflow-phase4d-backup-' + [guid]::NewGuid().ToString('N'))
+    [IO.Directory]::CreateDirectory($backupRoot) | Out-Null
+    $manifestPath = Join-Path $TargetPath '.ai-workflow-install.json'
+    [IO.File]::WriteAllBytes((Join-Path $backupRoot '.ai-workflow-install.json'), [IO.File]::ReadAllBytes($manifestPath))
+    foreach ($name in @($ManifestEntries.Keys | Where-Object { -not ([string]$_).StartsWith('__', [StringComparison]::Ordinal) } | Sort-Object)) {
+        $entry = $ManifestEntries[$name]
+        if ($entry.v3_disposition -ne 'manage' -or $entry.kind -ne 'file') { continue }
+        $source = Join-Path $TargetPath $name
+        if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { continue }
+        $destination = Join-Path $backupRoot $name
+        [IO.Directory]::CreateDirectory((Split-Path -Parent $destination)) | Out-Null
+        [IO.File]::WriteAllBytes($destination, [IO.File]::ReadAllBytes($source))
+    }
+    return $backupRoot
+}
+
+function Invoke-ManifestV3GeneralUpdate {
+    param(
+        [Parameter(Mandatory = $true)][string]$TargetPath,
+        [Parameter(Mandatory = $true)][string]$SourceRoot,
+        [switch]$Force
+    )
+    $manifestResult = Get-InstallManifest -TargetPath $TargetPath -SourceRoot $SourceRoot
+    if ($manifestResult.State -ne 'valid-v3') { throw "v3-general-update-not-applicable: $($manifestResult.State)" }
+    $entries = ConvertFrom-V3ManifestForUpdate -ManifestResult $manifestResult -TargetPath $TargetPath -SourceRoot $SourceRoot
+    $backupRoot = New-ManifestV3UpdateBackup -TargetPath $TargetPath -ManifestEntries $entries
+    try {
+        if ($script:Phase4DFailpoint -eq 'managed-write') { throw 'managed-write-failed: injected before managed write' }
+        $syncResult = Sync-WorkflowFiles -SourcePath (Join-Path $SourceRoot '.github') -TargetPath $TargetPath -ManifestEntries $entries -ConstitutionSourceRoot $SourceRoot -Force:$Force
+        $portableResult = Install-PortableRuntime -SourceRoot $SourceRoot -TargetPath $TargetPath -ManifestEntries $entries -Force:$Force
+        $syncResult = Merge-SyncResults $syncResult $portableResult
+        Write-InstallManifest -TargetPath $TargetPath -SourceRoot $SourceRoot -ManifestEntries $entries -Mode update
+        return [PSCustomObject]@{ SyncResult = $syncResult; BackupPath = $backupRoot; ManifestEntries = $entries }
+    } catch {
+        Write-Phase4DDiagnostic -Path (Join-Path $backupRoot 'diagnostic.txt') -Message $_.Exception.Message
+        throw "manual-recovery-required: $($_.Exception.Message); backup=$backupRoot"
+    }
+}
+
+function Test-ManifestV3FreshInstallPlan {
+    param(
+        [Parameter(Mandatory = $true)][string]$TargetPath,
+        [Parameter(Mandatory = $true)][string]$SourceRoot
+    )
+    $planSourceRoot = [IO.Path]::GetFullPath($SourceRoot)
+    $entries = @{}
+    $script:Phase4DPlanOnly = $true
+    try {
+        $null = Sync-WorkflowFiles -SourcePath (Join-Path $planSourceRoot '.github') -TargetPath $TargetPath -ManifestEntries $entries -ConstitutionSourceRoot $planSourceRoot
+        $null = Install-PortableRuntime -SourceRoot $planSourceRoot -TargetPath $TargetPath -ManifestEntries $entries
+        $candidate = New-ManifestV3Candidate -TargetPath $TargetPath -SourceRoot $planSourceRoot -ManifestEntries $entries -Mode install
+        [void](Assert-ManifestV3CandidateBytes -Bytes (ConvertTo-DeterministicJsonBytes $candidate) -SourceRoot $planSourceRoot)
+    } finally {
+        $script:Phase4DPlanOnly = $false
+    }
+    return $entries
 }
 
 function Set-ManagedBytes {
@@ -1803,6 +2290,27 @@ function Set-ManagedBytes {
     }
     $currentHash = if (Test-Path $Path -PathType Leaf) { Get-PathHash -Path $Path } else { $null }
     $desiredHash = Get-BytesHash -Bytes $Bytes
+
+    if ($script:Phase4DPlanOnly) {
+        $plannedStatus = if ($currentHash -eq $desiredHash) { 'skipped' } elseif ($currentHash) { 'updated' } else { 'added' }
+        Add-SyncRecord -Result $Result -Status $plannedStatus -Path $normalizedRelative
+        Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $normalizedRelative -Ownership $Ownership -SourceLabel $SourceLabel -Kind 'file' -ManagedHash $desiredHash -ObservedHash $desiredHash -Status 'planned'
+        return
+    }
+
+    if ($ManifestEntries.ContainsKey('__v3_update_mode')) {
+        $disposition = if ($previous -and $previous.v3_disposition) { [string]$previous.v3_disposition } else { 'report-only' }
+        if ($disposition -ne 'manage') {
+            $suffix = if ($disposition -eq 'preserve') { '[preserved customization or ownership]' } else { '[report-only; manual decision]' }
+            Add-SyncRecord -Result $Result -Status 'skipped' -Path $normalizedRelative -Suffix $suffix
+            if ($previous) {
+                $previous.observed_hash = $currentHash
+                $previous.proposed_hash = $desiredHash
+                $previous.status = if ($disposition -eq 'preserve') { 'preserved-customization' } else { 'reported' }
+            }
+            return
+        }
+    }
 
     if (-not (Test-Path $Path -PathType Leaf)) {
         $parent = Split-Path $Path -Parent
@@ -2333,11 +2841,17 @@ function Install-PortableRuntime {
     $targetPathResolved = (Resolve-Path $TargetPath).Path
     $skillExcludes = if ($sourceRootResolved -ne $targetPathResolved) { @('gate-check') } else { @() }
 
+    $seedSkills = if ($ManifestEntries.ContainsKey('__v3_update_mode')) { New-SyncResult } else { Seed-DirectoryFromLegacyRuntime -TargetPath $TargetPath -RelativeDirectory 'skills' -ExcludePatterns $skillExcludes }
+    $seedAgents = if ($ManifestEntries.ContainsKey('__v3_update_mode')) { New-SyncResult } else { Seed-DirectoryFromLegacyRuntime -TargetPath $TargetPath -RelativeDirectory 'agents' }
     $result = Merge-SyncResults `
-        (Seed-DirectoryFromLegacyRuntime -TargetPath $TargetPath -RelativeDirectory 'skills' -ExcludePatterns $skillExcludes) `
-        (Seed-DirectoryFromLegacyRuntime -TargetPath $TargetPath -RelativeDirectory 'agents') `
+        $seedSkills `
+        $seedAgents `
         (Sync-DirectoryWithPolicy -SourcePath (Join-Path $SourceRoot 'skills') -TargetPath $TargetPath -BaseRelative 'skills' -ManifestEntries $ManifestEntries -Ownership 'template-managed' -SourceLabelPrefix 'template:skills' -Force:$Force -ExcludePatterns $skillExcludes) `
         (Sync-DirectoryWithPolicy -SourcePath (Join-Path $SourceRoot 'agents') -TargetPath $TargetPath -BaseRelative 'agents' -ManifestEntries $ManifestEntries -Ownership 'template-managed' -SourceLabelPrefix 'template:agents' -Force:$Force)
+
+    if (-not $ManifestEntries.ContainsKey('__v3_update_mode')) {
+        Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath 'skills' -Ownership 'template-managed' -SourceLabel 'template:skills' -Kind 'directory' -ManagedHash $null -ObservedHash $null -Status $(if ($script:Phase4DPlanOnly) { 'planned' } else { 'reported' })
+    }
 
     $guideTemplates = @(
         @{ RelativePath = 'AGENTS.md';  Template = Join-Path $SourceRoot 'docs\AGENTS.template.md' },
@@ -2357,13 +2871,14 @@ function Install-PortableRuntime {
             continue
         }
 
-        $parent = Split-Path $guidePath -Parent
-        if ($parent -and -not (Test-Path $parent)) {
-            New-Item -ItemType Directory -Path $parent -Force | Out-Null
-        }
-        [System.IO.File]::WriteAllBytes($guidePath, $guideBytes)
-        Add-SyncRecord -Result $result -Status 'added' -Path $guide.RelativePath
-        Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $guide.RelativePath -Ownership 'project-owned' -SourceLabel "template:docs/$([IO.Path]::GetFileName($guide.Template))" -Kind 'file' -ManagedHash (Get-BytesHash -Bytes $guideBytes) -ObservedHash (Get-PathHash -Path $guidePath) -Status 'project-owned'
+        Set-ManagedBytes `
+            -Path $guidePath `
+            -RelativePath $guide.RelativePath `
+            -Bytes $guideBytes `
+            -Result $result `
+            -ManifestEntries $ManifestEntries `
+            -Ownership 'project-owned' `
+            -SourceLabel "template:docs/$([IO.Path]::GetFileName($guide.Template))"
     }
 
     $result = Merge-SyncResults `
@@ -2372,12 +2887,19 @@ function Install-PortableRuntime {
 
     $sharedSkills = Join-Path $TargetPath 'skills'
     foreach ($relativeLink in $script:PortableSkillLinks) {
-        $linkResult = Ensure-SkillLink -LinkPath (Join-Path $TargetPath $relativeLink) -TargetPath $sharedSkills -Force
-        Add-SyncRecord -Result $result -Status $linkResult.Status -Path $relativeLink -Suffix $linkResult.Suffix
-        Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $relativeLink -Ownership 'derived-runtime' -SourceLabel 'project:skills' -Kind 'mount' -ManagedHash $null -ObservedHash $null -Status 'derived-runtime'
+        if ($script:Phase4DPlanOnly) {
+            Add-SyncRecord -Result $result -Status 'added' -Path $relativeLink
+            Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $relativeLink -Ownership 'derived-runtime' -SourceLabel 'project:skills' -Kind 'mount' -ManagedHash $null -ObservedHash $null -Status 'planned'
+        } elseif ($ManifestEntries.ContainsKey('__v3_update_mode')) {
+            Add-SyncRecord -Result $result -Status 'skipped' -Path $relativeLink -Suffix '[v3 ownership preserved]'
+        } else {
+            $linkResult = Ensure-SkillLink -LinkPath (Join-Path $TargetPath $relativeLink) -TargetPath $sharedSkills -Force
+            Add-SyncRecord -Result $result -Status $linkResult.Status -Path $relativeLink -Suffix $linkResult.Suffix
+            Set-ManifestEntry -ManifestEntries $ManifestEntries -RelativePath $relativeLink -Ownership 'derived-runtime' -SourceLabel 'project:skills' -Kind 'mount' -ManagedHash $null -ObservedHash $null -Status 'derived-runtime'
+        }
     }
 
-    $targetAgentsDir = Join-Path $TargetPath 'agents'
+    $targetAgentsDir = if ($script:Phase4DPlanOnly) { Join-Path $SourceRoot 'agents' } else { Join-Path $TargetPath 'agents' }
     if (Test-Path $targetAgentsDir) {
         Get-ChildItem -Path $targetAgentsDir -Filter '*.agent.md' | Sort-Object Name | ForEach-Object {
             $definition = Get-AgentDefinition -Path $_.FullName
@@ -2410,10 +2932,12 @@ function Install-PortableRuntime {
         }
     }
 
+    $derivedSkillsSource = if ($script:Phase4DPlanOnly) { Join-Path $SourceRoot 'skills' } else { Join-Path $TargetPath 'skills' }
+    $derivedAgentsSource = if ($script:Phase4DPlanOnly) { Join-Path $SourceRoot 'agents' } else { Join-Path $TargetPath 'agents' }
     $result = Merge-SyncResults `
         $result `
-        (Sync-DirectoryWithPolicy -SourcePath (Join-Path $TargetPath 'skills') -TargetPath $TargetPath -BaseRelative '.github/skills' -ManifestEntries $ManifestEntries -Ownership 'derived-runtime' -SourceLabelPrefix 'project:skills' -AlwaysOverwrite -PreserveUntracked:$false) `
-        (Sync-DirectoryWithPolicy -SourcePath (Join-Path $TargetPath 'agents') -TargetPath $TargetPath -BaseRelative '.github/agents' -ManifestEntries $ManifestEntries -Ownership 'derived-runtime' -SourceLabelPrefix 'project:agents' -AlwaysOverwrite -PreserveUntracked:$false)
+        (Sync-DirectoryWithPolicy -SourcePath $derivedSkillsSource -TargetPath $TargetPath -BaseRelative '.github/skills' -ManifestEntries $ManifestEntries -Ownership 'derived-runtime' -SourceLabelPrefix 'project:skills' -AlwaysOverwrite -PreserveUntracked:$false -ExcludePatterns $skillExcludes) `
+        (Sync-DirectoryWithPolicy -SourcePath $derivedAgentsSource -TargetPath $TargetPath -BaseRelative '.github/agents' -ManifestEntries $ManifestEntries -Ownership 'derived-runtime' -SourceLabelPrefix 'project:agents' -AlwaysOverwrite -PreserveUntracked:$false)
 
     return $result
 }
@@ -2559,18 +3083,35 @@ function Main {
         (Test-Path -LiteralPath (Join-Path $script:RepoRoot $script:ComponentCatalogPath) -PathType Leaf) -and
         (Test-Path -LiteralPath (Join-Path $script:RepoRoot $script:ProductionManifestSchema) -PathType Leaf)
     ) { $script:RepoRoot } else { $null }
+    if ($MigrationPreview -or $ApplyMigration) {
+        if (-not $TargetPath) {
+            Write-Error 'Migration requires an explicit -TargetPath.' -ErrorAction Continue
+            exit 1
+        }
+        if (-not $catalogSourceRoot) {
+            Write-Error 'Migration requires the exact Production Schema and Component Catalog.' -ErrorAction Continue
+            exit 1
+        }
+        try {
+            if ($MigrationPreview) {
+                $preview = New-ManifestMigrationPreview -TargetPath $targetProjectPath -SourceRoot $catalogSourceRoot
+                $public = [ordered]@{}
+                foreach ($property in $preview.PSObject.Properties) {
+                    if ($property.Name -notin @('candidate_manifest', 'candidate_bytes')) { $public[$property.Name] = $property.Value }
+                }
+                Write-Output ($public | ConvertTo-Json -Depth 30)
+            } else {
+                $result = Invoke-ManifestMigrationApply -TargetPath $targetProjectPath -SourceRoot $catalogSourceRoot -ExpectedPreviewId $ExpectedPreviewId
+                Write-Output ($result | ConvertTo-Json -Depth 10)
+            }
+            return
+        } catch {
+            Write-Error $_.Exception.Message -ErrorAction Continue
+            exit 1
+        }
+    }
     $manifestResult = Get-InstallManifest -TargetPath $targetProjectPath -SourceRoot $catalogSourceRoot
     $pendingV3Validation = $manifestResult.State -eq 'v3-validation-blocked'
-    if ($manifestResult.State -eq 'valid-v3') {
-        $diagnostic = @(
-            "manifest-v3-writer-disabled: $($manifestResult.ManifestPath)"
-            'Manifest v3 writer/migration is not enabled.'
-            'The v3 Manifest was recognized read-only and will not be downgraded or overwritten.'
-            'Operation aborted before backup, directory, file, link, temporary artifact, or Manifest mutation.'
-        ) -join [Environment]::NewLine
-        Write-Error $diagnostic -ErrorAction Continue
-        exit 1
-    }
     if ($manifestResult.State -eq 'unsupported') {
         Write-Error "Unsupported install manifest: $($manifestResult.ManifestPath)" -ErrorAction Continue
         Write-Error "Observed schema version: $($manifestResult.SchemaVersion)" -ErrorAction Continue
@@ -2585,8 +3126,21 @@ function Main {
         Write-Error 'Inspect the manifest manually or restore it from a trusted backup.' -ErrorAction Continue
         exit 1
     }
-    if ($Update -and $manifestResult.State -eq 'missing') {
-        Write-Warning "Legacy project manifest is missing: $($manifestResult.ManifestPath)"
+    if ($manifestResult.State -eq 'unsafe-path') {
+        Write-Error "Unsafe install manifest path: $($manifestResult.ManifestPath)" -ErrorAction Continue
+        Write-Error $manifestResult.Detail -ErrorAction Continue
+        Write-Error 'Operation aborted before any target mutation.' -ErrorAction Continue
+        exit 1
+    }
+    if ($manifestResult.State -in @('valid-v1', 'valid-v2')) {
+        Write-Error "migration-preview-required: schema v$($manifestResult.SchemaVersion) cannot use general Update." -ErrorAction Continue
+        Write-Error "Run -MigrationPreview -TargetPath '$targetProjectPath' before an explicit -ApplyMigration." -ErrorAction Continue
+        Write-Error 'No managed files or Manifest bytes were changed.' -ErrorAction Continue
+        exit 1
+    }
+    $targetWasEmpty = -not (Test-Path -LiteralPath $targetProjectPath) -or @(Get-ChildItem -LiteralPath $targetProjectPath -Force -ErrorAction Stop).Count -eq 0
+    if ($manifestResult.State -eq 'missing' -and -not $targetWasEmpty) {
+        Write-Warning "legacy/missing-manifest: $($manifestResult.ManifestPath)"
         Write-Warning 'Update is report-only because managed-file provenance is unavailable.'
         Write-Warning 'No files changed; no ownership was inferred and no manifest was created.'
         return
@@ -2730,12 +3284,36 @@ function Main {
         }
     }
 
+    if ($manifestResult.State -eq 'valid-v3') {
+        if (-not $Update) {
+            Write-Error 'valid-v3 requires explicit -Update for general update.' -ErrorAction Continue
+            exit 1
+        }
+        try {
+            $v3Update = Invoke-ManifestV3GeneralUpdate -TargetPath $targetProjectPath -SourceRoot $script:RepoRoot -Force:$Force
+            Write-Host "✅ Manifest v3 update completed; backup: $($v3Update.BackupPath)" -ForegroundColor Green
+            return
+        } catch {
+            Write-Error $_.Exception.Message -ErrorAction Continue
+            exit 1
+        }
+    }
+
     if ($pendingV3Validation) {
         $revalidatedManifest = Get-InstallManifest -TargetPath $targetProjectPath -SourceRoot $script:RepoRoot
         if ($revalidatedManifest.State -eq 'valid-v3') {
-            Write-Error "manifest-v3-writer-disabled: $($revalidatedManifest.ManifestPath)" -ErrorAction Continue
-            Write-Error 'Manifest v3 writer/migration is not enabled.' -ErrorAction Continue
-            Write-Error 'The v3 Manifest was recognized read-only after exact Production Schema and Component Catalog validation.' -ErrorAction Continue
+            if (-not $Update) {
+                Write-Error 'valid-v3 requires explicit -Update for general update.' -ErrorAction Continue
+                exit 1
+            }
+            try {
+                $v3Update = Invoke-ManifestV3GeneralUpdate -TargetPath $targetProjectPath -SourceRoot $script:RepoRoot -Force:$Force
+                Write-Host "✅ Manifest v3 update completed; backup: $($v3Update.BackupPath)" -ForegroundColor Green
+                return
+            } catch {
+                Write-Error $_.Exception.Message -ErrorAction Continue
+                exit 1
+            }
         } elseif ($revalidatedManifest.State -eq 'v3-validation-blocked') {
             Write-Error "v3-validation-blocked: $($revalidatedManifest.ManifestPath)" -ErrorAction Continue
             Write-Error "catalog-unavailable: $($revalidatedManifest.Detail)" -ErrorAction Continue
@@ -2801,6 +3379,10 @@ function Main {
     Write-Host ""
     
     try {
+        if ($manifestResult.State -eq 'missing') {
+            $null = Test-ManifestV3FreshInstallPlan -TargetPath $targetProjectPath -SourceRoot $script:RepoRoot
+            $manifestEntries = @{}
+        }
         # 執行檔案同步
         $syncResult = Sync-WorkflowFiles -SourcePath $templateSourcePath -TargetPath $targetProjectPath -ManifestEntries $manifestEntries -ConstitutionSourceRoot $script:RepoRoot -Force:$forceMode -Backup:$backupMode
         if ($backupMode) {
@@ -2817,7 +3399,7 @@ function Main {
         $syncResult = Merge-SyncResults $syncResult $portableResult
 
         if (([IO.Path]::GetFullPath($targetProjectPath)) -ne ([IO.Path]::GetFullPath($script:RepoRoot))) {
-            Write-InstallManifest -TargetPath $targetProjectPath -SourceRoot $script:RepoRoot -ManifestEntries $manifestEntries
+            Write-InstallManifest -TargetPath $targetProjectPath -SourceRoot $script:RepoRoot -ManifestEntries $manifestEntries -Mode $(if ($manifestResult.State -eq 'valid-v3') { 'update' } else { 'install' })
         }
         
         # 顯示同步結果

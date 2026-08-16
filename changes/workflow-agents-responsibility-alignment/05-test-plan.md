@@ -240,3 +240,28 @@ Every implementation phase must run:
 7. Independent review appropriate to phase risk.
 
 Unavailable checks must be reported with reason and exact follow-up command; they must not be silently skipped.
+
+## Phase 4D Build Candidate Verification — 2026-08-14
+
+- **Fixed Acceptance Boundary**: State Matrix A–G only. The focused Product/Test evidence is Pester 5.6.1 `23 passed / 0 failed / 0 skipped`; no Product/Test file changed during governance, so this evidence is carried forward rather than redundantly rerun.
+- **A–G coverage**: New Install v3; missing-Manifest existing project report-only; v1/v2 general Update refusal; deterministic Preview/no-write; exact Preview ID Apply binding; valid-v3 Untouched update; Customized/Legacy/Unknown/Project-owned/stale preservation; corrupt/unsupported/unsafe hard-stop; final Manifest publication; backup/diagnostic retention and no false success; no prune/delete/tombstone; Force/AlwaysOverwrite ownership containment.
+- **Single Full Gate**: After governance edits, run exactly one `skills/gate-check/scripts/run-gate-check.ps1` Repository Full Gate. It covers Python, full Pester, sync, Catalog, lifecycle, Change Package, Agent structure, JSON/Schema, parser/compile, and diff-check; do not duplicate those full suites separately.
+- **Required invariants**: Windows-only tests must not create Linux discovery skips; Schema SHA-256 remains `e8109224c5dd96a558b18f6362a70775563fa3902825ae7b45602e8c1d994142`; Catalog SHA-256 remains `a8a4b126699f88dca86cf3498be5febfd50272509f9cf521abda749cb264f5d8`; no secret/token/PII/local absolute path; no unexpected generated artifact; exact changed-path review and `git diff --check` pass.
+- **Operational non-execution**: No real migration, restore, cleanup, deployment, or real-adopter operation is part of this Build. No independent Reviewer is invoked; a fresh Acceptance Session owns independent acceptance.
+
+### Full Gate stop evidence
+
+- The single Full Gate failed: Python `76 passed / 12 failed`; pinned Pester 5.6.1 `323 total / 317 passed / 6 failed / 0 skipped`. Sync, Catalog, lifecycle, Change Package, Agent structure, and diff-check passed; worktree status was unchanged.
+- Python failures are environment/path failures in Phase 0B Bash tests (`/bin/bash` cannot resolve the Windows `<repo-root>/scripts/bootstrap.sh` path). Pester failures are deterministic existing-contract mismatches: missing-manifest wording, schema-v2 writer expectation, and four Phase 4A valid-v3 route expectations for the retired writer-disabled behavior.
+- Because the required Full Gate failed, commit/push/PR/CI and independent acceptance are blocked. No Product/Test correction was authorized in this Build.
+
+### Full Gate triage correction — 2026-08-16
+
+- The 12 Python cases were re-run as the minimal Phase 0B suite and passed `13/13` in both current and exact clean-main worktrees; no Python correction was made.
+- The six Pester cases were corrected only for approved Phase 4D expectation changes and re-ran `6 passed / 0 failed / 0 skipped / 0 inconclusive`; the Phase 4D focused suite re-ran `23 passed / 0 failed / 0 skipped`.
+- The single Repository Full Gate is now pending. It must use the existing pinned Pester 5.6.1 and explicitly bind `PHASE0B_BASH` to Git Bash; no full gate has been repeated before this point.
+
+### Final Repository Full Gate evidence — 2026-08-16
+
+- `GATE PASSED WITH NOTES`: Python `188 passed`; Pester 5.6.1 `323 passed / 0 failed / 0 skipped / 0 inconclusive`; sync, Catalog, lifecycle, Change Package, Agent structure, JSON/Schema/parser/compile, and diff-check passed; worktree invariant passed.
+- The only note is the existing Agent line-count warning. Product/Test are frozen; no delivery action is authorized in this session.

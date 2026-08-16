@@ -224,7 +224,7 @@ Describe "Phase 0C manifest parse safety" {
         $before = Get-Phase0CTreeSnapshot -Root $target
         $result = Invoke-Phase0CBootstrap -Target $target -Arguments @('-Update')
         $result.ExitCode | Should -Be 0
-        $result.Output | Should -Match 'legacy project'
+        $result.Output | Should -Match 'legacy/missing-manifest'
         $result.Output | Should -Match 'report-only'
         $result.Output | Should -Match 'No files changed'
         Test-Path (Join-Path $target '.ai-workflow-install.json') | Should -BeFalse
@@ -579,12 +579,14 @@ Describe "Phase 4A Manifest v3 reader-first foundation" {
         [IO.File]::ReadAllBytes($path) | Should -Be $bytes
     }
 
-    It "keeps the production writer at schema v2" {
+    It "emits a Catalog-bound production v3 Manifest" {
         $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
         New-Item -ItemType Directory -Path $target | Out-Null
         Write-InstallManifest -TargetPath $target -SourceRoot $script:Phase4ARepoRoot -ManifestEntries @{}
         $written = Get-Content -Raw (Join-Path $target '.ai-workflow-install.json') | ConvertFrom-Json -AsHashtable
-        $written['schema_version'] | Should -Be 2
+        $written['schema_version'] | Should -Be 3
+        $written['last_transaction']['writer'] | Should -Be 'powershell'
+        (Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4ARepoRoot).State | Should -Be 'valid-v3'
     }
 
     It "matches the corrected normative Catalog allocation and audit fingerprint" {
@@ -759,7 +761,7 @@ Describe "Phase 4A Manifest v3 reader-first foundation" {
         $result.DiagnosticCategory | Should -Be $category
     }
 
-    It "blocks valid v3 route <name> before every target mutation" -ForEach @(
+    It "routes valid v3 operation <name> through the Phase 4D ownership boundary" -ForEach @(
         $Phase4AVectorsForDiscovery.mutation_routes
     ) {
         param($name, $powershell_arguments, $category)
@@ -767,18 +769,28 @@ Describe "Phase 4A Manifest v3 reader-first foundation" {
         New-Item -ItemType Directory -Path $target | Out-Null
         New-Item -ItemType Directory -Path (Join-Path $target '.github') | Out-Null
         New-Item -ItemType Directory -Path (Join-Path $target 'skills/custom') -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $target 'agents') -Force | Out-Null
         [IO.File]::WriteAllBytes((Join-Path $target '.github/copilot-instructions.md'), [Text.Encoding]::UTF8.GetBytes('sentinel'))
         [IO.File]::WriteAllBytes((Join-Path $target 'skills/custom/SKILL.md'), [Text.Encoding]::UTF8.GetBytes('custom'))
         Write-Phase4AManifest $target (New-Phase4AValidManifest)
         $before = Get-Phase4ATreeSnapshot $target
         $result = Invoke-Phase4ABootstrap -Target $target -Arguments @($powershell_arguments)
-        $result.ExitCode | Should -Not -Be 0
-        $result.Output | Should -Match $category
-        $result.Output | Should -Match 'writer/migration is not enabled'
-        $result.Output | Should -Match 'before backup, directory, file, link, temporary artifact, or Manifest mutation'
-        (Get-Phase4ATreeSnapshot $target) | Should -Be $before
-        Test-Path (Join-Path $target '.git') | Should -BeFalse
-        @(Get-ChildItem -LiteralPath $target -Force -Filter '*.backup-*').Count | Should -Be 0
+        if ($name -in @('install', 'force')) {
+            $result.ExitCode | Should -Not -Be 0
+            $result.Output | Should -Match 'valid-v3 requires explicit -Update'
+            $result.Output | Should -Not -Match 'manifest-v3-writer-disabled'
+            (Get-Phase4ATreeSnapshot $target) | Should -Be $before
+            Test-Path (Join-Path $target '.git') | Should -BeFalse
+            @(Get-ChildItem -LiteralPath $target -Force -Filter '*.backup-*').Count | Should -Be 0
+        } else {
+            $result.ExitCode | Should -Be 0
+            $result.Output | Should -Match 'Manifest v3 update completed'
+            $result.Output | Should -Not -Match 'manifest-v3-writer-disabled'
+            (Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4ARepoRoot).State | Should -Be 'valid-v3'
+            @(Get-ChildItem -LiteralPath $target -Force -Directory -Filter '.ai-workflow-phase4d-backup-*').Count | Should -Be 1
+            [IO.File]::ReadAllText((Join-Path $target '.github/copilot-instructions.md')) | Should -Be 'sentinel'
+            [IO.File]::ReadAllText((Join-Path $target 'skills/custom/SKILL.md')) | Should -Be 'custom'
+        }
     }
 
     It "correction2 blocks corrupt or unsupported <manifestKind> route <name> before target mutation" -ForEach @(
@@ -825,6 +837,449 @@ Describe "Phase 4A Manifest v3 reader-first foundation" {
         $scriptText = Get-Content -Raw (Join-Path $PSScriptRoot 'bootstrap.ps1')
         $scriptText | Should -Match 'sparse-checkout set[^\r\n]*manifest[^\r\n]*schemas'
         $scriptText | Should -Match 'if \(\$pendingV3Validation\)[\s\S]*Remove-TempDirectory -Path \$script:TempClonePath'
+    }
+}
+
+Describe "Phase 4D Windows Manifest v3 writer" {
+    BeforeAll {
+        $script:Phase4DRepoRoot = Split-Path -Parent $PSScriptRoot
+
+        function New-Phase4DTarget {
+            $target = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+            New-Item -ItemType Directory -Path $target | Out-Null
+            return $target
+        }
+
+        function Write-Phase4DLegacyManifest {
+            param([string]$Target, [int]$Version = 2)
+            $sourcePath = 'agents/coder.agent.md'
+            $sourceHash = Get-PathHash (Join-Path $script:Phase4DRepoRoot $sourcePath)
+            $manifest = [ordered]@{
+                schema_version = $Version
+                installed_at = '2026-07-01T00:00:00Z'
+                source_ref = 'legacy-source'
+                components = @([ordered]@{
+                    name = $sourcePath
+                    installed_at = '2026-07-01T00:00:00Z'
+                    updated_at = '2026-07-01T00:00:00Z'
+                    source_hash = $sourceHash
+                    managed_hash = $sourceHash
+                    observed_hash = $sourceHash
+                    ownership = 'template-managed'
+                    kind = 'file'
+                    source = "template:$sourcePath"
+                    status = 'managed'
+                })
+            }
+            [IO.File]::WriteAllText(
+                (Join-Path $Target '.ai-workflow-install.json'),
+                ($manifest | ConvertTo-Json -Depth 20) + "`n",
+                [Text.UTF8Encoding]::new($false)
+            )
+        }
+
+        function Invoke-Phase4DBootstrap {
+            param([string]$Target, [string[]]$Arguments)
+            $pwsh = (Get-Process -Id $PID).Path
+            $output = & $pwsh -NoProfile -File (Join-Path $PSScriptRoot 'bootstrap.ps1') -TargetPath $Target @Arguments 2>&1 | Out-String
+            [PSCustomObject]@{ ExitCode = $LASTEXITCODE; Output = $output }
+        }
+
+        function Get-Phase4DTreeSnapshot {
+            param([string]$Root)
+            $items = foreach ($item in @(Get-ChildItem -LiteralPath $Root -Force -Recurse | Sort-Object FullName)) {
+                $relative = [IO.Path]::GetRelativePath($Root, $item.FullName).Replace('\', '/')
+                if ($item.PSIsContainer) { "$relative/" } else { "$relative|$(Get-FileHash256 -Path $item.FullName)" }
+            }
+            return @($items)
+        }
+
+        function New-Phase4DSourceRoot {
+            param([byte[]]$CoderBytes)
+            $root = Join-Path $TestDrive ("phase4d-source-" + [guid]::NewGuid().ToString('N'))
+            New-Item -ItemType Directory -Path (Join-Path $root 'schemas') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $root 'manifest') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $root 'agents') -Force | Out-Null
+            Copy-Item -LiteralPath (Join-Path $script:Phase4DRepoRoot 'schemas/ai-workflow-install-manifest-v3.schema.json') -Destination (Join-Path $root 'schemas/ai-workflow-install-manifest-v3.schema.json')
+            Copy-Item -LiteralPath (Join-Path $script:Phase4DRepoRoot 'manifest/component-catalog.json') -Destination (Join-Path $root 'manifest/component-catalog.json')
+            [IO.File]::WriteAllBytes((Join-Path $root 'agents/coder.agent.md'), $CoderBytes)
+            return $root
+        }
+
+        function Write-Phase4DV3Baseline {
+            param([string]$Target, [string]$SourceRoot, [byte[]]$Bytes)
+            New-Item -ItemType Directory -Path (Join-Path $Target 'agents') -Force | Out-Null
+            [IO.File]::WriteAllBytes((Join-Path $Target 'agents/coder.agent.md'), $Bytes)
+            $hash = Get-BytesHash $Bytes
+            $entries = @{
+                'agents/coder.agent.md' = [ordered]@{
+                    name = 'agents/coder.agent.md'; installed_at = '2026-07-01T00:00:00Z'
+                    source_hash = $hash; managed_hash = $hash; observed_hash = $hash
+                    ownership = 'template-managed'; kind = 'file'; source = 'template:agents/coder.agent.md'; status = 'managed'
+                }
+            }
+            Write-InstallManifest -TargetPath $Target -SourceRoot $SourceRoot -ManifestEntries $entries -Mode install
+        }
+    }
+
+    Context "State Matrix A - new install" {
+        It "emits a Catalog-bound production v3 Manifest for a fresh install" {
+            $target = New-Phase4DTarget
+            $entries = @{}
+            $sourcePath = 'agents/coder.agent.md'
+            $sourceHash = Get-PathHash (Join-Path $script:Phase4DRepoRoot $sourcePath)
+            Set-ManifestEntry -ManifestEntries $entries -RelativePath $sourcePath -Ownership 'template-managed' -SourceLabel "template:$sourcePath" -Kind 'file' -ManagedHash $sourceHash -ObservedHash $sourceHash -Status 'managed'
+
+            Write-InstallManifest -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ManifestEntries $entries -Mode install
+
+            $result = Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $result.State | Should -Be 'valid-v3'
+            $manifest = Get-Content -Raw (Join-Path $target '.ai-workflow-install.json') | ConvertFrom-Json -AsHashtable
+            $manifest.schema_version | Should -Be 3
+            $manifest.last_transaction.writer | Should -Be 'powershell'
+            $manifest.components[0].identity.id | Should -Be 'cmp:canonical-coder-agent'
+            $manifest.components[0].provenance.ownership | Should -Be 'template-managed'
+            $manifest.components[0].hashes.baseline | Should -Be $sourceHash
+            $manifest.components[0].hashes.observed_before | Should -Be $sourceHash
+            $manifest.components[0].hashes.proposed_source | Should -Be $sourceHash
+            $manifest.components[0].provenance.generated_from | Should -Be @()
+        }
+
+        It "treats a non-empty target with no Manifest as legacy report-only" {
+            $target = New-Phase4DTarget
+            [IO.File]::WriteAllText((Join-Path $target 'project.txt'), 'sentinel')
+            $before = Get-Phase4DTreeSnapshot $target
+
+            $result = Invoke-Phase4DBootstrap -Target $target -Arguments @('-Update')
+
+            $result.ExitCode | Should -Be 0
+            $result.Output | Should -Match 'legacy/missing-manifest'
+            $result.Output | Should -Match 'report-only'
+            (Get-Phase4DTreeSnapshot $target) | Should -Be $before
+            Test-Path (Join-Path $target '.ai-workflow-install.json') | Should -BeFalse
+        }
+    }
+
+    Context "State Matrix B - legacy general update" {
+        It "requires Migration Preview for v<Version> general Update without target writes" -ForEach @(
+            @{ Version = 1 }, @{ Version = 2 }
+        ) {
+            param($Version)
+            $target = New-Phase4DTarget
+            Write-Phase4DLegacyManifest -Target $target -Version $Version
+            $before = Get-Phase4DTreeSnapshot $target
+
+            $result = Invoke-Phase4DBootstrap -Target $target -Arguments @('-Update', '-Force')
+
+            $result.ExitCode | Should -Not -Be 0
+            $result.Output | Should -Match 'migration-preview-required'
+            $result.Output | Should -Match 'MigrationPreview'
+            (Get-Phase4DTreeSnapshot $target) | Should -Be $before
+        }
+    }
+
+    Context "State Matrix C and D - explicit migration" {
+        It "creates a deterministic no-write Preview bound to exact input bytes" {
+            $target = New-Phase4DTarget
+            Write-Phase4DLegacyManifest -Target $target
+            $manifestPath = Join-Path $target '.ai-workflow-install.json'
+            $before = Get-Phase4DTreeSnapshot $target
+
+            $first = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            (Get-Item -LiteralPath $manifestPath -Force).LastWriteTimeUtc = [datetime]'2025-01-01T00:00:00Z'
+            $second = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+
+            $first.input_version | Should -Be 2
+            $first.normalized_target | Should -Be ([IO.Path]::GetFullPath($target))
+            $first.input_manifest_sha256 | Should -Be (Get-BytesHash ([IO.File]::ReadAllBytes($manifestPath)))
+            $first.proposed_manifest_sha256 | Should -Match '^sha256:[0-9a-f]{64}$'
+            $first.schema.id | Should -Be 'urn:ai-dev-workflow:manifest-schema:v3'
+            $first.schema.version | Should -Be 3
+            $first.catalog.fingerprint | Should -Be (Get-PathHash (Join-Path $script:Phase4DRepoRoot 'manifest/component-catalog.json'))
+            $first.source.version | Should -Be $script:ComponentCatalogVersion
+            $first.source.ref | Should -Be $script:ComponentCatalogPath
+            @($first.mapped_components).Count | Should -Be 1
+            $first.PSObject.Properties.Name | Should -Contain 'preserved_components'
+            $first.PSObject.Properties.Name | Should -Contain 'legacy_components'
+            $first.PSObject.Properties.Name | Should -Contain 'blocking_findings'
+            $first.backup_plan.required | Should -BeTrue
+            $first.no_write_confirmation | Should -BeTrue
+            $first.preview_id | Should -Match '^preview:sha256:[0-9a-f]{64}$'
+            $second.preview_id | Should -Be $first.preview_id
+            $second.proposed_manifest_sha256 | Should -Be $first.proposed_manifest_sha256
+            (Get-Phase4DTreeSnapshot $target) | Should -Be $before
+        }
+
+        It "hard-stops Apply when Expected Preview ID does not match" {
+            $target = New-Phase4DTarget
+            Write-Phase4DLegacyManifest -Target $target
+            $before = Get-Phase4DTreeSnapshot $target
+
+            { Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId ('preview:sha256:' + ('0' * 64)) } | Should -Throw '*preview-mismatch*'
+
+            (Get-Phase4DTreeSnapshot $target) | Should -Be $before
+        }
+
+        It "applies only the matching Manifest migration and preserves managed files" {
+            $target = New-Phase4DTarget
+            New-Item -ItemType Directory -Path (Join-Path $target 'agents') | Out-Null
+            [IO.File]::WriteAllText((Join-Path $target 'agents/coder.agent.md'), 'custom-managed-sentinel')
+            Write-Phase4DLegacyManifest -Target $target
+            $managedBefore = [IO.File]::ReadAllBytes((Join-Path $target 'agents/coder.agent.md'))
+            $preview = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+
+            $result = Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId $preview.preview_id
+
+            $result.status | Should -Be 'completed'
+            $result.backup_path | Should -Exist
+            [IO.File]::ReadAllBytes((Join-Path $target 'agents/coder.agent.md')) | Should -Be $managedBefore
+            (Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4DRepoRoot).State | Should -Be 'valid-v3'
+            @(Get-ChildItem -LiteralPath $target -Force -Recurse | Where-Object Name -Match 'tombstone|prune').Count | Should -Be 0
+        }
+
+        It "reports repeated Apply against valid v3 as already-v3 without mutation" {
+            $target = New-Phase4DTarget
+            Write-Phase4DLegacyManifest -Target $target
+            $preview = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $null = Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId $preview.preview_id
+            $before = Get-Phase4DTreeSnapshot $target
+
+            $result = Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId $preview.preview_id
+
+            $result.status | Should -Be 'already-v3'
+            $result.applicable | Should -BeFalse
+            (Get-Phase4DTreeSnapshot $target) | Should -Be $before
+        }
+
+        It "keeps Preview deterministic without fabricating committed production timestamps" {
+            $target = New-Phase4DTarget
+            Write-Phase4DLegacyManifest -Target $target
+
+            $first = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $second = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+
+            $first.preview_id | Should -Be $second.preview_id
+            $first.proposed_manifest_sha256 | Should -Be $second.proposed_manifest_sha256
+            $first.PSObject.Properties.Name | Should -Not -Contain 'candidate_manifest'
+            $first.PSObject.Properties.Name | Should -Not -Contain 'candidate_bytes'
+
+            $beforeApply = [DateTimeOffset]::UtcNow.AddSeconds(-1)
+            $result = Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId $first.preview_id
+            $afterApply = [DateTimeOffset]::UtcNow.AddSeconds(1)
+            $published = Get-Content -Raw (Join-Path $target '.ai-workflow-install.json') | ConvertFrom-Json -AsHashtable -DateKind String
+            $writtenAt = [DateTimeOffset]::Parse($published.written_at, [Globalization.CultureInfo]::InvariantCulture).UtcDateTime
+
+            $result.status | Should -Be 'completed'
+            $writtenAt | Should -BeGreaterOrEqual $beforeApply.UtcDateTime
+            $writtenAt | Should -BeLessOrEqual $afterApply.UtcDateTime
+        }
+    }
+
+    Context "State Matrix E - existing valid-v3 general update" {
+        It "updates only an Untouched regular file whose current hash equals the trusted v3 baseline" {
+            $oldBytes = [Text.UTF8Encoding]::new($false).GetBytes("old managed bytes`n")
+            $newBytes = [Text.UTF8Encoding]::new($false).GetBytes("new source bytes`n")
+            $source = New-Phase4DSourceRoot -CoderBytes $oldBytes
+            $target = New-Phase4DTarget
+            Write-Phase4DV3Baseline -Target $target -SourceRoot $source -Bytes $oldBytes
+            [IO.File]::WriteAllBytes((Join-Path $source 'agents/coder.agent.md'), $newBytes)
+            $manifestResult = Get-InstallManifest -TargetPath $target -SourceRoot $source
+
+            $entries = ConvertFrom-V3ManifestForUpdate -ManifestResult $manifestResult -TargetPath $target -SourceRoot $source
+            $sync = New-SyncResult
+            Set-ManagedBytes -Path (Join-Path $target 'agents/coder.agent.md') -RelativePath 'agents/coder.agent.md' -Bytes $newBytes -Result $sync -ManifestEntries $entries -Ownership 'template-managed' -SourceLabel 'template:agents/coder.agent.md' -Force -AlwaysOverwrite
+
+            [IO.File]::ReadAllBytes((Join-Path $target 'agents/coder.agent.md')) | Should -Be $newBytes
+            $sync.FilesUpdated | Should -Contain 'agents/coder.agent.md'
+        }
+
+        It "preserves Customized bytes even when Force and AlwaysOverwrite are supplied" {
+            $baselineBytes = [Text.UTF8Encoding]::new($false).GetBytes("baseline bytes`n")
+            $sourceBytes = [Text.UTF8Encoding]::new($false).GetBytes("new source bytes`n")
+            $customBytes = [Text.UTF8Encoding]::new($false).GetBytes("adopter customization`n")
+            $source = New-Phase4DSourceRoot -CoderBytes $baselineBytes
+            $target = New-Phase4DTarget
+            Write-Phase4DV3Baseline -Target $target -SourceRoot $source -Bytes $baselineBytes
+            [IO.File]::WriteAllBytes((Join-Path $source 'agents/coder.agent.md'), $sourceBytes)
+            [IO.File]::WriteAllBytes((Join-Path $target 'agents/coder.agent.md'), $customBytes)
+            $manifestResult = Get-InstallManifest -TargetPath $target -SourceRoot $source
+
+            $entries = ConvertFrom-V3ManifestForUpdate -ManifestResult $manifestResult -TargetPath $target -SourceRoot $source
+            $sync = New-SyncResult
+            Set-ManagedBytes -Path (Join-Path $target 'agents/coder.agent.md') -RelativePath 'agents/coder.agent.md' -Bytes $sourceBytes -Result $sync -ManifestEntries $entries -Ownership 'template-managed' -SourceLabel 'template:agents/coder.agent.md' -Force -AlwaysOverwrite -PreserveUntracked:$false
+
+            [IO.File]::ReadAllBytes((Join-Path $target 'agents/coder.agent.md')) | Should -Be $customBytes
+            $entries['agents/coder.agent.md'].v3_disposition | Should -Be 'preserve'
+            $entries['agents/coder.agent.md'].observed_hash | Should -Be (Get-BytesHash $customBytes)
+            $entries['agents/coder.agent.md'].proposed_hash | Should -Be (Get-BytesHash $sourceBytes)
+        }
+
+        It "keeps Legacy Unknown Project-owned and stale records report-only without pruning" {
+            $baseline = 'sha256:' + ('a' * 64)
+            $current = 'sha256:' + ('b' * 64)
+            $cases = @(
+                @{ Name = 'legacy'; Component = [ordered]@{ provenance = [ordered]@{ ownership = 'legacy-compat'; fork = [ordered]@{ decision = 'report-only' } }; lifecycle = [ordered]@{ state = 'active' }; hashes = [ordered]@{ result_after = $baseline } }; Expected = 'report-only' },
+                @{ Name = 'unknown'; Component = $null; Expected = 'report-only' },
+                @{ Name = 'project-owned'; Component = [ordered]@{ provenance = [ordered]@{ ownership = 'project-owned'; fork = [ordered]@{ decision = 'preserve' } }; lifecycle = [ordered]@{ state = 'active' }; hashes = [ordered]@{ result_after = $baseline } }; Expected = 'preserve' },
+                @{ Name = 'stale'; Component = [ordered]@{ provenance = [ordered]@{ ownership = 'derived-runtime'; fork = [ordered]@{ decision = 'manage' } }; lifecycle = [ordered]@{ state = 'retired' }; hashes = [ordered]@{ result_after = $baseline } }; Expected = 'report-only' }
+            )
+
+            foreach ($case in $cases) {
+                (Get-V3UpdateDisposition -Component $case.Component -CurrentHash $current).Action | Should -Be $case.Expected -Because $case.Name
+            }
+            @(Get-Command Remove-ManagedPath -ErrorAction Stop).Count | Should -Be 1
+        }
+
+
+        It "routes Main Update through v3 ownership rules so Force cannot overwrite customized derived output" {
+            $target = New-Phase4DTarget
+            $install = Invoke-Phase4DBootstrap -Target $target -Arguments @('-SkipHooks', '-Quiet')
+            $install.ExitCode | Should -Be 0
+            $customPath = Join-Path $target '.github/agents/coder.agent.md'
+            $customBytes = [Text.UTF8Encoding]::new($false).GetBytes("custom derived output`n")
+            [IO.File]::WriteAllBytes($customPath, $customBytes)
+
+            $update = Invoke-Phase4DBootstrap -Target $target -Arguments @('-Update', '-Force', '-SkipHooks', '-Quiet')
+
+            $update.ExitCode | Should -Be 0
+            [IO.File]::ReadAllBytes($customPath) | Should -Be $customBytes
+            (Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4DRepoRoot).State | Should -Be 'valid-v3'
+            @(Get-ChildItem -LiteralPath $target -Force -Directory -Filter '.ai-workflow-phase4d-backup-*').Count | Should -Be 1
+        }
+    }
+
+    Context "State Matrix F - Manifest path input" {
+        AfterEach {
+            $script:Phase4DManifestInspectionFailure = $false
+        }
+
+        It "classifies only an actually absent Manifest path as missing" {
+            $target = New-Phase4DTarget
+            $result = Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $result.State | Should -Be 'missing'
+            $result.DiagnosticCategory | Should -Be 'manifest-missing'
+        }
+
+        It "hard-stops a directory or container at the Manifest path as corrupt" {
+            $target = New-Phase4DTarget
+            New-Item -ItemType Directory -Path (Join-Path $target '.ai-workflow-install.json') | Out-Null
+            $result = Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $result.State | Should -Be 'corrupt'
+            $result.DiagnosticCategory | Should -Be 'manifest-path-type'
+        }
+
+        It "reads regular-file bytes strictly and rejects invalid UTF-8" {
+            $target = New-Phase4DTarget
+            [IO.File]::WriteAllBytes((Join-Path $target '.ai-workflow-install.json'), [byte[]](0xff, 0xfe, 0x7b, 0x7d))
+            $result = Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $result.State | Should -Be 'corrupt'
+            $result.DiagnosticCategory | Should -Be 'manifest-json'
+        }
+
+        It "hard-stops Manifest inspection or access failure instead of degrading it to missing" {
+            $target = New-Phase4DTarget
+            $script:Phase4DManifestInspectionFailure = $true
+            $result = Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $result.State | Should -Be 'corrupt'
+            $result.DiagnosticCategory | Should -Be 'manifest-inspection'
+        }
+
+        if ($IsWindows) {
+            It "hard-stops a Manifest leaf Junction as unsafe-path on Windows" {
+                $target = New-Phase4DTarget
+                $outside = Join-Path $TestDrive ("phase4d-junction-target-" + [guid]::NewGuid().ToString('N'))
+                New-Item -ItemType Directory -Path $outside | Out-Null
+                [IO.File]::WriteAllText((Join-Path $outside 'sentinel.txt'), 'outside-sentinel')
+                New-Item -ItemType Junction -Path (Join-Path $target '.ai-workflow-install.json') -Target $outside -ErrorAction Stop | Out-Null
+
+                $result = Get-InstallManifest -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+
+                $result.State | Should -Be 'unsafe-path'
+                $result.DiagnosticCategory | Should -Be 'manifest-unsafe-path'
+            }
+        }
+    }
+
+    Context "State Matrix G - failure honesty and recovery evidence" {
+        AfterEach {
+            $script:Phase4DFailpoint = ''
+        }
+
+        It "hard-stops backup failure before any target mutation" {
+            $target = New-Phase4DTarget
+            Write-Phase4DLegacyManifest -Target $target
+            $preview = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $before = Get-Phase4DTreeSnapshot $target
+            $script:Phase4DFailpoint = 'backup'
+
+            { Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId $preview.preview_id } | Should -Throw '*backup-failed*'
+
+            (Get-Phase4DTreeSnapshot $target) | Should -Be $before
+        }
+
+        It "hard-stops candidate validation failure before backup or publication" {
+            $target = New-Phase4DTarget
+            Write-Phase4DLegacyManifest -Target $target
+            $preview = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $before = Get-Phase4DTreeSnapshot $target
+            $script:Phase4DFailpoint = 'candidate-validation'
+
+            { Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId $preview.preview_id } | Should -Throw '*candidate-validation-failed*'
+
+            (Get-Phase4DTreeSnapshot $target) | Should -Be $before
+        }
+
+        It "retains backup and diagnostic without false success when a managed write fails" {
+            $oldBytes = [Text.UTF8Encoding]::new($false).GetBytes("managed-before`n")
+            $newBytes = [Text.UTF8Encoding]::new($false).GetBytes("managed-after`n")
+            $source = New-Phase4DSourceRoot -CoderBytes $oldBytes
+            $target = New-Phase4DTarget
+            Write-Phase4DV3Baseline -Target $target -SourceRoot $source -Bytes $oldBytes
+            [IO.File]::WriteAllBytes((Join-Path $source 'agents/coder.agent.md'), $newBytes)
+            $manifestBefore = [IO.File]::ReadAllBytes((Join-Path $target '.ai-workflow-install.json'))
+            $script:Phase4DFailpoint = 'managed-write'
+
+            { Invoke-ManifestV3GeneralUpdate -TargetPath $target -SourceRoot $source } | Should -Throw '*manual-recovery-required*managed-write*'
+
+            [IO.File]::ReadAllBytes((Join-Path $target 'agents/coder.agent.md')) | Should -Be $oldBytes
+            [IO.File]::ReadAllBytes((Join-Path $target '.ai-workflow-install.json')) | Should -Be $manifestBefore
+            @(Get-ChildItem -LiteralPath $target -Force -Directory -Filter '.ai-workflow-phase4d-backup-*').Count | Should -Be 1
+            @(Get-ChildItem -LiteralPath $target -Force -Recurse -File -Filter 'diagnostic.txt').Count | Should -Be 1
+        }
+
+        It "retains the exact backup and diagnostic when Manifest replace fails" {
+            $target = New-Phase4DTarget
+            Write-Phase4DLegacyManifest -Target $target
+            $manifestPath = Join-Path $target '.ai-workflow-install.json'
+            $original = [IO.File]::ReadAllBytes($manifestPath)
+            $preview = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $script:Phase4DFailpoint = 'manifest-replace'
+
+            { Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId $preview.preview_id } | Should -Throw '*manual-recovery-required*manifest-replace*'
+
+            [IO.File]::ReadAllBytes($manifestPath) | Should -Be $original
+            $backup = @(Get-ChildItem -LiteralPath $target -Force -File -Filter '.ai-workflow-install.json.phase4d-backup-*' | Where-Object Name -NotLike '*.diagnostic.txt')
+            $backup.Count | Should -Be 1
+            [IO.File]::ReadAllBytes($backup[0].FullName) | Should -Be $original
+            Test-Path ($backup[0].FullName + '.diagnostic.txt') | Should -BeTrue
+        }
+
+        It "reports manual recovery and does not guess a restore after post-write validation fails" {
+            $target = New-Phase4DTarget
+            Write-Phase4DLegacyManifest -Target $target
+            $manifestPath = Join-Path $target '.ai-workflow-install.json'
+            $original = [IO.File]::ReadAllBytes($manifestPath)
+            $preview = New-ManifestMigrationPreview -TargetPath $target -SourceRoot $script:Phase4DRepoRoot
+            $script:Phase4DFailpoint = 'post-write-validation'
+
+            { Invoke-ManifestMigrationApply -TargetPath $target -SourceRoot $script:Phase4DRepoRoot -ExpectedPreviewId $preview.preview_id } | Should -Throw '*manual-recovery-required*post-write-validation*'
+
+            [IO.File]::ReadAllBytes($manifestPath) | Should -Not -Be $original
+            $backup = @(Get-ChildItem -LiteralPath $target -Force -File -Filter '.ai-workflow-install.json.phase4d-backup-*' | Where-Object Name -NotLike '*.diagnostic.txt')
+            $backup.Count | Should -Be 1
+            [IO.File]::ReadAllBytes($backup[0].FullName) | Should -Be $original
+            Test-Path ($backup[0].FullName + '.diagnostic.txt') | Should -BeTrue
+        }
     }
 }
 
